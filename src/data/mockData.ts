@@ -11,6 +11,12 @@ export interface EventItem {
   category: string;
   capacity: string;
   attendees: number;
+  type?: 'free' | 'paid';
+  ticketId?: string;
+  ticketCode?: string;
+  pricePaid?: number | string;
+  status?: string;
+  purchasedAt?: string;
 }
 
 export interface CategoryItem {
@@ -42,51 +48,51 @@ export interface StatItem {
 export const mockCategories: CategoryItem[] = [
   {
     id: "cat-1",
-    name: "Tech & Innovation",
-    icon: "Cpu",
-    description: "Conferences, hackathons, and product launches.",
-    count: 245,
-    slug: "tech"
+    name: "Community Service",
+    icon: "Heart",
+    description: "Humanitarian aids, environmental drives, blood donations, and local community outreach.",
+    count: 24,
+    slug: "community"
   },
   {
     id: "cat-2",
-    name: "Music & Concerts",
-    icon: "Music",
-    description: "Live bands, DJ sets, festivals, and concerts.",
-    count: 382,
-    slug: "music"
+    name: "Professional Development",
+    icon: "Briefcase",
+    description: "Leadership workshops, career guidance panels, skills training, and speaker sessions.",
+    count: 18,
+    slug: "professional"
   },
   {
     id: "cat-3",
-    name: "Business & Startup",
-    icon: "Briefcase",
-    description: "Networking events, workshops, and investor panels.",
-    count: 189,
-    slug: "business"
+    name: "Club Service",
+    icon: "Users",
+    description: "Club meetings, fellowships, socials, installation ceremonies, and internal bonding.",
+    count: 15,
+    slug: "club"
   },
   {
     id: "cat-4",
-    name: "Food & Culinary",
-    icon: "Utensils",
-    description: "Tastings, cooking masterclasses, and food truck expos.",
-    count: 120,
-    slug: "food"
+    name: "International Service",
+    icon: "Globe",
+    description: "Global joint projects, sister-club partnerships, peace webinars, and exchange programs.",
+    count: 8,
+    slug: "international"
   },
   {
     id: "cat-5",
-    name: "Arts & Theater",
-    icon: "Palette",
-    description: "Gallery openings, plays, comedy shows, and design exhibitions.",
-    count: 94,
-    slug: "arts"
+    name: "Fundraisers",
+    icon: "DollarSign",
+    description: "Charity runs, benefit galas, donation drives, and fundraising concerts for social causes.",
+    count: 12,
+    slug: "fundraiser"
   },
   {
     id: "cat-6",
-    name: "Fitness & Sports",
-    icon: "Activity",
-    description: "Marathons, yoga retreats, cycling tours, and team matches.",
-    count: 156,
-    slug: "sports"
+    name: "Public Relations",
+    icon: "Sparkles",
+    description: "Orientation events, membership drives, public walks, and Rotaract awareness seminars.",
+    count: 6,
+    slug: "pr"
   }
 ];
 
@@ -101,7 +107,7 @@ export const mockEvents: EventItem[] = [
     image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     organizer: "NextGen Tech Group",
     price: "$299.00",
-    category: "tech",
+    category: "professional",
     capacity: "1500",
     attendees: 1240
   },
@@ -115,7 +121,7 @@ export const mockEvents: EventItem[] = [
     image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     organizer: "Decibel Entertainment",
     price: "$149.00",
-    category: "music",
+    category: "fundraiser",
     capacity: "5000",
     attendees: 4200
   },
@@ -129,7 +135,7 @@ export const mockEvents: EventItem[] = [
     image: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     organizer: "SaaS Builders Network",
     price: "$199.00",
-    category: "business",
+    category: "professional",
     capacity: "800",
     attendees: 642
   },
@@ -143,7 +149,7 @@ export const mockEvents: EventItem[] = [
     image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     organizer: "Culinary Arts Association",
     price: "$85.00",
-    category: "food",
+    category: "club",
     capacity: "1000",
     attendees: 890
   },
@@ -157,7 +163,7 @@ export const mockEvents: EventItem[] = [
     image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     organizer: "Modern Art Coalition",
     price: "Free (RSVP Req.)",
-    category: "arts",
+    category: "pr",
     capacity: "2000",
     attendees: 1650
   },
@@ -171,7 +177,7 @@ export const mockEvents: EventItem[] = [
     image: "https://images.unsplash.com/photo-1502904582529-0a1514896a2e?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     organizer: "ActiveLife Foundation",
     price: "$45.00",
-    category: "sports",
+    category: "community",
     capacity: "3000",
     attendees: 2100
   }

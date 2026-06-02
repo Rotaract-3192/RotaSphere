@@ -1,5 +1,5 @@
 "use client"
-
+ 
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useAuthSession } from "@/context/AuthContext"
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
-
+ 
 export default function SignInPage() {
   const { isClerkActive, signIn, loginWithGoogle, isSignedIn } = useAuthSession()
   const router = useRouter()
@@ -18,37 +18,34 @@ export default function SignInPage() {
   const [password, setPassword] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState("")
-
+ 
   // Redirect if already signed in
   React.useEffect(() => {
     if (isSignedIn) {
       router.push("/dashboard")
     }
   }, [isSignedIn, router])
-
+ 
   if (isClerkActive) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-radial-grid py-12 px-4 relative">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-purple-500/10 blur-[100px] pointer-events-none" />
-        
-        <div className="relative z-10 glass-card p-2 rounded-2xl border border-white/10 shadow-2xl">
+      <div className="min-h-screen flex items-center justify-center bg-background bg-dot-grid py-12 px-4 relative">
+        <div className="relative z-10 border border-border bg-card p-4 rounded-[16px] shadow-none">
           <ClerkSignIn routing="hash" />
         </div>
       </div>
     )
   }
-
+ 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password) {
       setError("Please fill in all fields")
       return
     }
-
+ 
     setIsLoading(true)
     setError("")
-
+ 
     try {
       // Find role from mock registry if user registered before
       const registryStr = localStorage.getItem("rotasphere_mock_registry")
@@ -59,7 +56,7 @@ export default function SignInPage() {
         const matched = registry.find((u) => u.email.toLowerCase() === email.toLowerCase())
         if (matched) matchedRole = matched.role
       }
-
+ 
       await signIn(email, matchedRole)
       router.push("/dashboard")
     } catch {
@@ -68,7 +65,7 @@ export default function SignInPage() {
       setIsLoading(false)
     }
   }
-
+ 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     try {
@@ -80,44 +77,40 @@ export default function SignInPage() {
       setIsLoading(false)
     }
   }
-
+ 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-radial-grid py-12 px-4 relative overflow-hidden">
-      {/* Decorative Blur Blobs */}
-      <div className="absolute top-1/4 left-1/10 h-[350px] w-[350px] rounded-full bg-indigo-500/15 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/10 h-[350px] w-[350px] rounded-full bg-purple-500/15 blur-[120px] pointer-events-none" />
-
+    <div className="min-h-screen flex items-center justify-center bg-background bg-dot-grid py-12 px-4 relative overflow-hidden">
       <div className="w-full max-w-md relative z-10">
         {/* RotaSphere Logo Header */}
         <div className="flex flex-col items-center mb-8 text-center">
           <Link href="/" className="flex items-center gap-2 mb-2 group">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25">
-              <Sparkles className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c]">
+              <Sparkles className="h-4.5 w-4.5 text-[#ff7759]" />
             </div>
-            <span className="font-bold text-2xl tracking-tight bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <span className="font-heading font-medium text-2xl tracking-tight text-[#17171c] dark:text-white">
               RotaSphere
             </span>
           </Link>
-          <span className="text-xs text-indigo-500 dark:text-indigo-400 font-semibold tracking-wider uppercase bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/10">
+          <span className="font-mono text-xs text-[#ff7759] tracking-wider uppercase bg-[#ff7759]/10 px-2.5 py-1 rounded-full border border-[#ff7759]/20">
             Simulated Auth Sandbox
           </span>
         </div>
-
-        {/* Glassmorphic Sign In Card */}
-        <div className="glass-card border border-white/20 dark:border-white/5 rounded-2xl p-8 shadow-2xl backdrop-blur-2xl">
+ 
+        {/* Bordered Sign In Card */}
+        <div className="border border-border bg-card rounded-[16px] p-8 shadow-none">
           <div className="mb-6 text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">Welcome Back</h2>
+            <h2 className="text-2xl font-heading font-medium tracking-tight text-foreground">Welcome Back</h2>
             <p className="text-muted-foreground text-sm mt-1.5">
               Access your events dashboard and stats
             </p>
           </div>
-
+ 
           {error && (
-            <div className="mb-4 p-3 text-xs bg-destructive/10 border border-destructive/20 text-destructive rounded-xl font-medium">
+            <div className="mb-4 p-3 text-xs bg-destructive/10 border border-destructive/20 text-destructive rounded-[8px] font-medium">
               {error}
             </div>
           )}
-
+ 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Address */}
             <div className="space-y-1.5">
@@ -131,12 +124,12 @@ export default function SignInPage() {
                   placeholder="name@example.com"
                   required
                   disabled={isLoading}
-                  className="rounded-xl border-muted-foreground/20 bg-background/50 pl-9 focus-visible:ring-indigo-500"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
                 />
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-
+ 
             {/* Password */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
@@ -151,17 +144,17 @@ export default function SignInPage() {
                   placeholder="••••••••"
                   required
                   disabled={isLoading}
-                  className="rounded-xl border-muted-foreground/20 bg-background/50 pl-9 focus-visible:ring-indigo-500"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
                 />
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-
+ 
             {/* Submit Button */}
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-xl h-11 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold shadow-md shadow-indigo-500/25 mt-2"
+              className="w-full rounded-full h-11 bg-primary text-primary-foreground hover:opacity-90 font-medium shadow-none mt-2"
             >
               {isLoading ? (
                 <>
@@ -176,25 +169,25 @@ export default function SignInPage() {
               )}
             </Button>
           </form>
-
+ 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-muted" />
+              <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background/80 backdrop-blur px-2 text-muted-foreground font-medium">
+              <span className="bg-card px-2 text-muted-foreground font-medium">
                 Or Continue With
               </span>
             </div>
           </div>
-
+ 
           {/* Social Logins */}
           <Button
             type="button"
             variant="outline"
             disabled={isLoading}
             onClick={handleGoogleLogin}
-            className="w-full rounded-xl h-11 border-muted hover:bg-muted/50 text-foreground flex items-center justify-center gap-2"
+            className="w-full rounded-full h-11 border-border bg-transparent hover:bg-[#eeece7] dark:hover:bg-[#2c2c35] text-foreground flex items-center justify-center gap-2 font-medium shadow-none"
           >
             {/* Google Custom SVG */}
             <svg className="h-4 w-4 mr-1" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
@@ -205,13 +198,13 @@ export default function SignInPage() {
             </svg>
             Continue with Google
           </Button>
-
+ 
           {/* Bottom Link */}
           <p className="text-center text-xs text-muted-foreground mt-6">
             Don&apos;t have an account?{" "}
             <Link
               href="/sign-up"
-              className="text-indigo-500 dark:text-indigo-400 font-semibold hover:underline"
+              className="text-[#ff7759] font-medium hover:underline"
             >
               Sign up for free
             </Link>

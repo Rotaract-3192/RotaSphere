@@ -1,14 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { Calendar, MapPin, Sparkles, User, Ticket, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Calendar, MapPin, Ticket, Check } from "lucide-react"
 import { EventItem } from "@/data/mockData"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-
 import { useAuthSession } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
+import { createRazorpayOrderAction, verifyPaymentAndBookTicketAction, bookFreeTicketAction } from "@/app/actions/paymentActions"
+import { Loader2 } from "lucide-react"
 
 interface FeaturedEventsProps {
   events: EventItem[];
@@ -17,19 +16,42 @@ interface FeaturedEventsProps {
 
 export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const router = useRouter()
-  const { isSignedIn, role } = useAuthSession()
+  const { user, isSignedIn, role } = useAuthSession()
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all")
   const [bookingEvent, setBookingEvent] = React.useState<EventItem | null>(null)
   const [bookingSuccess, setBookingSuccess] = React.useState(false)
+  const [isPaying, setIsPaying] = React.useState(false)
+
+  // Registration Form State
+  const [formData, setFormData] = React.useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    ticketCount: 1,
+    specialRequests: ""
+  })
+
+  // Prefill user details when modal opens
+  React.useEffect(() => {
+    if (bookingEvent) {
+      setFormData({
+        fullName: user?.fullName || "",
+        email: user?.email || "",
+        phone: "",
+        ticketCount: 1,
+        specialRequests: ""
+      })
+    }
+  }, [bookingEvent, user])
 
   const categories = [
     { label: "All Events", value: "all" },
-    { label: "Tech", value: "tech" },
-    { label: "Music", value: "music" },
-    { label: "Business", value: "business" },
-    { label: "Food", value: "food" },
-    { label: "Arts", value: "arts" },
-    { label: "Sports", value: "sports" }
+    { label: "Community Service", value: "community" },
+    { label: "Professional Development", value: "professional" },
+    { label: "Club Service", value: "club" },
+    { label: "International Service", value: "international" },
+    { label: "Fundraisers", value: "fundraiser" },
+    { label: "Public Relations", value: "pr" }
   ]
 
   const filteredEvents = selectedCategory === "all"
@@ -37,189 +59,434 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
     : events.filter(evt => evt.category === selectedCategory)
 
   const handleBookTicket = (event: EventItem) => {
-    if (!isSignedIn) {
-      router.push("/sign-in")
-      return
-    }
-    
+    if (!isSignedIn) { router.push("/sign-in"); return }
     if (role !== "attendee") {
-      alert(`Only Attendees can book tickets. Your current role is "${role?.toUpperCase() || 'unknown'}". Please create an Attendee account to get tickets.`)
+      alert(`Only Attendees can book tickets. Your current role is "${role?.toUpperCase() || 'unknown'}".`)
       return
     }
-
     setBookingEvent(event)
   }
 
-  const confirmBooking = () => {
-    if (!bookingEvent) return
+  // Parse price string to number for details display
+  const getPriceDetails = () => {
+    if (!bookingEvent) return { isFree: true, unitPrice: 0, totalPrice: 0, currencySymbol: "$" }
+    const priceStr = bookingEvent.price || "0"
+    const isFree = priceStr.toLowerCase().includes("free") ||
+      bookingEvent.type === "free" ||
+      parseFloat(priceStr.replace(/[^0-9.]/g, "")) === 0
 
-    // 1. Update tickets list in localStorage
-    const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
-    const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
-    
-    // Check if already booked to avoid duplicates
-    const alreadyBooked = bookedList.some(evt => evt.id === bookingEvent.id)
-    if (!alreadyBooked) {
-      bookedList.push(bookingEvent)
-      localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
-    }
-
-    // 2. Trigger parent callback to update state and localStorage "rotasphere_events"
-    if (onEventBooked) {
-      onEventBooked(bookingEvent.id)
-    } else {
-      // Fallback: manually update localStorage if no callback is provided
-      const savedEvents = localStorage.getItem("rotasphere_events")
-      if (savedEvents) {
-        const eventsList: EventItem[] = JSON.parse(savedEvents)
-        const updatedList = eventsList.map(e => 
-          e.id === bookingEvent.id ? { ...e, attendees: (e.attendees || 0) + 1 } : e
-        )
-        localStorage.setItem("rotasphere_events", JSON.stringify(updatedList))
-      }
-    }
-
-    setBookingSuccess(true)
-    setTimeout(() => {
-      setBookingSuccess(false)
-      setBookingEvent(null)
-    }, 2000)
+    const unitPrice = isFree ? 0 : parseFloat(priceStr.replace(/[^0-9.]/g, ""))
+    const totalPrice = unitPrice * formData.ticketCount
+    const currencySymbol = priceStr.startsWith("$") ? "$" : priceStr.startsWith("₹") ? "₹" : "INR "
+    return { isFree, unitPrice, totalPrice, currencySymbol }
   }
 
-  // Get color variables for badges based on event category
-  const getCategoryStyles = (cat: string) => {
-    const styles: Record<string, string> = {
-      tech: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-      music: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-      business: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-      food: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-      arts: "bg-pink-500/10 text-pink-500 border-pink-500/20",
-      sports: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+  const { isFree, totalPrice, currencySymbol } = getPriceDetails()
+
+  const confirmBooking = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!bookingEvent) return
+
+    if (!formData.fullName.trim() || !formData.email.trim() || !formData.phone.trim()) {
+      alert("Please fill in all required fields.")
+      return
     }
-    return styles[cat] || "bg-slate-500/10 text-slate-500 border-slate-500/20"
+
+    setIsPaying(true)
+    try {
+      if (isFree) {
+        const res = await bookFreeTicketAction(
+          bookingEvent.id,
+          formData.ticketCount,
+          formData.fullName,
+          formData.email
+        )
+        if (res.success) {
+          // Save registration details to local storage
+          const ticketCodes = (res.ticketCode || "").split(", ")
+          const savedDetails = localStorage.getItem("rotasphere_ticket_details")
+          const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
+
+          ticketCodes.forEach(code => {
+            detailsMap[code] = {
+              phone: formData.phone,
+              specialRequests: formData.specialRequests,
+              fullName: formData.fullName,
+              email: formData.email,
+              ticketCount: formData.ticketCount,
+              bookedAt: new Date().toISOString()
+            }
+          })
+          localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
+
+          const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
+          const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
+          if (!bookedList.some(evt => evt.id === bookingEvent.id)) {
+            const bookedEventItem = {
+              ...bookingEvent,
+              ticketCode: res.ticketCode,
+              ticketId: res.ticketId
+            }
+            bookedList.push(bookedEventItem)
+            localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
+          }
+          setBookingSuccess(true)
+          if (onEventBooked) onEventBooked(bookingEvent.id)
+          router.refresh()
+          setTimeout(() => { setBookingSuccess(false); setBookingEvent(null) }, 2200)
+        } else {
+          alert(res.error || "Failed to book ticket")
+        }
+        setIsPaying(false); return
+      }
+
+      // Paid tickets Razorpay Order
+      const orderRes = await createRazorpayOrderAction(bookingEvent.id, formData.ticketCount)
+      if (!orderRes.success || !orderRes.orderId) {
+        alert(orderRes.error || "Failed to initiate payment order.")
+        setIsPaying(false); return
+      }
+
+      if (orderRes.simulated && orderRes.keyId === "rzp_test_simulated_key") {
+        const verifyRes = await verifyPaymentAndBookTicketAction({
+          eventId: bookingEvent.id,
+          orderId: orderRes.orderId,
+          paymentId: `pay_sim_${Date.now()}`,
+          signature: `sig_sim_${Date.now()}`,
+          isSimulated: true,
+          ticketCount: formData.ticketCount,
+          fullName: formData.fullName,
+          email: formData.email
+        })
+        if (verifyRes.success) {
+          // Save registration details to local storage
+          const ticketCodes = (verifyRes.ticketCode || "").split(", ")
+          const savedDetails = localStorage.getItem("rotasphere_ticket_details")
+          const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
+
+          ticketCodes.forEach(code => {
+            detailsMap[code] = {
+              phone: formData.phone,
+              specialRequests: formData.specialRequests,
+              fullName: formData.fullName,
+              email: formData.email,
+              ticketCount: formData.ticketCount,
+              bookedAt: new Date().toISOString()
+            }
+          })
+          localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
+
+          const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
+          const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
+          if (!bookedList.some(evt => evt.id === bookingEvent.id)) {
+            const bookedEventItem = {
+              ...bookingEvent,
+              ticketCode: verifyRes.ticketCode,
+              ticketId: verifyRes.ticketId
+            }
+            bookedList.push(bookedEventItem)
+            localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
+          }
+          setBookingSuccess(true)
+          if (onEventBooked) onEventBooked(bookingEvent.id)
+          router.refresh()
+          setTimeout(() => { setBookingSuccess(false); setBookingEvent(null) }, 2200)
+        } else { alert(verifyRes.error || "Failed to complete ticket booking.") }
+        setIsPaying(false); return
+      }
+
+      // Real Razorpay options
+      const options = {
+        key: orderRes.keyId,
+        amount: orderRes.amount,
+        currency: orderRes.currency,
+        name: "RotaSphere Events",
+        description: `${formData.ticketCount} Ticket(s) for ${bookingEvent.title}`,
+        order_id: orderRes.orderId,
+        handler: async function (response: any) {
+          setIsPaying(true)
+          const verifyRes = await verifyPaymentAndBookTicketAction({
+            eventId: bookingEvent.id,
+            orderId: orderRes.orderId,
+            paymentId: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+            isSimulated: false,
+            ticketCount: formData.ticketCount,
+            fullName: formData.fullName,
+            email: formData.email
+          })
+          if (verifyRes.success) {
+            // Save registration details to local storage
+            const ticketCodes = (verifyRes.ticketCode || "").split(", ")
+            const savedDetails = localStorage.getItem("rotasphere_ticket_details")
+            const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
+
+            ticketCodes.forEach(code => {
+              detailsMap[code] = {
+                phone: formData.phone,
+                specialRequests: formData.specialRequests,
+                fullName: formData.fullName,
+                email: formData.email,
+                ticketCount: formData.ticketCount,
+                bookedAt: new Date().toISOString()
+              }
+            })
+            localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
+
+            const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
+            const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
+            if (!bookedList.some(evt => evt.id === bookingEvent.id)) {
+              const bookedEventItem = {
+                ...bookingEvent,
+                ticketCode: verifyRes.ticketCode,
+                ticketId: verifyRes.ticketId
+              }
+              bookedList.push(bookedEventItem)
+              localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
+            }
+            setBookingSuccess(true)
+            if (onEventBooked) onEventBooked(bookingEvent.id)
+            router.refresh()
+            setTimeout(() => { setBookingSuccess(false); setBookingEvent(null) }, 2200)
+          } else { alert(verifyRes.error || "Payment signature verification failed.") }
+          setIsPaying(false)
+        },
+        prefill: {
+          name: formData.fullName,
+          email: formData.email,
+          contact: formData.phone
+        },
+        theme: { color: "#CF4500" },
+        modal: { ondismiss: function () { setIsPaying(false) } }
+      }
+      const rzp = new (window as any).Razorpay(options)
+      rzp.open()
+    } catch (err) {
+      console.error("Payment flow error:", err)
+      alert("An unexpected error occurred during booking.")
+      setIsPaying(false)
+    }
   }
 
   return (
-    <section id="events" className="py-20 relative bg-background bg-radial-grid">
-      <div className="container mx-auto px-4 md:px-6 relative z-10">
-        
-        {/* Section Title */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-card border border-indigo-500/15 shadow-sm text-xs font-semibold text-indigo-500 mb-3">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Discover What&apos;s Happening</span>
+    <section
+      id="events"
+      className="relative section-padding"
+      style={{ background: "#eeece7" }}
+    >
+      {/* Ghost Watermark */}
+      <div
+        className="ghost-watermark absolute top-8 left-0 w-full overflow-hidden pointer-events-none"
+        aria-hidden="true"
+        style={{ fontSize: "clamp(60px,12vw,180px)", textAlign: "center", color: "rgba(23, 23, 28, 0.015)" }}
+      >
+        EVENTS
+      </div>
+
+      <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+
+        {/* Section Header */}
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <div className="mb-4">
+            <span className="eyebrow-accent">Discover What's Happening</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground mb-4">
-            Featured <span className="text-gradient">Events</span>
+          <h2
+            className="text-4xl md:text-5xl font-medium mb-5"
+            style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+          >
+            Featured Platform Events
           </h2>
-          <p className="text-muted-foreground text-sm">
-            Browse through our top curated events. From local coding workshops to global music festivals, explore events that ignite your passions.
+          <p
+            className="font-weight-450 leading-relaxed"
+            style={{ color: "#616161", fontSize: "16px" }}
+          >
+            Browse top curated events — from local community service drives to professional webinars.
+            Explore events that make a difference.
           </p>
         </div>
 
-        {/* Filter Category Tabs */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
-          {categories.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setSelectedCategory(cat.value)}
-              className={`px-4 py-2 text-xs font-semibold rounded-xl border transition-all duration-200 ${
-                selectedCategory === cat.value
-                  ? "bg-indigo-500 border-indigo-500 text-white shadow-md shadow-indigo-500/20"
-                  : "glass-card border-muted hover:border-indigo-500/40 text-foreground/80 hover:text-indigo-500"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+        {/* Category Filter Tabs — pill buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-14">
+          {categories.map((cat) => {
+            const isActive = selectedCategory === cat.value
+            return (
+              <button
+                key={cat.value}
+                onClick={() => setSelectedCategory(cat.value)}
+                className="text-xs font-bold uppercase transition-all duration-200 cursor-pointer"
+                style={{
+                  padding: "8px 22px",
+                  borderRadius: "32px",
+                  letterSpacing: "0.05em",
+                  background: isActive ? "#17171c" : "#ffffff",
+                  color: isActive ? "#ffffff" : "#212121",
+                  border: `1px solid ${isActive ? "#17171c" : "#d9d9dd"}`
+                }}
+              >
+                {cat.label}
+              </button>
+            )
+          })}
         </div>
 
-        {/* Events Grid */}
+        {/* Events Grid — Circular Portrait Layout */}
         {filteredEvents.length === 0 ? (
-          <div className="text-center py-16 glass-card border border-muted/50 rounded-2xl max-w-md mx-auto">
-            <p className="text-muted-foreground mb-4">No events found in this category.</p>
-            <Button
-              variant="outline"
+          <div
+            className="text-center py-20 max-w-sm mx-auto"
+            style={{
+              background: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #d9d9dd"
+            }}
+          >
+            <p className="font-weight-450 mb-5" style={{ color: "#616161" }}>
+              No events found in this category.
+            </p>
+            <button
               onClick={() => setSelectedCategory("all")}
-              className="rounded-xl text-xs"
+              style={{
+                background: "#17171c",
+                color: "#ffffff",
+                borderRadius: "32px",
+                padding: "8px 24px",
+                fontSize: "14px",
+                border: "1px solid #17171c"
+              }}
             >
               Reset Filters
-            </Button>
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredEvents.map((evt) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-14">
+            {filteredEvents.map((evt, index) => {
               const attendeesPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
               return (
-                <Card
+                <div
                   key={evt.id}
-                  className="glass-card border border-white/10 dark:border-white/5 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:scale-[1.02] hover:border-indigo-500/20 flex flex-col group"
+                  className={`flex flex-col items-center text-center group relative ${
+                    index % 2 === 1 ? "md-stagger-even" : ""
+                  }`}
                 >
-                  {/* Event Image & Price Badge */}
-                  <CardHeader className="p-0 relative h-48 w-full overflow-hidden bg-muted">
-                    <img
-                      src={evt.image}
-                      alt={evt.title}
-                      className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute top-3 right-3 px-2.5 py-1 rounded-xl bg-slate-900/80 backdrop-blur-md text-white font-bold text-xs shadow-md border border-white/10">
+                  {/* Orbital arc SVG between cards */}
+                  {index % 3 !== 2 && (
+                    <svg
+                      className="absolute -right-7 top-24 pointer-events-none hidden lg:block animate-orbit-pulse"
+                      width="80" height="60" viewBox="0 0 80 60" fill="none"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M0 30 Q40 -10 80 30"
+                        stroke="#ff7759" strokeWidth="1.5" strokeLinecap="round"
+                        fill="none" opacity="0.3"
+                      />
+                    </svg>
+                  )}
+
+                  {/* Circular Portrait Container */}
+                  <div className="relative w-60 h-60 mx-auto mb-6">
+                    {/* Portrait circle */}
+                    <div className="circular-portrait w-full h-full bg-muted overflow-hidden group-hover:shadow-lg transition-all duration-500">
+                      <img
+                        src={evt.image}
+                        alt={evt.title}
+                        className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {/* Price chip — docked top-left outside circle */}
+                    <div
+                      className="absolute -top-1 -left-1 font-bold text-[10px]"
+                      style={{
+                        background: "#17171c",
+                        color: "#ffffff",
+                        padding: "4px 14px",
+                        borderRadius: "999px",
+                        letterSpacing: "0.02em",
+                        border: "1px solid #17171c"
+                      }}
+                    >
                       {evt.price}
                     </div>
-                  </CardHeader>
 
-                  <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                    {/* Header: Category and Title */}
-                    <div>
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider mb-3 ${getCategoryStyles(evt.category)}`}>
-                        {evt.category}
-                      </span>
-                      <h3 className="font-bold text-lg leading-snug text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
-                        {evt.title}
-                      </h3>
-                    </div>
-
-                    {/* Metadata details */}
-                    <div className="space-y-2 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-indigo-500/80" />
-                        <span>{evt.date} • {evt.time.split(" ")[0]} {evt.time.split(" ")[1]}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-indigo-500/80 shrink-0" />
-                        <span className="truncate">{evt.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-indigo-500/80" />
-                        <span>By {evt.organizer}</span>
-                      </div>
-                    </div>
-
-                    {/* Capacity Indicator */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] font-semibold">
-                        <span className="text-muted-foreground">Registered</span>
-                        <span className="text-foreground">{evt.attendees} / {evt.capacity} seats</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-muted/50 border border-muted/20 rounded-full overflow-hidden">
-                        <div
-                          className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full transition-all duration-300"
-                          style={{ width: `${attendeesPct}%` }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-
-                  <CardFooter className="px-5 pb-5 pt-0">
-                    <Button
+                    {/* Satellite CTA — docked bottom-right */}
+                    <button
                       onClick={() => handleBookTicket(evt)}
-                      className="w-full rounded-xl bg-indigo-500/10 hover:bg-indigo-500 hover:text-white border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-semibold transition-all duration-200"
+                      className="satellite-cta absolute bottom-1 right-1 animate-satellite-pop cursor-pointer"
+                      title="Get Ticket"
                     >
-                      <Ticket className="h-4 w-4 mr-2" />
-                      Get Ticket
-                    </Button>
-                  </CardFooter>
-                </Card>
+                      <Ticket className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Eyebrow Category */}
+                  <div className="mb-2">
+                    <span className="eyebrow-accent">{evt.category}</span>
+                  </div>
+
+                  {/* Title — H3 style */}
+                  <h3
+                    className="text-xl font-medium mb-2 line-clamp-2 max-w-xs transition-colors"
+                    style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+                  >
+                    {evt.title}
+                  </h3>
+
+                  {/* Meta */}
+                  <div className="flex items-center justify-center gap-3 mb-5">
+                    <span
+                      className="flex items-center gap-1 text-xs font-weight-450"
+                      style={{ color: "#616161" }}
+                    >
+                      <Calendar className="h-3.5 w-3.5" />
+                      {evt.date}
+                    </span>
+                    <span style={{ color: "#d9d9dd" }}>•</span>
+                    <span
+                      className="flex items-center gap-1 text-xs font-weight-450"
+                      style={{ color: "#616161" }}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                      {evt.location}
+                    </span>
+                  </div>
+
+                  {/* Capacity Bar */}
+                  <div className="w-full max-w-[220px] mb-5">
+                    <div className="flex justify-between text-[10px] font-bold mb-1.5">
+                      <span style={{ color: "#616161" }}>Registered</span>
+                      <span style={{ color: "#17171c" }}>{evt.attendees} / {evt.capacity}</span>
+                    </div>
+                    <div
+                      className="w-full h-1.5 rounded-full overflow-hidden"
+                      style={{ background: "#d9d9dd" }}
+                    >
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${attendeesPct}%`,
+                          background: attendeesPct > 85 ? "#b30000" : "#ff7759"
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Near-Black CTA Button */}
+                  <button
+                    onClick={() => handleBookTicket(evt)}
+                    className="text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm cursor-pointer"
+                    style={{
+                      background: "#17171c",
+                      color: "#ffffff",
+                      borderRadius: "32px",
+                      padding: "9px 24px",
+                      border: "1px solid #17171c",
+                      letterSpacing: "-0.02em"
+                    }}
+                  >
+                    Get Ticket Pass
+                  </button>
+                </div>
               )
             })}
           </div>
@@ -227,70 +494,225 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
       </div>
 
-      {/* Ticket Booking Interactive Dialog */}
+      {/* ─── Ticket Booking Dialog ─── */}
       <Dialog open={!!bookingEvent} onOpenChange={(open) => { if (!open) setBookingEvent(null) }}>
-        <DialogContent className="glass-card max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl backdrop-blur-2xl text-center">
+        <DialogContent
+          className="max-w-md p-0 overflow-hidden"
+          style={{
+            borderRadius: "16px",
+            border: "1px solid #d9d9dd",
+            boxShadow: "rgba(0,0,0,0.04) 0px 24px 48px",
+            background: "#ffffff"
+          }}
+        >
           {bookingSuccess ? (
-            <div className="py-6 flex flex-col items-center justify-center">
-              <div className="h-12 w-12 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center mb-3 animate-bounce">
-                <Check className="h-6 w-6" />
+            <div className="py-10 flex flex-col items-center justify-center text-center px-8">
+              <div
+                className="h-14 w-14 rounded-full flex items-center justify-center mb-4"
+                style={{ background: "rgba(34,197,94,0.1)" }}
+              >
+                <Check className="h-7 w-7" style={{ color: "#16a34a" }} />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-1">Ticket Booked!</h3>
-              <p className="text-xs text-muted-foreground">
-                Your confirmation has been sent to your email. See you there!
+              <h3
+                className="text-xl font-medium mb-2"
+                style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+              >
+                {formData.ticketCount > 1 ? `${formData.ticketCount} Tickets Booked!` : "Ticket Booked!"}
+              </h3>
+              <p className="text-sm font-weight-450" style={{ color: "#616161" }}>
+                Your confirmation has been sent to {formData.email}. See you there!
               </p>
             </div>
           ) : (
             bookingEvent && (
-              <>
-                <DialogHeader className="items-center">
-                  <div className="h-10 w-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-2">
-                    <Ticket className="h-5 w-5" />
+              <div className="p-7 max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="items-center text-center mb-5">
+                  <div
+                    className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
+                    style={{ background: "rgba(255,119,89,0.1)" }}
+                  >
+                    <Ticket className="h-6 w-6" style={{ color: "#ff7759" }} />
                   </div>
-                  <DialogTitle className="text-lg font-bold text-foreground">
-                    Confirm Ticket Order
-                  </DialogTitle>
-                  <DialogDescription className="text-xs text-muted-foreground">
-                    You are placing an order for a ticket to:
-                  </DialogDescription>
-                  <span className="font-bold text-foreground block text-sm mt-2">
+                  <div className="mb-1">
+                    <span className="eyebrow-accent" style={{ fontSize: "11px" }}>Secure Checkout</span>
+                  </div>
+                  <DialogTitle
+                    className="text-xl font-medium line-clamp-1"
+                    style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+                  >
                     {bookingEvent.title}
-                  </span>
+                  </DialogTitle>
+                  <DialogDescription className="text-sm font-weight-450" style={{ color: "#616161" }}>
+                    Please fill out the registration details to complete your order.
+                  </DialogDescription>
                 </DialogHeader>
 
-                <div className="my-5 p-4 rounded-xl bg-background/50 border border-muted/50 text-left space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Price:</span>
-                    <span className="font-bold text-foreground">{bookingEvent.price}</span>
+                <form onSubmit={confirmBooking} className="space-y-4 text-left">
+                  {/* Name Input */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                      style={{
+                        background: "#ffffff",
+                        borderColor: "#d9d9dd",
+                        color: "#212121"
+                      }}
+                      placeholder="Enter attendee's full name"
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Date:</span>
-                    <span className="font-semibold text-foreground">{bookingEvent.date}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Location:</span>
-                    <span className="font-semibold text-foreground truncate max-w-[180px]">
-                      {bookingEvent.location}
-                    </span>
-                  </div>
-                </div>
 
-                <DialogFooter className="flex sm:justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setBookingEvent(null)}
-                    className="rounded-xl flex-1 border-muted hover:bg-muted/50 text-xs"
+                  {/* Email Input */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                      style={{
+                        background: "#ffffff",
+                        borderColor: "#d9d9dd",
+                        color: "#212121"
+                      }}
+                      placeholder="email@example.com"
+                    />
+                  </div>
+
+                  {/* Phone Input */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                      style={{
+                        background: "#ffffff",
+                        borderColor: "#d9d9dd",
+                        color: "#212121"
+                      }}
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+
+                  {/* Quantity and Special Requests */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-1">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        Tickets *
+                      </label>
+                      <select
+                        value={formData.ticketCount}
+                        onChange={(e) => setFormData({ ...formData, ticketCount: parseInt(e.target.value) })}
+                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                        style={{
+                          background: "#ffffff",
+                          borderColor: "#d9d9dd",
+                          color: "#212121"
+                        }}
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                          <option key={num} value={num}>
+                            {num}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        Special Requests
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.specialRequests}
+                        onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
+                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                        style={{
+                          background: "#ffffff",
+                          borderColor: "#d9d9dd",
+                          color: "#212121"
+                        }}
+                        placeholder="Dietary, access needs..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Event Details Card & Price Calculation */}
+                  <div
+                    className="mb-5 p-4 mt-4 space-y-2"
+                    style={{
+                      background: "#eeece7",
+                      borderRadius: "8px",
+                      border: "1px solid #d9d9dd"
+                    }}
                   >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={confirmBooking}
-                    className="rounded-xl flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-xs shadow-md shadow-indigo-500/25"
-                  >
-                    Confirm Booking
-                  </Button>
-                </DialogFooter>
-              </>
+                    <div className="flex justify-between text-sm">
+                      <span className="font-weight-450" style={{ color: "#616161" }}>Price per Ticket</span>
+                      <span className="font-medium" style={{ color: "#212121" }}>{bookingEvent.price}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="font-weight-450" style={{ color: "#616161" }}>Ticket Count</span>
+                      <span className="font-medium" style={{ color: "#212121" }}>{formData.ticketCount}</span>
+                    </div>
+                    <div className="border-t border-[#d9d9dd] my-2 pt-2 flex justify-between text-sm font-bold">
+                      <span style={{ color: "#212121" }}>Total Due</span>
+                      <span style={{ color: "#ff7759" }}>
+                        {isFree ? "Free" : `${currencySymbol}${totalPrice.toFixed(2)}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <DialogFooter className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setBookingEvent(null)}
+                      className="flex-1 text-sm font-medium transition-colors cursor-pointer"
+                      style={{
+                        background: "#ffffff",
+                        color: "#17171c",
+                        borderRadius: "32px",
+                        padding: "10px",
+                        border: "1px solid #d9d9dd"
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPaying}
+                      className="flex-1 flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-60 cursor-pointer"
+                      style={{
+                        background: "#17171c",
+                        color: "#ffffff",
+                        borderRadius: "32px",
+                        padding: "10px",
+                        border: "1px solid #17171c",
+                        letterSpacing: "-0.01em"
+                      }}
+                    >
+                      {isPaying ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Processing…
+                        </>
+                      ) : isFree ? "Book Free Pass" : "Proceed to Checkout"}
+                    </button>
+                  </DialogFooter>
+                </form>
+              </div>
             )
           )}
         </DialogContent>

@@ -188,7 +188,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
       city: "",
       address: "",
       pincode: "",
-      category: "tech",
+      category: "community",
       tags: "",
       capacity: 500,
       contactEmail: "",
@@ -322,12 +322,12 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
     <div className="max-w-4xl mx-auto space-y-6">
       
       {/* Wizard Header Progress Stepper */}
-      <Card className="glass-card border-white/10 shadow-lg p-5">
+      <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
         <div className="relative flex justify-between items-center w-full">
           {/* Progress bar line */}
-          <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-muted z-0">
+          <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-[#eeece7] dark:bg-muted z-0">
             <div 
-              className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300"
+              className="h-full bg-primary transition-all duration-300"
               style={{ 
                 width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%` 
               }}
@@ -354,12 +354,12 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                   className={cn(
                     "h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all duration-300",
                     isCompleted
-                      ? "bg-emerald-500 border-emerald-500 text-white"
+                      ? "bg-primary border-primary text-primary-foreground"
                       : isActive
-                      ? "bg-indigo-500 border-indigo-500 text-white shadow-lg ring-4 ring-indigo-500/20"
+                      ? "bg-[#ff7759] border-[#ff7759] text-white shadow-none ring-4 ring-[#ff7759]/20"
                       : isSkipped
-                      ? "bg-muted border-muted-foreground/30 text-muted-foreground/50 line-through cursor-not-allowed"
-                      : "bg-background border-muted text-muted-foreground hover:border-indigo-500/50"
+                      ? "bg-[#eeece7] border-border text-[#93939f]/50 line-through cursor-not-allowed dark:bg-muted"
+                      : "bg-background border-border text-[#93939f] hover:border-[#ff7759]/50"
                   )}
                 >
                   {isCompleted ? (
@@ -370,7 +370,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                 </button>
                 <span className={cn(
                   "hidden sm:block text-[10px] font-bold uppercase tracking-wider",
-                  isActive ? "text-indigo-500 dark:text-indigo-400" : "text-muted-foreground",
+                  isActive ? "text-[#ff7759]" : "text-[#93939f]",
                   isSkipped && "line-through opacity-40"
                 )}>
                   {s.label}
@@ -392,8 +392,8 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.2 }}
             >
-              <Card className="glass-card border-white/10 p-6 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-600" />
+              <Card className="border border-border bg-card p-6 shadow-none relative overflow-hidden rounded-[16px]">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#ff7759]" />
                 
                 <CardContent className="p-0 space-y-6">
                   
@@ -518,7 +518,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                         className={cn(
                                           "px-2 py-0.5 rounded-full border text-[9px] font-medium transition-all",
                                           bannerValue === preset.url
-                                            ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/40 font-bold"
+                                            ? "bg-accent/10 text-accent border-accent/40 font-bold"
                                             : "border-muted hover:bg-muted/40 text-muted-foreground"
                                         )}
                                       >
@@ -578,7 +578,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                         className={cn(
                                           "px-2 py-0.5 rounded-full border text-[9px] font-medium transition-all",
                                           thumbnailValue === preset.url
-                                            ? "bg-indigo-500/10 text-indigo-400 border-indigo-500/40 font-bold"
+                                            ? "bg-accent/10 text-accent border-accent/40 font-bold"
                                             : "border-muted hover:bg-muted/40 text-muted-foreground"
                                         )}
                                       >
@@ -692,13 +692,13 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                         if (option.value === "free") setValue("price", "")
                                       }}
                                       className={cn(
-                                        "flex flex-col items-center justify-between p-4 rounded-xl border-2 text-center text-xs transition-all gap-2",
+                                        "flex flex-col items-center justify-between p-4 rounded-2xl border-2 text-center text-xs transition-all gap-2",
                                         isSelected
-                                          ? "border-indigo-500 bg-indigo-500/5 text-foreground ring-2 ring-indigo-500/20"
-                                          : "border-muted hover:bg-muted/40 text-muted-foreground"
+                                          ? "border-[#ff7759] bg-[#ff7759]/8 text-foreground ring-2 ring-[#ff7759]/20"
+                                          : "border-border hover:bg-[#eeece7]/40 text-[#93939f]"
                                       )}
                                     >
-                                      <Icon className="h-5 w-5 text-indigo-500" />
+                                      <Icon className="h-5 w-5 text-[#ff7759]" />
                                       <div>
                                         <span className="font-bold block text-[11px]">{option.label}</span>
                                         <span className="text-[9px] opacity-75">{option.desc}</span>
@@ -711,7 +711,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                             </FormItem>
                           )}
                         />
-
+ 
                         {/* Price Input Field (Conditional) */}
                         {typeValue === "paid" && (
                           <FormField
@@ -733,7 +733,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                           />
                         )}
                       </div>
-
+ 
                       {/* Public vs Private settings */}
                       <FormField
                         control={form.control}
@@ -756,11 +756,11 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                     className={cn(
                                       "flex items-center gap-3 p-4 rounded-xl border-2 text-left text-xs transition-all",
                                       isSelected
-                                        ? "border-indigo-500 bg-indigo-500/5 text-foreground ring-2 ring-indigo-500/20"
-                                        : "border-muted hover:bg-muted/40 text-muted-foreground"
+                                        ? "border-[#ff7759] bg-[#ff7759]/8 text-foreground ring-2 ring-[#ff7759]/20"
+                                        : "border-border hover:bg-[#eeece7]/40 text-[#93939f]"
                                     )}
                                   >
-                                    <div className="h-8 w-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500 shrink-0">
+                                    <div className="h-8 w-8 rounded-lg bg-[#ff7759]/10 flex items-center justify-center text-[#ff7759] shrink-0">
                                       <Icon className="h-4 w-4" />
                                     </div>
                                     <div>
@@ -775,7 +775,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                           </FormItem>
                         )}
                       />
-
+ 
                       {/* Location format settings */}
                       <FormField
                         control={form.control}
@@ -799,11 +799,11 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                     className={cn(
                                       "flex flex-col items-center justify-between p-4 rounded-xl border-2 text-center text-xs transition-all gap-2",
                                       isSelected
-                                        ? "border-indigo-500 bg-indigo-500/5 text-foreground ring-2 ring-indigo-500/20"
-                                        : "border-muted hover:bg-muted/40 text-muted-foreground"
+                                        ? "border-[#ff7759] bg-[#ff7759]/8 text-foreground ring-2 ring-[#ff7759]/20"
+                                        : "border-border hover:bg-[#eeece7]/40 text-[#93939f]"
                                     )}
                                   >
-                                    <Icon className="h-5 w-5 text-indigo-500" />
+                                    <Icon className="h-5 w-5 text-[#ff7759]" />
                                     <div>
                                       <span className="font-bold block text-[11px]">{option.label}</span>
                                       <span className="text-[9px] opacity-75">{option.desc}</span>
@@ -956,12 +956,12 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                   className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-xs outline-none focus-visible:border-ring text-foreground dark:bg-background/40"
                                   {...field}
                                 >
-                                  <option value="tech" className="bg-background text-foreground">Tech & Coding</option>
-                                  <option value="music" className="bg-background text-foreground">Music & Concerts</option>
-                                  <option value="business" className="bg-background text-foreground">Business & Startups</option>
-                                  <option value="food" className="bg-background text-foreground">Culinary & Wine</option>
-                                  <option value="arts" className="bg-background text-foreground">Arts & Galleries</option>
-                                  <option value="sports" className="bg-background text-foreground">Sports & Fitness</option>
+                                  <option value="community" className="bg-background text-foreground">Community Service</option>
+                                  <option value="professional" className="bg-background text-foreground">Professional Development</option>
+                                  <option value="club" className="bg-background text-foreground">Club Service</option>
+                                  <option value="international" className="bg-background text-foreground">International Service</option>
+                                  <option value="fundraiser" className="bg-background text-foreground">Fundraisers</option>
+                                  <option value="pr" className="bg-background text-foreground">Public Relations</option>
                                 </select>
                               </FormControl>
                               <FormMessage />
@@ -1010,7 +1010,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                               <Button 
                                 type="button" 
                                 onClick={handleAddTag}
-                                className="bg-indigo-500 hover:bg-indigo-600 text-white shrink-0"
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground shrink-0 rounded-xl"
                               >
                                 <Plus className="h-4 w-4" />
                               </Button>
@@ -1024,13 +1024,13 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                 {tagsList.map((tag) => (
                                   <span 
                                     key={tag} 
-                                    className="inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                                    className="inline-flex items-center gap-1.5 bg-[#ff7759]/10 text-[#ff7759] border border-[#ff7759]/20 px-2.5 py-0.5 rounded-full text-[10px] font-bold"
                                   >
                                     {tag}
                                     <button 
                                       type="button" 
                                       onClick={() => handleRemoveTag(tag)}
-                                      className="text-indigo-400 hover:text-indigo-600"
+                                      className="text-[#ff7759] hover:text-[#ff7759]/80 font-bold"
                                     >
                                       &times;
                                     </button>
@@ -1095,7 +1095,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                       type="button"
                       variant="outline"
                       onClick={handleBack}
-                      className="rounded-xl border-muted hover:bg-muted/50 text-xs font-semibold px-4"
+                      className="rounded-full border-muted hover:bg-muted/50 text-xs font-semibold px-4"
                     >
                       <ArrowLeft className="h-4 w-4 mr-1.5" />
                       Back
@@ -1109,7 +1109,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                       type="button"
                       variant="ghost"
                       onClick={onSuccessRedirect}
-                      className="rounded-xl text-muted-foreground hover:text-foreground text-xs font-semibold px-4"
+                      className="rounded-full text-muted-foreground hover:text-foreground text-xs font-semibold px-4"
                     >
                       Cancel
                     </Button>
@@ -1118,7 +1118,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                       <Button
                         type="button"
                         onClick={handleNext}
-                        className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-xs shadow-md shadow-indigo-500/25 px-5"
+                        className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-sm px-5"
                       >
                         Next
                         <ArrowRight className="h-4 w-4 ml-1.5" />
@@ -1127,7 +1127,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                       <Button
                         type="submit"
                         disabled={form.formState.isSubmitting}
-                        className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold text-xs shadow-md shadow-indigo-500/25 px-6 animate-pulse"
+                        className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-sm px-6"
                       >
                         Publish Event
                         <Check className="h-4 w-4 ml-1.5" />

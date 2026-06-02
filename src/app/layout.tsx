@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AuthProvider } from "@/context/AuthContext";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,9 +23,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "RotaSphere | Premium Event Management SaaS Platform",
-  description: "Experience the next generation of event management. Plan, customize, host, and analyze your events seamlessly with RotaSphere's glassmorphic SaaS interface.",
-  keywords: ["event management", "event planning", "SaaS", "ticketing", "conferences", "festivals", "meetups", "scheduler"],
+  title: "RotaSphere | Premium Event Management Platform for Rotaract",
+  description: "Plan, customize, host, and analyze Rotaract service drives, professional webinars, fundraisers, and fellowships seamlessly with RotaSphere.",
+  keywords: ["Rotaract", "Rotary", "event management", "event planning", "SaaS", "ticketing", "community service", "fundraisers", "fellowships"],
   authors: [{ name: "RotaSphere Team" }],
 };
 
@@ -47,6 +49,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <AnnouncementBar />
           {clerkKey ? (
             <ClerkProvider publishableKey={clerkKey}>
               <AuthProvider>
@@ -58,6 +61,7 @@ export default function RootLayout({
               {children}
             </AuthProvider>
           )}
+          <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         </ThemeProvider>
       </body>
     </html>

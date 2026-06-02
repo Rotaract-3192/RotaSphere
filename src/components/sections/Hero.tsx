@@ -2,9 +2,8 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { Sparkles, ArrowRight, Play, Star, Calendar, Users, ShieldCheck } from "lucide-react"
-import { Button, buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { ArrowRight, Star, Ticket, Users, Scan, CheckCircle2, TrendingUp, Zap } from "lucide-react"
+import { AuroraBackground } from "@/components/ui/aurora-background"
 
 interface HeroProps {
   onCreateEventClick: () => void;
@@ -15,219 +14,338 @@ export function Hero({ onCreateEventClick }: HeroProps) {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 0.1
-      }
+      transition: { staggerChildren: 0.12, delayChildren: 0.1 }
     }
   }
-
   const itemVariants = {
-    hidden: { y: 30, opacity: 0 },
+    hidden: { y: 32, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { type: "spring" as const, stiffness: 100, damping: 15 }
+      transition: { type: "spring" as const, stiffness: 90, damping: 18 }
     }
   }
 
-  const floatCardVariants = {
-    hidden: { scale: 0.9, opacity: 0 },
-    visible: {
-      scale: 1,
-      opacity: 1,
-      transition: { type: "spring" as const, stiffness: 80, damping: 12, delay: 0.6 }
-    }
-  }
+  const avatars = [
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
+  ]
+
+  const [scanCount, setScanCount] = React.useState(142)
+  React.useEffect(() => {
+    const t = setInterval(() => {
+      setScanCount(c => c + Math.floor(Math.random() * 2))
+    }, 3200)
+    return () => clearInterval(t)
+  }, [])
 
   return (
-    <section className="relative min-h-[92vh] flex items-center justify-center pt-28 pb-16 overflow-hidden bg-radial-grid">
-      {/* Dynamic Background Glowing Blobs */}
-      <div className="absolute top-1/4 left-1/10 h-96 w-96 rounded-full bg-indigo-500/20 blur-[120px] pointer-events-none dark:bg-indigo-500/15" />
-      <div className="absolute bottom-1/4 right-1/10 h-[450px] w-[450px] rounded-full bg-purple-500/20 blur-[130px] pointer-events-none dark:bg-purple-500/15" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-80 w-80 rounded-full bg-pink-500/10 blur-[100px] pointer-events-none" />
-
-      {/* Floating Decorative Glass Shapes */}
-      <div className="absolute top-[20%] right-[15%] h-12 w-12 rounded-xl glass-card border-white/20 shadow-md flex items-center justify-center animate-float pointer-events-none hidden lg:flex">
-        <Calendar className="h-5 w-5 text-indigo-500" />
+    <AuroraBackground
+      className="!h-auto !bg-transparent !text-inherit"
+      showRadialGradient={true}
+    >
+    <section
+      className="relative flex flex-col items-center justify-center pt-32 pb-0 overflow-hidden w-full"
+      style={{ background: "transparent" }}
+    >
+      {/* Ghost Watermark */}
+      <div
+        className="ghost-watermark absolute top-[8%] left-[2%] pointer-events-none select-none"
+        aria-hidden="true"
+        style={{ color: "rgba(23, 23, 28, 0.012)" }}
+      >
+        ROTASPHERE
       </div>
-      <div className="absolute bottom-[25%] left-[8%] h-14 w-14 rounded-2xl glass-card border-white/20 shadow-md flex items-center justify-center animate-float-delayed pointer-events-none hidden lg:flex">
-        <Users className="h-6 w-6 text-purple-500" />
-      </div>
 
-      <div className="container mx-auto px-4 md:px-6 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          {/* Hero Left Content */}
+      {/* Subtle atmospheric blobs */}
+      <div className="absolute top-1/3 right-[5%] h-[480px] w-[480px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(255,119,89,0.04) 0%, transparent 70%)" }} />
+      <div className="absolute bottom-[15%] left-[3%] h-[360px] w-[360px] rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(23,23,28,0.02) 0%, transparent 70%)" }} />
+
+      {/* Subtle dot grid */}
+      <div className="absolute inset-0 bg-dot-grid pointer-events-none" />
+
+      {/* ─── Editorial Center Column ─── */}
+      <div className="container mx-auto px-6 md:px-12 relative z-10 max-w-7xl w-full">
+        <div className="max-w-3xl mx-auto text-center flex flex-col items-center">
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="lg:col-span-7 text-left space-y-6"
+            className="flex flex-col items-center text-center w-full"
           >
-            {/* Tagline Badge */}
-            <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-card border border-indigo-500/20 shadow-sm text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-              <Sparkles className="h-3.5 w-3.5 animate-pulse text-indigo-500" />
-              <span>Host the extraordinary, smoothly</span>
+            {/* Eyebrow */}
+            <motion.div variants={itemVariants} className="mb-6">
+              <span className="eyebrow-accent">Host the Extraordinary</span>
             </motion.div>
 
-            {/* Title */}
+            {/* H1 Headline */}
             <motion.h1
               variants={itemVariants}
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] text-foreground"
+              className="text-5xl md:text-6xl lg:text-[68px] font-medium leading-[1.03] mb-6"
+              style={{ letterSpacing: "-0.025em", color: "var(--foreground)" }}
             >
-              Where Moments Become{" "}
-              <span className="text-gradient">Memories</span>
+              Where Moments
+              <br />
+              <span style={{ color: "var(--accent)" }}>Become</span> Memories
             </motion.h1>
 
-            {/* Description */}
+            {/* Body copy */}
             <motion.p
               variants={itemVariants}
-              className="text-lg text-muted-foreground max-w-xl leading-relaxed"
+              className="font-weight-450 text-base leading-[1.6] max-w-xl mb-10 text-center"
+              style={{ color: "var(--body-muted)", fontSize: "17px" }}
             >
-              RotaSphere is the premium, glassmorphic SaaS platform designed to build, manage, and coordinate your corporate summits, music festivals, food expos, and community gatherings seamlessly.
+              RotaSphere is the premium event management platform built for Rotaract service drives,
+              professional webinars, fundraisers, and community fellowships. Seamless ticketing,
+              beautiful pages, real-time analytics.
             </motion.p>
 
-            {/* CTAs */}
+            {/* CTA Row */}
             <motion.div
               variants={itemVariants}
-              className="flex flex-wrap items-center gap-4 pt-2"
+              className="flex flex-wrap items-center justify-center gap-4 mb-12"
             >
-              <Button
-                size="lg"
+              <button
                 onClick={onCreateEventClick}
-                className="rounded-xl h-12 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-600/35 hover:-translate-y-0.5 transition-all duration-200"
+                className="flex items-center gap-2 font-medium transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
+                style={{
+                  background: "#17171c",
+                  color: "#ffffff",
+                  borderRadius: "32px",
+                  padding: "13px 30px",
+                  fontSize: "15px",
+                  letterSpacing: "-0.02em",
+                  border: "1px solid #17171c"
+                }}
               >
                 Create Event
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+
               <a
                 href="#events"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "lg" }),
-                  "rounded-xl h-12 px-6 border-muted hover:bg-muted/50 text-foreground flex items-center justify-center"
-                )}
+                className="flex items-center gap-2 font-medium transition-all duration-200 hover:-translate-y-0.5"
+                style={{
+                  background: "transparent",
+                  color: "#17171c",
+                  borderRadius: "32px",
+                  padding: "13px 30px",
+                  fontSize: "15px",
+                  letterSpacing: "-0.02em",
+                  border: "1px solid #d9d9dd",
+                  textDecoration: "none"
+                }}
               >
-                <Play className="h-4 w-4 mr-2 text-indigo-500 fill-indigo-500" />
                 Explore Events
               </a>
             </motion.div>
 
-            {/* Rating & Social Proof */}
+            {/* Social Proof Row */}
             <motion.div
               variants={itemVariants}
-              className="flex items-center gap-6 pt-4 border-t border-muted max-w-md"
+              className="flex items-center justify-center gap-5 pt-6 w-full max-w-md mb-20"
+              style={{ borderTop: "1px solid #d9d9dd" }}
             >
               <div className="flex -space-x-3">
-                {[
-                  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
-                  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
-                ].map((src, i) => (
+                {avatars.map((src, i) => (
                   <img
                     key={i}
                     src={src}
-                    alt="User avatar"
-                    className="h-9 w-9 rounded-full border-2 border-background object-cover"
+                    alt="User"
+                    className="h-9 w-9 rounded-full object-cover"
+                    style={{ border: "2px solid #ffffff" }}
                   />
                 ))}
               </div>
               <div className="text-left">
-                <div className="flex items-center text-amber-500">
+                <div className="flex items-center gap-1 mb-0.5">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-500 text-amber-500" />
+                    <Star key={i} className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
                   ))}
-                  <span className="text-xs font-bold text-foreground ml-2">4.9/5</span>
+                  <span className="text-xs font-bold ml-1" style={{ color: "#17171c" }}>4.9/5</span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Trusted by 10,000+ event creators globally.
+                <p className="text-xs font-weight-450" style={{ color: "#616161" }}>
+                  Trusted by 10,000+ event creators globally
                 </p>
               </div>
             </motion.div>
           </motion.div>
-
-          {/* Hero Right Visuals (Glassmorphic Mockup) */}
-          <motion.div
-            variants={floatCardVariants}
-            initial="hidden"
-            animate="visible"
-            className="lg:col-span-5 relative"
-          >
-            {/* Main Mockup Card */}
-            <div className="relative glass-card border border-white/20 dark:border-white/10 rounded-2xl p-6 shadow-2xl backdrop-blur-2xl overflow-hidden animate-float">
-              {/* Card glowing header */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="font-bold text-lg text-foreground">NextGen Tech Summit</h3>
-                  <p className="text-xs text-muted-foreground">Hosted by RotaSphere Pro</p>
-                </div>
-                <div className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold">
-                  Live Dashboard
-                </div>
-              </div>
-
-              {/* Stat grid inside card */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="rounded-xl bg-muted/30 border border-muted p-3">
-                  <span className="text-xs text-muted-foreground block mb-1">Tickets Sold</span>
-                  <span className="text-xl font-bold text-foreground">1,240 / 1,500</span>
-                  <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
-                    <div className="bg-indigo-500 h-full rounded-full" style={{ width: "82%" }} />
-                  </div>
-                </div>
-                <div className="rounded-xl bg-muted/30 border border-muted p-3">
-                  <span className="text-xs text-muted-foreground block mb-1">Total Revenue</span>
-                  <span className="text-xl font-bold text-foreground">$370,760</span>
-                  <span className="text-[10px] text-emerald-400 font-medium block mt-1">
-                    ↑ 18% vs yesterday
-                  </span>
-                </div>
-              </div>
-
-              {/* Recent ticket orders */}
-              <div className="space-y-3">
-                <span className="text-xs font-bold text-foreground block uppercase tracking-wider">
-                  Recent Registrations
-                </span>
-                {[
-                  { name: "Sophia Martinez", time: "2 mins ago", type: "VIP Ticket" },
-                  { name: "David Chen", time: "12 mins ago", type: "Regular Ticket" },
-                  { name: "Emily Watson", time: "25 mins ago", type: "VIP Ticket" },
-                ].map((item, i) => (
-                  <div key={i} className="flex justify-between items-center p-2 rounded-lg bg-background/40 border border-muted/50 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold text-[10px]">
-                        {item.name.split(" ").map(n => n[0]).join("")}
-                      </div>
-                      <div>
-                        <span className="font-semibold text-foreground block">{item.name}</span>
-                        <span className="text-[10px] text-muted-foreground">{item.type}</span>
-                      </div>
-                    </div>
-                    <span className="text-muted-foreground font-medium text-[10px]">{item.time}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Smaller decorative back card */}
-            <div className="absolute -bottom-6 -right-6 h-48 w-48 rounded-2xl glass-card border-white/10 shadow-lg -z-10 flex flex-col p-4 justify-between backdrop-blur-md opacity-75 hidden sm:flex">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                <span className="text-xs font-bold text-foreground">Secure Payments</span>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Stripe, PayPal, and Apple Pay integrated.</p>
-                <div className="h-1 bg-emerald-500 w-full rounded-full mt-2" />
-              </div>
-            </div>
-          </motion.div>
-
         </div>
+
+        {/* ─── Two-Card Media Composition ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 48 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="grid grid-cols-1 lg:grid-cols-5 gap-4 w-full max-w-6xl mx-auto pb-0"
+        >
+          {/* ── Left: Agent Console Card (3/5 width) ── */}
+          <div
+            className="lg:col-span-3 relative flex flex-col overflow-hidden"
+            style={{
+              background: "#17171c",
+              borderRadius: "22px 22px 0 0",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderBottom: "none",
+              padding: "28px 28px 0",
+              minHeight: "340px"
+            }}
+          >
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <span
+                  className="text-[10px] font-bold uppercase tracking-[0.12em] block mb-1"
+                  style={{ color: "#ff7759" }}
+                >
+                  Live Dashboard
+                </span>
+                <span
+                  className="font-medium text-sm"
+                  style={{ color: "#ffffff", letterSpacing: "-0.01em" }}
+                >
+                  District Assembly 2026
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.5)" }}>Live</span>
+              </div>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              {[
+                { icon: Users, label: "Registered", value: "1,248", sub: "+24 today" },
+                { icon: Scan, label: "Checked In", value: String(scanCount), sub: "of 1,248" },
+                { icon: Ticket, label: "Revenue", value: "₹2.4L", sub: "100% target" }
+              ].map((stat, i) => (
+                <div
+                  key={i}
+                  className="p-3 flex flex-col"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: "12px"
+                  }}
+                >
+                  <stat.icon className="h-4 w-4 mb-2" style={{ color: "#ff7759" }} />
+                  <span className="text-lg font-medium" style={{ color: "#ffffff", letterSpacing: "-0.02em" }}>
+                    {stat.value}
+                  </span>
+                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>{stat.label}</span>
+                  <span className="text-[10px] mt-0.5" style={{ color: "#ff7759" }}>{stat.sub}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-6">
+              <div className="flex justify-between text-[11px] mb-2">
+                <span style={{ color: "rgba(255,255,255,0.5)" }}>Gate Check-in Progress</span>
+                <span style={{ color: "#ff7759" }}>{Math.round((scanCount / 1248) * 100)}%</span>
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${Math.round((scanCount / 1248) * 100)}%`, background: "#ff7759" }}
+                />
+              </div>
+            </div>
+
+            {/* Recent scans */}
+            <div className="space-y-2">
+              {[
+                { name: "Priya Menon", ticket: "ROTASM-4821", status: "Checked In" },
+                { name: "Arjun Rajan", ticket: "ROTASM-4820", status: "Checked In" },
+                { name: "Nisha Pillai", ticket: "ROTASM-4819", status: "Checked In" },
+              ].map((entry, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between py-2 px-3"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255,255,255,0.05)"
+                  }}
+                >
+                  <div>
+                    <span className="text-xs font-medium block" style={{ color: "#ffffff" }}>{entry.name}</span>
+                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>{entry.ticket}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" style={{ color: "#4ade80" }} />
+                    <span className="text-[10px]" style={{ color: "#4ade80" }}>{entry.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Right: Hero Photo Card (2/5 width) ── */}
+          <div
+            className="lg:col-span-2 relative overflow-hidden flex flex-col"
+            style={{
+              background: "#eeece7",
+              borderRadius: "22px 22px 0 0",
+              border: "1px solid #d9d9dd",
+              borderBottom: "none",
+              minHeight: "340px"
+            }}
+          >
+            {/* Photo */}
+            <div className="relative flex-1 overflow-hidden" style={{ minHeight: "220px" }}>
+              <img
+                src="https://images.unsplash.com/photo-1559223607-a43c990c692c?w=700&auto=format&fit=crop&q=80"
+                alt="Rotaract community event"
+                className="w-full h-full object-cover"
+                style={{ borderRadius: "20px 20px 0 0" }}
+              />
+              {/* Overlay gradient */}
+              <div
+                className="absolute inset-0"
+                style={{ background: "linear-gradient(to top, rgba(238,236,231,1) 0%, transparent 60%)" }}
+              />
+            </div>
+
+            {/* Caption block */}
+            <div className="p-6 pt-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] block mb-1" style={{ color: "#ff7759" }}>
+                    Community Service
+                  </span>
+                  <p className="font-medium text-sm leading-snug" style={{ color: "#17171c", letterSpacing: "-0.01em" }}>
+                    Club fellowship & tree planting drive, Calicut North
+                  </p>
+                </div>
+                <div
+                  className="shrink-0 h-10 w-10 rounded-full flex items-center justify-center"
+                  style={{ background: "#17171c" }}
+                >
+                  <TrendingUp className="h-4 w-4" style={{ color: "#ff7759" }} />
+                </div>
+              </div>
+
+              {/* Mini stat */}
+              <div
+                className="mt-4 flex items-center gap-3 py-2.5 px-3"
+                style={{ background: "#ffffff", borderRadius: "10px", border: "1px solid #d9d9dd" }}
+              >
+                <Zap className="h-4 w-4 shrink-0" style={{ color: "#ff7759" }} />
+                <span className="text-xs" style={{ color: "#616161" }}>
+                  <strong style={{ color: "#17171c" }}>342 members</strong> participated across 6 clubs
+                </span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
+    </AuroraBackground>
   )
 }

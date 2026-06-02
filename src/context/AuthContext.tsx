@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useUser as useClerkUser, useClerk } from "@clerk/nextjs"
+import { syncClerkUserAction } from "@/app/actions/userActions"
 
 export interface UserSession {
   id: string;
@@ -38,25 +39,44 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
   const [syncedUser, setSyncedUser] = React.useState<UserSession | null>(null)
 
   React.useEffect(() => {
-    if (isLoaded && isSignedIn && clerkUser) {
-      // Fetch role from publicMetadata (defaulting to attendee)
-      const role = (clerkUser.publicMetadata?.role as 'attendee' | 'organizer' | 'admin') || 'attendee'
-      
-      const timer = setTimeout(() => {
+    let active = true
+    
+    async function syncUser() {
+      if (isLoaded && isSignedIn && clerkUser) {
+        const email = clerkUser.primaryEmailAddress?.emailAddress || ""
+        const fullName = clerkUser.fullName || clerkUser.username || "Event Enthusiast"
+        const imageUrl = clerkUser.imageUrl
+        
+        // Sync with Supabase
+        const syncResult = await syncClerkUserAction({
+          clerkId: clerkUser.id,
+          email,
+          fullName,
+          imageUrl
+        })
+
+        if (!active) return
+
+        const finalRole = (syncResult.success && syncResult.role)
+          ? syncResult.role
+          : ((clerkUser.publicMetadata?.role as 'attendee' | 'organizer' | 'admin') || 'attendee')
+
         setSyncedUser({
           id: clerkUser.id,
-          email: clerkUser.primaryEmailAddress?.emailAddress || "",
-          fullName: clerkUser.fullName || clerkUser.username || "Event Enthusiast",
-          role: role,
-          imageUrl: clerkUser.imageUrl
+          email,
+          fullName,
+          role: finalRole,
+          imageUrl
         })
-      }, 0)
-      return () => clearTimeout(timer)
-    } else {
-      const timer = setTimeout(() => {
+      } else {
         setSyncedUser(null)
-      }, 0)
-      return () => clearTimeout(timer)
+      }
+    }
+
+    syncUser()
+
+    return () => {
+      active = false
     }
   }, [clerkUser, isSignedIn, isLoaded])
 

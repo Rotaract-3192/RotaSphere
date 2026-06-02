@@ -4,7 +4,9 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useAuthSession } from "@/context/AuthContext"
 import { EventItem, mockEvents } from "@/data/mockData"
-import { getEventsAction } from "@/app/actions/eventActions"
+import { getEventsAction, deleteEventAction } from "@/app/actions/eventActions"
+import { getBookedTicketsAction } from "@/app/actions/paymentActions"
+import { getAdminDashboardDataAction } from "@/app/actions/userActions"
 import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
 import { CreateEventModal } from "@/components/sections/CreateEventModal"
@@ -24,6 +26,36 @@ export default function DashboardPage() {
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
   const [bookedTickets, setBookedTickets] = React.useState<EventItem[]>([])
   const [sysUsersCount, setSysUsersCount] = React.useState(124)
+  const [sysTicketSales, setSysTicketSales] = React.useState(1240)
+  const [sysCommission, setSysCommission] = React.useState(124840)
+  const [adminUsers, setAdminUsers] = React.useState<{ id: string; email: string; full_name: string; role: string; image_url?: string }[]>([])
+  
+  // Custom ticket registration details (phone, special requests, guest names)
+  const [ticketDetails, setTicketDetails] = React.useState<Record<string, { phone: string; specialRequests: string; fullName: string; email: string; ticketCount: number }>>({})
+
+  // Dynamic attendee statistics
+  const totalSpent = React.useMemo(() => {
+    return bookedTickets.reduce((sum, evt) => {
+      if (evt.pricePaid !== undefined) {
+        const val = typeof evt.pricePaid === "number" ? evt.pricePaid : parseFloat(String(evt.pricePaid).replace(/[^0-9.]/g, ""));
+        return sum + (isNaN(val) ? 0 : val);
+      }
+      if (evt.price) {
+        const val = parseFloat(evt.price.replace(/[^0-9.]/g, ""));
+        return sum + (isNaN(val) ? 0 : val);
+      }
+      return sum;
+    }, 0);
+  }, [bookedTickets]);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedDetails = localStorage.getItem("rotasphere_ticket_details")
+      if (savedDetails) {
+        setTicketDetails(JSON.parse(savedDetails))
+      }
+    }
+  }, [bookedTickets])
 
   // Redirect unauthorized
   React.useEffect(() => {
@@ -32,41 +64,51 @@ export default function DashboardPage() {
     }
   }, [isLoaded, isSignedIn, router])
 
-  // Load events from LocalStorage and MongoDB
   React.useEffect(() => {
     async function loadData() {
-      // 1. First get initial list from local storage / mock fallback
-      const savedEvents = localStorage.getItem("rotasphere_events")
-      let localEvents = savedEvents ? JSON.parse(savedEvents) : mockEvents
+      let finalEvents: EventItem[] = []
+      let finalBookings: EventItem[] = []
 
-      // 2. Fetch database events from Server Action
+      // 1. Fetch database events from Server Action
       try {
         const res = await getEventsAction()
-        if (res.success && res.events && res.events.length > 0) {
-          const dbEvents = res.events as EventItem[]
-          const dbIds = new Set(dbEvents.map(e => e.id))
-          const filteredLocal = localEvents.filter((e: EventItem) => !dbIds.has(e.id))
-          localEvents = [...dbEvents, ...filteredLocal]
+        if (res.success) {
+          if (!res.simulated) {
+            finalEvents = res.events as EventItem[]
+          } else {
+            const savedEvents = localStorage.getItem("rotasphere_events")
+            finalEvents = savedEvents ? JSON.parse(savedEvents) : mockEvents
+          }
         }
       } catch (err) {
         console.error("Failed to load events from database:", err)
       }
 
-      // Initialize booked tickets for mock attendee
-      const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
-      let initialBookings: EventItem[] = []
-      if (savedBooked) {
-        initialBookings = JSON.parse(savedBooked)
-      } else {
-        // Default mock bookings (first two events)
-        initialBookings = [localEvents[0], localEvents[3]].filter(Boolean)
-        localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(initialBookings))
+      // 2. Fetch booked tickets from database
+      try {
+        const ticketRes = await getBookedTicketsAction()
+        if (ticketRes.success) {
+          if (!ticketRes.simulated) {
+            finalBookings = ticketRes.tickets as EventItem[]
+          } else {
+            const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
+            if (savedBooked) {
+              finalBookings = JSON.parse(savedBooked)
+            } else {
+              // Default mock bookings (first two events)
+              finalBookings = [finalEvents[0], finalEvents[3]].filter(Boolean)
+              localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(finalBookings))
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load booked tickets from database:", err)
       }
 
       // Defer state updates to avoid set-state-in-effect warning
       setTimeout(() => {
-        setEvents(localEvents)
-        setBookedTickets(initialBookings)
+        setEvents(finalEvents)
+        setBookedTickets(finalBookings)
       }, 0)
     }
 
@@ -75,23 +117,50 @@ export default function DashboardPage() {
     }
   }, [])
 
+  // Load admin dashboard statistics and users
+  React.useEffect(() => {
+    async function loadAdminData() {
+      if (user?.role !== "admin") return
+      try {
+        const res = await getAdminDashboardDataAction()
+        if (res.success) {
+          setAdminUsers(res.users || [])
+          setSysUsersCount(res.usersCount ?? 0)
+          setSysTicketSales(res.ticketsCount ?? 0)
+          setSysCommission(res.commission ?? 0)
+        }
+      } catch (err) {
+        console.error("Failed to load admin dashboard data:", err)
+      }
+    }
+
+    if (isLoaded && user) {
+      loadAdminData()
+    }
+  }, [user, isLoaded])
+
   const handleEventCreated = (newEvent: EventItem) => {
     const updated = [newEvent, ...events]
     setEvents(updated)
     localStorage.setItem("rotasphere_events", JSON.stringify(updated))
   }
 
-  const handleDeleteEvent = (id: string) => {
-    const updated = events.filter(e => e.id !== id)
-    setEvents(updated)
-    localStorage.setItem("rotasphere_events", JSON.stringify(updated))
+  const handleDeleteEvent = async (id: string) => {
+    const res = await deleteEventAction(id)
+    if (res.success) {
+      const updated = events.filter(e => e.id !== id)
+      setEvents(updated)
+      localStorage.setItem("rotasphere_events", JSON.stringify(updated))
+    } else {
+      alert(res.error || "Failed to delete event.")
+    }
   }
 
   // Loading state
   if (!isLoaded || !user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-radial-grid">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-4" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4" />
         <p className="text-muted-foreground text-sm font-medium">Securing session...</p>
       </div>
     )
@@ -123,17 +192,14 @@ export default function DashboardPage() {
         }
       }} />
 
-      <main className="flex-grow pt-28 pb-16 bg-radial-grid relative overflow-hidden">
-        {/* Glow Blobs */}
-        <div className="absolute top-1/4 left-1/10 h-[400px] w-[400px] rounded-full bg-indigo-500/10 blur-[130px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/10 h-[400px] w-[400px] rounded-full bg-purple-500/10 blur-[130px] pointer-events-none" />
+      <main className="flex-grow pt-28 pb-16 bg-background relative overflow-hidden">
 
         <div className="container mx-auto px-4 md:px-6 relative z-10">
           
           {/* Header Banner */}
-          <div className="glass-card border border-white/20 dark:border-white/5 rounded-2xl p-6 md:p-8 shadow-xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="border border-border bg-card rounded-[16px] p-6 md:p-8 shadow-none mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold border-2 border-background shadow-lg">
+              <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-medium border border-border">
                 {user.imageUrl ? (
                   <img src={user.imageUrl} alt={user.fullName} className="h-full w-full rounded-full object-cover" />
                 ) : (
@@ -142,11 +208,11 @@ export default function DashboardPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-extrabold text-foreground">{user.fullName}</h1>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                  <h1 className="text-2xl font-heading font-medium tracking-tight text-foreground">{user.fullName}</h1>
+                  <span className={`font-mono text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
                     userRole === 'admin' 
-                      ? 'bg-purple-500/15 border-purple-500/30 text-purple-400' 
-                      : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                      ? 'bg-primary/10 border-border text-primary dark:text-white' 
+                      : 'bg-[#ff7759]/10 border-[#ff7759]/20 text-[#ff7759]'
                   }`}>
                     {userRole}
                   </span>
@@ -159,7 +225,7 @@ export default function DashboardPage() {
               {userRole === "admin" && (
                 <Button 
                   onClick={() => setIsCreateOpen(true)}
-                  className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium shadow-md shadow-indigo-500/20"
+                  className="rounded-full bg-primary hover:opacity-90 text-primary-foreground font-medium shadow-none"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   New Event
@@ -168,7 +234,7 @@ export default function DashboardPage() {
               <Button 
                 variant="outline" 
                 onClick={() => signOut()}
-                className="rounded-xl border-muted hover:bg-muted/50 text-foreground"
+                className="rounded-full border-border bg-transparent hover:bg-muted text-foreground"
               >
                 Sign Out
               </Button>
@@ -180,22 +246,22 @@ export default function DashboardPage() {
              ========================================== */}
           {userRole === "attendee" && (
             <div className="space-y-8 animate-fade-in">
-              {/* Stat Grid */}
+           {/* Stat Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                   { label: "Booked Events", val: bookedTickets.length, icon: Ticket, desc: "Active ticket reservations" },
                   { label: "Completed Events", val: 0, icon: Calendar, desc: "Past events attended" },
-                  { label: "Gross Contribution", val: "$149.00", icon: DollarSign, desc: "Spent on registered tickets" }
+                  { label: "Gross Contribution", val: `$${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: DollarSign, desc: "Spent on registered tickets" }
                 ].map((s, i) => {
                   const Icon = s.icon
                   return (
-                    <div key={i} className="glass-card border border-white/10 p-5 rounded-2xl flex items-center justify-between shadow-md">
+                    <div key={i} className="border border-border bg-card p-5 rounded-[16px] flex items-center justify-between shadow-none">
                       <div>
                         <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider block">{s.label}</span>
-                        <span className="text-3xl font-extrabold text-foreground mt-1.5 block">{s.val}</span>
+                        <span className="text-3xl font-heading font-medium tracking-tight text-foreground mt-1.5 block">{s.val}</span>
                         <span className="text-[10px] text-muted-foreground mt-1 block">{s.desc}</span>
                       </div>
-                      <div className="h-12 w-12 rounded-xl bg-indigo-500/10 border border-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                      <div className="h-12 w-12 rounded-full bg-[#ff7759]/10 border border-[#ff7759]/20 text-[#ff7759] flex items-center justify-center">
                         <Icon className="h-6 w-6" />
                       </div>
                     </div>
@@ -204,9 +270,9 @@ export default function DashboardPage() {
               </div>
 
               {/* Tickets Section */}
-              <div className="glass-card border border-white/10 rounded-2xl p-6 shadow-lg">
-                <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-                  <Ticket className="h-5 w-5 text-indigo-500" />
+              <div className="border border-border bg-card rounded-[16px] p-6 shadow-none">
+                <h3 className="text-lg font-heading font-medium tracking-tight text-foreground mb-6 flex items-center gap-2">
+                  <Ticket className="h-5 w-5 text-[#ff7759]" />
                   Your Active Event Passes
                 </h3>
 
@@ -214,42 +280,78 @@ export default function DashboardPage() {
                   <div className="py-12 text-center">
                     <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                     <p className="text-muted-foreground text-sm font-medium">No tickets booked yet.</p>
-                    <Link href="#events" className="text-indigo-500 text-xs font-bold hover:underline mt-2 inline-block">
+                    <Link href="#events" className="text-[#ff7759] text-xs font-medium hover:underline mt-2 inline-block">
                       Browse Upcoming Events
                     </Link>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {bookedTickets.map((evt, idx) => (
-                      <div key={idx} className="relative glass-card border border-white/10 dark:bg-background/20 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm">
-                        <div className="p-5 flex gap-4">
-                          <img src={evt.image} alt={evt.title} className="h-16 w-16 rounded-xl object-cover border border-white/10" />
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/10">
-                              {evt.category}
-                            </span>
-                            <h4 className="font-bold text-foreground text-sm leading-snug line-clamp-1">{evt.title}</h4>
-                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                              <Calendar className="h-3 w-3" />
-                              <span>{evt.date}</span>
-                            </div>
-                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                              <MapPin className="h-3 w-3" />
-                              <span className="line-clamp-1">{evt.location}</span>
-                            </div>
-                          </div>
-                        </div>
+                    {bookedTickets.map((evt, idx) => {
+                      const code = evt.ticketCode || `EVT-${evt.id.toUpperCase()}`
+                      const details = ticketDetails[code] || {}
 
-                        {/* Barcode Mock */}
-                        <div className="border-t border-muted bg-muted/20 px-5 py-3 flex justify-between items-center">
-                          <div className="font-mono text-[9px] text-muted-foreground leading-none">
-                            <span className="block font-bold text-[10px] text-foreground mb-1">TICKET BARCODE</span>
-                            <span>||||||| | |||| || ||||| | | EVT-{evt.id.toUpperCase()}</span>
+                      return (
+                        <div key={idx} className="relative border border-border bg-card rounded-[16px] overflow-hidden flex flex-col justify-between hover:border-[#ff7759] transition-all duration-300 shadow-none">
+                          <div className="p-5 flex gap-4">
+                            <img src={evt.image} alt={evt.title} className="h-16 w-16 rounded-xl object-cover border border-border" />
+                            <div className="space-y-1 flex-grow">
+                              <div className="flex justify-between items-start">
+                                <span className="text-[10px] font-bold text-[#ff7759] uppercase tracking-wide bg-[#ff7759]/10 px-2.5 py-0.5 rounded-full border border-[#ff7759]/20">
+                                  {evt.category}
+                                </span>
+                                {evt.pricePaid !== undefined && (
+                                  <span className="text-[10px] font-semibold text-muted-foreground">
+                                    Paid: {evt.pricePaid === 0 ? "Free" : `${evt.pricePaid}`}
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="font-medium text-foreground text-sm leading-snug line-clamp-1">{evt.title}</h4>
+                              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                <span>{evt.date}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                <span className="line-clamp-1">{evt.location}</span>
+                              </div>
+
+                              {/* Attendee Details */}
+                              <div className="border-t border-dashed border-border pt-2 mt-2 space-y-1 text-[11px] text-muted-foreground">
+                                <div className="flex justify-between">
+                                  <span>Guest:</span>
+                                  <span className="font-medium text-foreground">{details.fullName || user.fullName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Email:</span>
+                                  <span className="font-medium text-foreground">{details.email || user.email}</span>
+                                </div>
+                                {details.phone && (
+                                  <div className="flex justify-between">
+                                    <span>Phone:</span>
+                                    <span className="font-medium text-foreground">{details.phone}</span>
+                                  </div>
+                                )}
+                                {details.specialRequests && (
+                                  <div className="flex justify-between">
+                                    <span>Notes:</span>
+                                    <span className="font-medium text-amber-500 truncate max-w-[160px]">{details.specialRequests}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <span className="text-[10px] font-bold text-emerald-400">REGISTERED</span>
+
+                          {/* Barcode Mock */}
+                          <div className="border-t border-border bg-muted/20 px-5 py-3 flex justify-between items-center">
+                            <div className="font-mono text-[9px] text-muted-foreground leading-none">
+                              <span className="block font-bold text-[10px] text-foreground mb-1">TICKET PASS CODE</span>
+                              <span className="font-mono text-[#ff7759] font-medium">{code}</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-400">REGISTERED</span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>
@@ -266,17 +368,17 @@ export default function DashboardPage() {
               {/* Platform Statistics */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
-                  { label: "Global Platform Users", val: sysUsersCount, icon: UserCheck, color: "text-purple-500 bg-purple-500/10" },
-                  { label: "Active Events Listed", val: events.length, icon: Calendar, color: "text-indigo-500 bg-indigo-500/10" },
-                  { label: "Global Ticket Sales", val: events.reduce((sum, e) => sum + (e.attendees || 0), 0) + 1240, icon: Ticket, color: "text-emerald-500 bg-emerald-500/10" },
-                  { label: "Platform Commission", val: "$124,840", icon: DollarSign, color: "text-amber-500 bg-amber-500/10" }
+                  { label: "Global Platform Users", val: sysUsersCount, icon: UserCheck, color: "text-primary bg-primary/10" },
+                  { label: "Active Events Listed", val: events.length, icon: Calendar, color: "text-[#ff7759] bg-[#ff7759]/10" },
+                  { label: "Global Ticket Sales", val: sysTicketSales, icon: Ticket, color: "text-primary bg-primary/10" },
+                  { label: "Platform Commission", val: typeof sysCommission === "number" ? `$${sysCommission.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : sysCommission, icon: DollarSign, color: "text-[#ff7759] bg-[#ff7759]/10" }
                 ].map((s, i) => {
                   const Icon = s.icon
                   return (
-                    <div key={i} className="glass-card border border-white/10 p-5 rounded-2xl flex items-center justify-between shadow-md">
+                    <div key={i} className="border border-border bg-card p-5 rounded-[16px] flex items-center justify-between shadow-none">
                       <div>
                         <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider block">{s.label}</span>
-                        <span className="text-2xl font-extrabold text-foreground mt-1.5 block">{s.val}</span>
+                        <span className="text-2xl font-heading font-medium tracking-tight text-foreground mt-1.5 block">{s.val}</span>
                         <span className="text-[10px] text-emerald-400 font-medium block mt-1">Stripe verified</span>
                       </div>
                       <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${s.color}`}>
@@ -290,19 +392,19 @@ export default function DashboardPage() {
               {/* Admin Global Control Board */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Events list manager */}
-                <div className="lg:col-span-2 glass-card border border-white/10 rounded-2xl p-6 shadow-lg">
-                  <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-purple-500" />
+                <div className="lg:col-span-2 border border-border bg-card rounded-[16px] p-6 shadow-none">
+                  <h3 className="text-lg font-heading font-medium tracking-tight text-foreground mb-6 flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-[#ff7759]" />
                     Global Event Control Queue
                   </h3>
 
                   <div className="space-y-4">
                     {events.map((evt) => (
-                      <div key={evt.id} className="flex justify-between items-center p-3 rounded-xl bg-background/40 border border-muted/50 text-xs">
+                      <div key={evt.id} className="flex justify-between items-center p-3 rounded-xl bg-[#eeece7]/40 dark:bg-muted/10 border border-border text-xs">
                         <div className="flex items-center gap-3">
                           <img src={evt.image} alt={evt.title} className="h-9 w-9 rounded-lg object-cover" />
                           <div>
-                            <span className="font-bold text-foreground block">{evt.title}</span>
+                            <span className="font-medium text-foreground block">{evt.title}</span>
                             <span className="text-[10px] text-muted-foreground">Organizer: {evt.organizer}</span>
                           </div>
                         </div>
@@ -325,41 +427,46 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Platform Users Panel */}
-                <div className="glass-card border border-white/10 rounded-2xl p-6 shadow-lg flex flex-col justify-between">
+                <div className="border border-border bg-card rounded-[16px] p-6 shadow-none flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                      <Users className="h-5 w-5 text-indigo-500" />
+                    <h3 className="text-lg font-heading font-medium tracking-tight text-foreground mb-4 flex items-center gap-2">
+                      <Users className="h-5 w-5 text-[#ff7759]" />
                       Platform Users
                     </h3>
 
                     <div className="space-y-3">
-                      {[
-                        { name: "Sophia Martinez", role: "Organizer", email: "sophia@tech.io" },
-                        { name: "David Chen", role: "Attendee", email: "dchen@gmail.com" },
-                        { name: "Alex Rivera", role: "Attendee", email: "alex@rivera.com" },
-                        { name: "Sarah Jenkins", role: "Admin", email: "sarah@rotasphere.com" }
-                      ].map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center p-2.5 rounded-xl bg-background/20 border border-muted/30 text-xs">
-                          <div>
-                            <span className="font-bold text-foreground block">{item.name}</span>
-                            <span className="text-[10px] text-muted-foreground">{item.email}</span>
-                          </div>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                            item.role === 'Admin' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                            item.role === 'Organizer' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
-                            'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          }`}>
-                            {item.role}
-                          </span>
+                      {adminUsers.length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground text-xs italic">
+                          No platform users found
                         </div>
-                      ))}
+                      ) : (
+                        adminUsers.map((item, idx) => {
+                          const displayRole = item.role.charAt(0).toUpperCase() + item.role.slice(1)
+                          const roleLower = item.role.toLowerCase()
+                          return (
+                            <div key={item.id || idx} className="flex justify-between items-center p-2.5 rounded-xl bg-[#eeece7]/20 dark:bg-muted/10 border border-border text-xs">
+                              <div>
+                                <span className="font-medium text-foreground block">{item.full_name}</span>
+                                <span className="text-[10px] text-muted-foreground">{item.email}</span>
+                              </div>
+                              <span className={`font-mono text-[9px] font-medium px-2 py-0.5 rounded-full border ${
+                                roleLower === 'admin' ? 'bg-primary/10 text-primary border-border' :
+                                roleLower === 'organizer' ? 'bg-[#ff7759]/10 text-[#ff7759] border-[#ff7759]/20' :
+                                'bg-muted-foreground/10 text-muted-foreground border-border'
+                              }`}>
+                                {displayRole}
+                              </span>
+                            </div>
+                          )
+                        })
+                      )}
                     </div>
                   </div>
 
                   <Button 
                     variant="outline" 
                     onClick={() => setSysUsersCount(prev => prev + 1)}
-                    className="w-full rounded-xl mt-4 border-muted hover:bg-muted/50 text-foreground text-xs"
+                    className="w-full rounded-full mt-4 border-border bg-transparent hover:bg-muted text-foreground text-xs"
                   >
                     Simulate New User Sign Up
                   </Button>

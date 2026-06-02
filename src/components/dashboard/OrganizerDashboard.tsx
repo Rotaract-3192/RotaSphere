@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { EventItem } from "@/data/mockData"
 import { cn } from "@/lib/utils"
 import { MultiStepCreateEvent } from "./MultiStepCreateEvent"
+import { deleteEventAction } from "@/app/actions/eventActions"
 
 interface OrganizerDashboardProps {
   events: EventItem[];
@@ -86,11 +87,16 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
 
 
-  const handleDeleteEvent = (id: string) => {
-    const updated = events.filter(e => e.id !== id)
-    setEvents(updated)
-    localStorage.setItem("rotasphere_events", JSON.stringify(updated))
-    showToast("🗑️ Event removed successfully.")
+  const handleDeleteEvent = async (id: string) => {
+    const res = await deleteEventAction(id)
+    if (res.success) {
+      const updated = events.filter(e => e.id !== id)
+      setEvents(updated)
+      localStorage.setItem("rotasphere_events", JSON.stringify(updated))
+      showToast("🗑️ Event removed successfully.")
+    } else {
+      showToast(`❌ Failed to delete: ${res.error}`)
+    }
   }
 
   const toggleCheckIn = (id: string) => {
@@ -110,11 +116,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       {/* Brand logo */}
       <div className="space-y-6">
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25">
-            <Sparkles className="h-4 w-4" />
+          <div className="h-8 w-8 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c]">
+            <Sparkles className="h-4 w-4 text-[#ff7759]" />
           </div>
-          <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-            EventSphere
+          <span className="font-heading font-medium text-lg tracking-tight text-[#17171c] dark:text-white">
+            RotaSphere
           </span>
         </div>
 
@@ -131,10 +137,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   setMobileOpen(false)
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200",
+                  "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20"
-                    : "text-foreground/75 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-muted/50"
+                    ? "bg-[#17171c] text-white dark:bg-white dark:text-[#17171c] shadow-none"
+                    : "text-[#616161] dark:text-[#93939f] hover:text-[#212121] dark:hover:text-white hover:bg-[#eeece7] dark:hover:bg-[#2c2c35]"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -148,7 +154,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       {/* Logout / User Info footer inside sidebar */}
       <div className="space-y-4 pt-4 border-t border-muted/50">
         <div className="flex items-center gap-3 px-2">
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shadow-sm overflow-hidden">
+          <div className="h-9 w-9 rounded-full bg-[#ff7759]/15 border border-[#ff7759]/30 text-[#ff7759] flex items-center justify-center font-medium text-xs overflow-hidden">
             {user.imageUrl ? (
               <img src={user.imageUrl} alt={user.fullName} className="h-full w-full object-cover" />
             ) : (
@@ -181,9 +187,9 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 16, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl bg-slate-900/90 dark:bg-white/95 text-white dark:text-slate-900 text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/10"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-[#17171c] dark:bg-[#eeece7] text-white dark:text-[#17171c] text-xs font-medium shadow-none border border-border flex items-center gap-2"
           >
-            <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+            <Sparkles className="h-3.5 w-3.5 text-[#ff7759]" />
             <span>{toastMessage}</span>
           </motion.div>
         )}
@@ -194,7 +200,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-purple-500/5 blur-[120px] pointer-events-none" />
 
       {/* Desktop Sidebar (Persistent) */}
-      <aside className="hidden md:block w-64 h-screen border-r border-muted bg-background/50 backdrop-blur-xl p-4 sticky top-0 shrink-0">
+      <aside className="hidden md:block w-64 h-screen border-r border-border bg-card p-4 sticky top-0 shrink-0">
         {sidebarContent}
       </aside>
 
@@ -223,14 +229,14 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
               </SheetContent>
             </Sheet>
 
-            <h2 className="text-md md:text-lg font-bold text-foreground capitalize tracking-tight">
+            <h2 className="text-md md:text-lg font-heading font-medium text-foreground capitalize tracking-tight">
               {activeView.replace("-", " ")}
             </h2>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Search Input (Desktop) */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-muted bg-muted/20 w-64 text-xs text-muted-foreground focus-within:border-indigo-500/50 transition-colors">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-muted bg-muted/20 w-64 text-xs text-muted-foreground focus-within:border-[#9b60aa] transition-colors">
               <Search className="h-3.5 w-3.5" />
               <input 
                 type="text" 
@@ -252,14 +258,14 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
               {theme === "dark" ? (
                 <Sun className="h-4 w-4 text-amber-500" />
               ) : (
-                <Moon className="h-4 w-4 text-indigo-600" />
+                <Moon className="h-4 w-4 text-[#ff7759]" />
               )}
             </Button>
 
             {/* Notifications icon */}
             <button className="h-9 w-9 rounded-xl border border-muted hover:bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground relative transition-colors">
               <Bell className="h-4 w-4" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-500" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#ff7759]" />
             </button>
           </div>
         </header>
@@ -284,18 +290,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   {/* Grid Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                      { label: "Total Events", value: totalEvents, desc: "Created active lists", icon: Calendar, color: "text-indigo-500 bg-indigo-500/10" },
-                      { label: "Tickets Sold", value: totalTicketsSold, desc: "Attendee signups", icon: Ticket, color: "text-emerald-500 bg-emerald-500/10" },
-                      { label: "Revenue Earned", value: `$${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, desc: "Stripe payout value", icon: DollarSign, color: "text-amber-500 bg-amber-500/10" },
-                      { label: "Active Attendees", value: activeAttendees, desc: "Checked-in guest counts", icon: UserCheck, color: "text-purple-500 bg-purple-500/10" }
+                      { label: "Total Events", value: totalEvents, desc: "Created active lists", icon: Calendar, color: "text-[#ff7759] bg-[#ff7759]/10" },
+                      { label: "Tickets Sold", value: totalTicketsSold, desc: "Attendee signups", icon: Ticket, color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400" },
+                      { label: "Revenue Earned", value: `$${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, desc: "Stripe payout value", icon: DollarSign, color: "text-amber-600 bg-amber-500/10 dark:text-amber-400" },
+                      { label: "Active Attendees", value: activeAttendees, desc: "Checked-in guest counts", icon: UserCheck, color: "text-[#9b60aa] bg-[#9b60aa]/10" }
                     ].map((card, i) => {
                       const Icon = card.icon
                       return (
-                        <Card key={i} className="glass-card border-white/10 hover:border-indigo-500/20 transition-all shadow-md">
+                        <Card key={i} className="border border-border bg-card hover:border-[#ff7759] transition-all duration-300 shadow-none rounded-[16px]">
                           <CardContent className="p-4 flex items-center justify-between">
                             <div className="space-y-1">
                               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">{card.label}</span>
-                              <span className="text-xl md:text-2xl font-extrabold text-foreground block">{card.value}</span>
+                              <span className="text-xl md:text-2xl font-heading font-medium tracking-tight text-foreground block">{card.value}</span>
                               <span className="text-[9px] text-muted-foreground block">{card.desc}</span>
                             </div>
                             <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", card.color)}>
@@ -310,11 +316,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   {/* Summary & Overview Graph Placeholder */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Graph Mock */}
-                    <Card className="lg:col-span-2 glass-card border-white/10 shadow-md p-5 flex flex-col justify-between">
+                    <Card className="lg:col-span-2 border border-border bg-card shadow-none p-5 flex flex-col justify-between rounded-[16px]">
                       <div>
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-sm font-bold text-foreground">Sales Revenue Graph</h3>
-                          <span className="text-[10px] font-semibold text-emerald-400 flex items-center gap-1">
+                          <h3 className="text-sm font-heading font-medium text-foreground">Sales Revenue Graph</h3>
+                          <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                             <TrendingUp className="h-3.5 w-3.5" />
                             +12.4% vs last week
                           </span>
@@ -325,7 +331,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       </div>
 
                       {/* Simulated Chart Bars */}
-                      <div className="h-44 flex items-end justify-between gap-2 px-2 border-b border-muted pb-2">
+                      <div className="h-44 flex items-end justify-between gap-2 px-2 border-b border-border pb-2">
                         {[
                           { day: "Mon", val: "h-[30%]" },
                           { day: "Tue", val: "h-[50%]" },
@@ -336,7 +342,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           { day: "Sun", val: "h-[85%]" }
                         ].map((bar, idx) => (
                           <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                            <div className={cn("w-full bg-gradient-to-t from-indigo-500 to-purple-600 rounded-md transition-all duration-500 hover:from-indigo-600 hover:to-purple-700", bar.val)} />
+                            <div className={cn("w-full bg-[#ff7759] rounded-t-sm transition-all duration-500 hover:opacity-85", bar.val)} />
                             <span className="text-[9px] text-muted-foreground font-semibold">{bar.day}</span>
                           </div>
                         ))}
@@ -344,10 +350,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     </Card>
 
                     {/* Right column: Quick overview info */}
-                    <Card className="glass-card border-white/10 shadow-md p-5 flex flex-col justify-between">
+                    <Card className="border border-border bg-card shadow-none p-5 flex flex-col justify-between rounded-[16px]">
                       <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                          <Award className="h-4.5 w-4.5 text-indigo-500" />
+                        <h3 className="text-sm font-heading font-medium text-foreground flex items-center gap-2">
+                          <Award className="h-4.5 w-4.5 text-[#ff7759]" />
                           Top Category Performance
                         </h3>
                         
@@ -363,7 +369,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 <span className="text-muted-foreground">{item.val} ({item.pct}%)</span>
                               </div>
                               <div className="w-full bg-muted/50 h-1.5 rounded-full overflow-hidden">
-                                <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${item.pct}%` }} />
+                                <div className="bg-[#ff7759] h-full rounded-full" style={{ width: `${item.pct}%` }} />
                               </div>
                             </div>
                           ))}
@@ -372,7 +378,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
                       <Button 
                         onClick={() => setActiveView('create-event')}
-                        className="w-full rounded-xl bg-indigo-500/10 hover:bg-indigo-500 hover:text-white border border-indigo-500/20 text-indigo-500 dark:text-indigo-400 font-semibold text-xs mt-6"
+                        className="w-full rounded-full bg-transparent hover:bg-primary hover:text-primary-foreground border border-border text-foreground font-medium text-xs mt-6 shadow-none"
                       >
                         <Plus className="h-3.5 w-3.5 mr-1.5" />
                         Publish a New Event
@@ -381,30 +387,30 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   </div>
 
                   {/* Recent Bookings rows */}
-                  <Card className="glass-card border-white/10 shadow-md p-5">
-                    <h3 className="text-sm font-bold text-foreground mb-4">Recent Bookings Log</h3>
+                  <Card className="border border-border bg-card shadow-none p-5 rounded-[16px]">
+                    <h3 className="text-sm font-heading font-medium text-foreground mb-4">Recent Bookings Log</h3>
                     <div className="overflow-x-auto text-xs">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="border-b border-muted text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
+                          <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
                             <th className="pb-2">Guest Name</th>
                             <th className="pb-2">Registered Event</th>
                             <th className="pb-2">Date Purchased</th>
                             <th className="pb-2 text-right">Status</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-muted/30">
+                        <tbody className="divide-y divide-border/40">
                           {attendeeRegistry.slice(0, 3).map((item, idx) => (
-                            <tr key={idx} className="hover:bg-muted/10">
-                              <td className="py-2.5 font-bold text-foreground">{item.name}</td>
+                            <tr key={idx} className="hover:bg-[#eeece7]/30 dark:hover:bg-[#2c2c35]/30">
+                              <td className="py-2.5 font-medium text-foreground">{item.name}</td>
                               <td className="py-2.5 text-muted-foreground">{item.eventTitle}</td>
                               <td className="py-2.5 text-muted-foreground">{item.date}</td>
                               <td className="py-2.5 text-right">
                                 <span className={cn(
-                                  "inline-block text-[9px] font-bold px-2 py-0.5 rounded-full border",
+                                  "inline-block text-[9px] font-mono font-medium px-2.5 py-0.5 rounded-full border",
                                   item.checkedIn
-                                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
-                                    : "bg-amber-500/15 text-amber-400 border-amber-500/20"
+                                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                                    : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400"
                                 )}>
                                   {item.checkedIn ? "Checked In" : "Pending"}
                                 </span>
@@ -437,13 +443,13 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                  3. MANAGE EVENTS VIEW
                  ========================================== */}
               {activeView === 'manage-events' && (
-                <Card className="glass-card border-white/10 p-5 shadow-lg">
+                <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h3 className="text-sm font-bold text-foreground">Active Event Listings</h3>
+                    <h3 className="text-sm font-heading font-medium text-foreground">Active Event Listings</h3>
                     
                     {/* Search & Add CTA */}
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-muted bg-muted/20 text-xs text-muted-foreground w-full sm:w-60 focus-within:border-indigo-500/50 transition-colors">
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-[#eeece7]/20 dark:bg-muted/10 text-xs text-muted-foreground w-full sm:w-60 focus-within:border-[#9b60aa] transition-colors">
                         <Search className="h-3.5 w-3.5" />
                         <input 
                           type="text" 
@@ -456,7 +462,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       <Button 
                         onClick={() => setActiveView('create-event')}
                         size="xs"
-                        className="rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-500/20 shrink-0 py-3.5"
+                        className="rounded-full bg-primary hover:opacity-90 text-primary-foreground font-medium shadow-none shrink-0 py-3.5"
                       >
                         <Plus className="h-3.5 w-3.5 mr-1" />
                         Add Event
@@ -467,7 +473,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   <div className="overflow-x-auto text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-muted text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
+                        <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
                           <th className="pb-3">Event Details</th>
                           <th className="pb-3">Date</th>
                           <th className="pb-3">Tickets Sold</th>
@@ -475,18 +481,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <th className="pb-3 text-right">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-muted/30">
+                      <tbody className="divide-y divide-border/40">
                         {events
                           .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
                           .map((evt) => {
                             const registeredPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
                             return (
-                              <tr key={evt.id} className="group hover:bg-muted/10">
+                              <tr key={evt.id} className="group hover:bg-[#eeece7]/20 dark:hover:bg-[#2c2c35]/20">
                                 <td className="py-3">
                                   <div className="flex items-center gap-3">
-                                    <img src={evt.image} alt={evt.title} className="h-9 w-9 rounded-lg object-cover border border-white/10" />
+                                    <img src={evt.image} alt={evt.title} className="h-9 w-9 rounded-lg object-cover border border-border" />
                                     <div>
-                                      <span className="font-bold text-foreground block group-hover:text-indigo-500 transition-colors">{evt.title}</span>
+                                      <span className="font-medium text-foreground block group-hover:text-[#ff7759] transition-colors">{evt.title}</span>
                                       <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                                         <MapPin className="h-3 w-3" />
                                         {evt.location}
@@ -498,7 +504,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 <td className="py-3">
                                   <div className="w-24 bg-muted h-1.5 rounded-full overflow-hidden flex mb-1">
                                     <div 
-                                      className="bg-indigo-50 h-full rounded-full" 
+                                      className="bg-[#ff7759] h-full rounded-full" 
                                       style={{ width: `${registeredPct}%` }} 
                                     />
                                   </div>
@@ -532,8 +538,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                  4. TICKETS VIEW
                  ========================================== */}
               {activeView === 'tickets' && (
-                <Card className="glass-card border-white/10 p-5 shadow-lg">
-                  <h3 className="text-sm font-bold text-foreground mb-4">Ticketing Audit Log</h3>
+                <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
+                  <h3 className="text-sm font-heading font-medium text-foreground mb-4">Ticketing Audit Log</h3>
                   <p className="text-xs text-muted-foreground mb-6">
                     Complete list of transaction receipts and generated active passes across platform bookings.
                   </p>
@@ -541,7 +547,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   <div className="overflow-x-auto text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-muted text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
+                        <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
                           <th className="pb-3">Booking ID</th>
                           <th className="pb-3">Event Detail</th>
                           <th className="pb-3">Base Cost</th>
@@ -549,24 +555,24 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <th className="pb-3 text-right">Action</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-muted/30">
+                      <tbody className="divide-y divide-border/40">
                         {bookedTickets.map((evt, idx) => (
-                          <tr key={idx} className="hover:bg-muted/10">
+                          <tr key={idx} className="hover:bg-[#eeece7]/30 dark:hover:bg-[#2c2c35]/30">
                             <td className="py-3 font-mono font-bold text-foreground">#EVT-{evt.id.toUpperCase()}-{idx}</td>
                             <td className="py-3">
-                              <span className="font-bold text-foreground block">{evt.title}</span>
+                              <span className="font-medium text-foreground block">{evt.title}</span>
                               <span className="text-[10px] text-muted-foreground">{evt.date}</span>
                             </td>
                             <td className="py-3 font-semibold text-foreground">{evt.price}</td>
                             <td className="py-3">
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                 CONFIRMED
                               </span>
                             </td>
                             <td className="py-3 text-right">
                               <button 
                                 onClick={() => showToast(`Simulating barcode scan for EVT-${evt.id}`)}
-                                className="text-indigo-500 hover:underline font-semibold"
+                                className="text-[#ff7759] hover:underline font-medium"
                               >
                                 Scan Ticket
                               </button>
@@ -586,8 +592,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                 <div className="space-y-6">
                   {/* Detailed Performance Charts */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="glass-card border-white/10 p-5 shadow-md">
-                      <h3 className="text-sm font-bold text-foreground mb-4">Event Check-In Rates</h3>
+                    <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
+                      <h3 className="text-sm font-heading font-medium text-foreground mb-4">Event Check-In Rates</h3>
                       <div className="space-y-4 text-xs mt-4">
                         {[
                           { title: "NextGen Tech Summit 2026", total: 1240, check: 980, pct: 79 },
@@ -600,15 +606,15 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                               <span className="text-muted-foreground">{evt.check}/{evt.total} checked ({evt.pct}%)</span>
                             </div>
                             <div className="w-full bg-muted/50 h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${evt.pct}%` }} />
+                              <div className="bg-[#003c33] h-full rounded-full" style={{ width: `${evt.pct}%` }} />
                             </div>
                           </div>
                         ))}
                       </div>
                     </Card>
 
-                    <Card className="glass-card border-white/10 p-5 shadow-md">
-                      <h3 className="text-sm font-bold text-foreground mb-4">Monthly Platform Growth</h3>
+                    <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
+                      <h3 className="text-sm font-heading font-medium text-foreground mb-4">Monthly Platform Growth</h3>
                       <div className="space-y-4 text-xs mt-4">
                         {[
                           { month: "January", total: 15, growth: "+12%" },
@@ -616,11 +622,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           { month: "March", total: 22, growth: "+22%" },
                           { month: "April", total: 29, growth: "+31%" }
                         ].map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center py-2 border-b border-muted/30">
-                            <span className="font-bold text-foreground/80">{item.month}</span>
+                          <div key={idx} className="flex justify-between items-center py-2 border-b border-border">
+                            <span className="font-medium text-foreground/80">{item.month}</span>
                             <div className="flex items-center gap-4">
                               <span className="text-muted-foreground">{item.total} lists</span>
-                              <span className="font-bold text-emerald-400">{item.growth}</span>
+                              <span className="font-medium text-emerald-600 dark:text-emerald-400">{item.growth}</span>
                             </div>
                           </div>
                         ))}
@@ -629,10 +635,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   </div>
 
                   {/* General summary alerts */}
-                  <Card className="glass-card border-white/10 p-5 flex items-start gap-4">
-                    <Info className="h-5 w-5 text-indigo-500 shrink-0 mt-0.5" />
+                  <Card className="border border-border bg-[#eeece7]/40 dark:bg-muted/10 p-5 flex items-start gap-4 rounded-[16px] shadow-none">
+                    <Info className="h-5 w-5 text-[#ff7759] shrink-0 mt-0.5" />
                     <div className="text-xs space-y-1.5">
-                      <h4 className="font-bold text-foreground">Analytics Data Resolution</h4>
+                      <h4 className="font-heading font-medium text-foreground">Analytics Data Resolution</h4>
                       <p className="text-muted-foreground">
                         Data updates every 15 minutes. To sync instant ticket transactions, click the refresh button on top header. Stripe commission deductions of 2.9% + $0.30 apply.
                       </p>
@@ -645,10 +651,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                  6. ATTENDEES VIEW
                  ========================================== */}
               {activeView === 'attendees' && (
-                <Card className="glass-card border-white/10 p-5 shadow-lg">
+                <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
                   <div className="flex justify-between items-center mb-6">
                     <div>
-                      <h3 className="text-sm font-bold text-foreground">Attendee Registry</h3>
+                      <h3 className="text-sm font-heading font-medium text-foreground">Attendee Registry</h3>
                       <p className="text-[10px] text-muted-foreground mt-0.5">Toggle check-in status directly when checking in guests at the gate.</p>
                     </div>
                   </div>
@@ -656,7 +662,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   <div className="overflow-x-auto text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-muted text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
+                        <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
                           <th className="pb-3">Guest</th>
                           <th className="pb-3">Email Address</th>
                           <th className="pb-3">Event Registered</th>
@@ -664,15 +670,15 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <th className="pb-3 text-right">Gate Check-In</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-muted/30">
+                      <tbody className="divide-y divide-border/40">
                         {attendeeRegistry.map((item) => (
-                          <tr key={item.id} className="hover:bg-muted/10">
+                          <tr key={item.id} className="hover:bg-[#eeece7]/20 dark:hover:bg-[#2c2c35]/20">
                             <td className="py-3">
                               <div className="flex items-center gap-2">
-                                <div className="h-7 w-7 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold text-[10px]">
+                                <div className="h-7 w-7 rounded-full bg-[#ff7759]/10 text-[#ff7759] flex items-center justify-center font-semibold text-[10px]">
                                   {item.name.charAt(0)}
                                 </div>
-                                <span className="font-bold text-foreground">{item.name}</span>
+                                <span className="font-medium text-foreground">{item.name}</span>
                               </div>
                             </td>
                             <td className="py-3 text-muted-foreground">{item.email}</td>
@@ -684,8 +690,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 className={cn(
                                   "inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold border transition-colors",
                                   item.checkedIn
-                                    ? "bg-emerald-500/15 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
-                                    : "bg-muted/50 border-muted text-muted-foreground hover:bg-muted/80"
+                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
+                                    : "bg-[#eeece7] border-border text-foreground hover:bg-[#d9d9dd]"
                                 )}
                               >
                                 {item.checkedIn ? (
@@ -710,16 +716,16 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                  7. SETTINGS VIEW
                  ========================================== */}
               {activeView === 'settings' && (
-                <Card className="glass-card border-white/10 p-6 shadow-lg max-w-xl mx-auto">
-                  <h3 className="font-bold text-sm text-foreground mb-4 pb-3 border-b border-muted/50">Organization & Account Settings</h3>
+                <Card className="border border-border bg-card p-6 shadow-none max-w-xl mx-auto rounded-[16px]">
+                  <h3 className="font-heading font-medium text-sm text-foreground mb-4 pb-3 border-b border-border">Organization & Account Settings</h3>
                   
                   <form onSubmit={handleSettingsSubmit} className="space-y-4 text-xs text-foreground">
                     <div className="space-y-1">
-                      <label className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Organizer Name</label>
+                      <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Organizer Name</label>
                       <input 
                         type="text" 
                         required
-                        className="w-full px-3 py-2 rounded-xl border border-muted bg-background/50 focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-[#9b60aa] focus:outline-none"
                         value={orgName}
                         onChange={(e) => setOrgName(e.target.value)}
                       />
@@ -727,43 +733,43 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     </div>
 
                     <div className="space-y-1">
-                      <label className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Profile Full Name</label>
+                      <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Profile Full Name</label>
                       <input 
                         type="text" 
                         required
-                        className="w-full px-3 py-2 rounded-xl border border-muted bg-background/50 focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-[#9b60aa] focus:outline-none"
                         value={profileName}
                         onChange={(e) => setProfileName(e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-1">
-                      <label className="font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Profile Email Address</label>
+                      <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Profile Email Address</label>
                       <input 
                         type="email" 
                         required
-                        className="w-full px-3 py-2 rounded-xl border border-muted bg-background/50 focus:border-indigo-500 focus:outline-none"
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-[#9b60aa] focus:outline-none"
                         value={profileEmail}
                         onChange={(e) => setProfileEmail(e.target.value)}
                       />
                     </div>
 
                     <div className="space-y-2 pt-2">
-                      <label className="font-bold text-muted-foreground uppercase tracking-wider text-[10px] block">Security Preference</label>
+                      <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px] block">Security Preference</label>
                       <div className="flex gap-2">
-                        <span className="px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/15">
+                        <span className="font-mono px-2.5 py-1 rounded-full bg-[#ff7759]/10 text-[#ff7759] border border-[#ff7759]/15">
                           2FA Enabled
                         </span>
-                        <span className="px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-400 font-bold border border-slate-500/15">
+                        <span className="font-mono px-2.5 py-1 rounded-full bg-stone-100 text-slate-500 dark:bg-muted/30 dark:text-slate-400 border border-border">
                           OAuth Login Active
                         </span>
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-muted/50 flex gap-3">
+                    <div className="pt-4 border-t border-border flex gap-3">
                       <Button
                         type="submit"
-                        className="w-full rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold text-xs shadow-md shadow-indigo-500/25"
+                        className="w-full rounded-full bg-primary hover:opacity-90 text-primary-foreground font-semibold text-xs shadow-none py-4"
                       >
                         Save Configuration
                       </Button>

@@ -1,5 +1,5 @@
 "use client"
-
+ 
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { useAuthSession } from "@/context/AuthContext"
@@ -9,50 +9,47 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
-
+ 
 type UserRole = "attendee" | "organizer" | "admin"
-
+ 
 export default function SignUpPage() {
   const { isClerkActive, signUp, loginWithGoogle, isSignedIn } = useAuthSession()
   const router = useRouter()
-
+ 
   const [fullName, setFullName] = React.useState("")
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [selectedRole, setSelectedRole] = React.useState<UserRole>("attendee")
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState("")
-
+ 
   // Redirect if already signed in
   React.useEffect(() => {
     if (isSignedIn) {
       router.push("/dashboard")
     }
   }, [isSignedIn, router])
-
+ 
   if (isClerkActive) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-radial-grid py-12 px-4 relative">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-purple-500/10 blur-[100px] pointer-events-none" />
-        
-        <div className="relative z-10 glass-card p-2 rounded-2xl border border-white/10 shadow-2xl">
+      <div className="min-h-screen flex items-center justify-center bg-background bg-dot-grid py-12 px-4 relative">
+        <div className="relative z-10 border border-border bg-card p-4 rounded-[16px] shadow-none">
           <ClerkSignUp routing="hash" />
         </div>
       </div>
     )
   }
-
+ 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!fullName || !email || !password) {
       setError("Please fill in all fields")
       return
     }
-
+ 
     setIsLoading(true)
     setError("")
-
+ 
     try {
       await signUp(email, fullName, selectedRole)
       router.push("/dashboard")
@@ -62,7 +59,7 @@ export default function SignUpPage() {
       setIsLoading(false)
     }
   }
-
+ 
   const handleGoogleSignup = async () => {
     setIsLoading(true)
     try {
@@ -74,68 +71,61 @@ export default function SignUpPage() {
       setIsLoading(false)
     }
   }
-
+ 
   const roles = [
     {
       id: "attendee" as UserRole,
       title: "Attendee",
       desc: "Book tickets & join events",
       icon: Users,
-      color: "text-blue-500 bg-blue-500/10 border-blue-500/20"
     },
     {
       id: "organizer" as UserRole,
       title: "Organizer",
       desc: "Create & manage events",
       icon: Calendar,
-      color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20"
     },
     {
       id: "admin" as UserRole,
       title: "Admin",
-      desc: "Oversee global operations",
+      desc: "Oversee operations",
       icon: ShieldCheck,
-      color: "text-purple-500 bg-purple-500/10 border-purple-500/20"
     }
   ]
-
+ 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-radial-grid py-12 px-4 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-1/4 left-1/10 h-[350px] w-[350px] rounded-full bg-indigo-500/15 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/10 h-[350px] w-[350px] rounded-full bg-purple-500/15 blur-[120px] pointer-events-none" />
-
+    <div className="min-h-screen flex items-center justify-center bg-background bg-dot-grid py-12 px-4 relative overflow-hidden">
       <div className="w-full max-w-lg relative z-10">
         {/* RotaSphere Logo Header */}
         <div className="flex flex-col items-center mb-6 text-center">
           <Link href="/" className="flex items-center gap-2 mb-2 group">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25">
-              <Sparkles className="h-5 w-5" />
+            <div className="h-9 w-9 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c]">
+              <Sparkles className="h-4.5 w-4.5 text-[#ff7759]" />
             </div>
-            <span className="font-bold text-2xl tracking-tight bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <span className="font-heading font-medium text-2xl tracking-tight text-[#17171c] dark:text-white">
               RotaSphere
             </span>
           </Link>
-          <span className="text-xs text-indigo-500 dark:text-indigo-400 font-semibold tracking-wider uppercase bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/10">
+          <span className="font-mono text-xs text-[#ff7759] tracking-wider uppercase bg-[#ff7759]/10 px-2.5 py-1 rounded-full border border-[#ff7759]/20">
             Simulated Auth Sandbox
           </span>
         </div>
-
-        {/* Glassmorphic Sign Up Card */}
-        <div className="glass-card border border-white/20 dark:border-white/5 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-2xl">
+ 
+        {/* Bordered Sign Up Card */}
+        <div className="border border-border bg-card rounded-[16px] p-6 md:p-8 shadow-none">
           <div className="mb-6 text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">Create Account</h2>
+            <h2 className="text-2xl font-heading font-medium tracking-tight text-foreground">Create Account</h2>
             <p className="text-muted-foreground text-sm mt-1">
               Join RotaSphere and plan your next moments
             </p>
           </div>
-
+ 
           {error && (
-            <div className="mb-4 p-3 text-xs bg-destructive/10 border border-destructive/20 text-destructive rounded-xl font-medium">
+            <div className="mb-4 p-3 text-xs bg-destructive/10 border border-destructive/20 text-destructive rounded-[8px] font-medium">
               {error}
             </div>
           )}
-
+ 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div className="space-y-1.5">
@@ -149,12 +139,12 @@ export default function SignUpPage() {
                   placeholder="Alex Rivera"
                   required
                   disabled={isLoading}
-                  className="rounded-xl border-muted-foreground/20 bg-background/50 pl-9 focus-visible:ring-indigo-500"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
                 />
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-
+ 
             {/* Email */}
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-sm font-semibold">Email Address</Label>
@@ -167,12 +157,12 @@ export default function SignUpPage() {
                   placeholder="name@example.com"
                   required
                   disabled={isLoading}
-                  className="rounded-xl border-muted-foreground/20 bg-background/50 pl-9 focus-visible:ring-indigo-500"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
                 />
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-
+ 
             {/* Password */}
             <div className="space-y-1.5">
               <Label htmlFor="password" className="text-sm font-semibold">Password</Label>
@@ -185,12 +175,12 @@ export default function SignUpPage() {
                   placeholder="••••••••"
                   required
                   disabled={isLoading}
-                  className="rounded-xl border-muted-foreground/20 bg-background/50 pl-9 focus-visible:ring-indigo-500"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
                 />
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
-
+ 
             {/* Role Support Picker */}
             <div className="space-y-2 pt-2">
               <Label className="text-sm font-semibold block">Select Your Account Role</Label>
@@ -204,16 +194,18 @@ export default function SignUpPage() {
                       type="button"
                       disabled={isLoading}
                       onClick={() => setSelectedRole(r.id)}
-                      className={`flex flex-col items-center text-center p-3 rounded-xl border transition-all duration-200 ${
+                      className={`flex flex-col items-center text-center p-3 rounded-[12px] border transition-all duration-200 ${
                         isSelected
-                          ? "bg-indigo-500/10 border-indigo-500 ring-2 ring-indigo-500/20"
-                          : "bg-background/40 border-muted hover:bg-muted/30"
+                          ? "bg-[#ff7759]/8 border-[#ff7759] ring-2 ring-[#ff7759]/20"
+                          : "bg-background/40 border-border hover:bg-[#eeece7] dark:hover:bg-[#2c2c35]"
                       }`}
                     >
-                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center mb-2 ${r.color}`}>
+                      <div className={`h-8 w-8 rounded-lg flex items-center justify-center mb-2 ${
+                        isSelected ? "text-[#ff7759] bg-[#ff7759]/10" : "text-muted-foreground bg-muted/40"
+                      }`}>
                         <Icon className="h-4 w-4" />
                       </div>
-                      <span className="text-xs font-bold text-foreground block mb-0.5">{r.title}</span>
+                      <span className="text-xs font-semibold text-foreground block mb-0.5">{r.title}</span>
                       <span className="text-[9px] text-muted-foreground leading-tight hidden sm:block">
                         {r.desc}
                       </span>
@@ -222,12 +214,12 @@ export default function SignUpPage() {
                 })}
               </div>
             </div>
-
+ 
             {/* Submit */}
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-xl h-11 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold shadow-md shadow-indigo-500/25 mt-2"
+              className="w-full rounded-full h-11 bg-primary text-primary-foreground hover:opacity-90 font-medium shadow-none mt-2"
             >
               {isLoading ? (
                 <>
@@ -242,25 +234,25 @@ export default function SignUpPage() {
               )}
             </Button>
           </form>
-
+ 
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-muted" />
+              <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background/80 backdrop-blur px-2 text-muted-foreground font-medium">
+              <span className="bg-card px-2 text-muted-foreground font-medium">
                 Or Sign Up With
               </span>
             </div>
           </div>
-
+ 
           {/* Social signup */}
           <Button
             type="button"
             variant="outline"
             disabled={isLoading}
             onClick={handleGoogleSignup}
-            className="w-full rounded-xl h-11 border-muted hover:bg-muted/50 text-foreground flex items-center justify-center gap-2"
+            className="w-full rounded-full h-11 border-border bg-transparent hover:bg-[#eeece7] dark:hover:bg-[#2c2c35] text-foreground flex items-center justify-center gap-2 font-medium shadow-none"
           >
             <svg className="h-4 w-4 mr-1" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -270,13 +262,13 @@ export default function SignUpPage() {
             </svg>
             Sign up with Google
           </Button>
-
+ 
           {/* Bottom links */}
           <p className="text-center text-xs text-muted-foreground mt-5">
             Already have an account?{" "}
             <Link
               href="/sign-in"
-              className="text-indigo-500 dark:text-indigo-400 font-semibold hover:underline"
+              className="text-[#ff7759] font-medium hover:underline"
             >
               Sign In
             </Link>

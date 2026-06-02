@@ -1,75 +1,170 @@
 "use client"
 
 import * as React from "react"
-import { Cpu, Music, Briefcase, Utensils, Palette, Activity, Sparkles, ChevronRight } from "lucide-react"
-import { mockCategories } from "@/data/mockData"
+import { Heart, Briefcase, Users, Globe, DollarSign, Sparkles, ChevronRight } from "lucide-react"
+import { mockCategories, EventItem } from "@/data/mockData"
+import { getEventsAction } from "@/app/actions/eventActions"
 
 export function Categories() {
+  const [categories, setCategories] = React.useState(mockCategories)
+
+  React.useEffect(() => {
+    async function loadCategoryCounts() {
+      try {
+        const res = await getEventsAction()
+        if (res.success) {
+          const eventsList = res.events as EventItem[]
+          const isRealDb = !res.simulated
+
+          // Compute counts
+          const counts: Record<string, number> = {}
+          eventsList.forEach(e => {
+            counts[e.category] = (counts[e.category] || 0) + 1
+          })
+
+          setCategories(prev => prev.map(cat => ({
+            ...cat,
+            count: counts[cat.slug] || (isRealDb ? 0 : cat.count)
+          })))
+        }
+      } catch (err) {
+        console.error("Failed to load category counts:", err)
+      }
+    }
+    loadCategoryCounts()
+  }, [])
+
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    Cpu,
-    Music,
-    Briefcase,
-    Utensils,
-    Palette,
-    Activity
+    Heart, Briefcase, Users, Globe, DollarSign, Sparkles
   }
 
   return (
-    <section id="categories" className="py-20 relative bg-background/50 overflow-hidden">
-      {/* Background shapes */}
-      <div className="absolute top-1/2 left-0 -translate-y-1/2 h-80 w-80 rounded-full bg-indigo-500/5 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-purple-500/5 blur-[100px] pointer-events-none" />
+    <section
+      id="categories"
+      className="relative section-padding overflow-hidden"
+      style={{ background: "#ffffff" }}
+    >
+      {/* Ghost Watermark */}
+      <div
+        className="ghost-watermark absolute top-0 right-0 pointer-events-none overflow-hidden"
+        aria-hidden="true"
+        style={{ fontSize: "clamp(60px, 11vw, 160px)", color: "rgba(23, 23, 28, 0.015)" }}
+      >
+        EXPLORE
+      </div>
 
-      <div className="container mx-auto px-4 md:px-6 relative z-10">
-        
+      {/* Atmospheric blob */}
+      <div
+        className="absolute bottom-0 left-0 h-96 w-96 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(255,119,89,0.04) 0%, transparent 70%)" }}
+      />
+
+      <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
-          <div className="max-w-xl text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-card border border-indigo-500/15 shadow-sm text-xs font-semibold text-indigo-500 mb-3">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Categorized for You</span>
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+          <div className="max-w-xl">
+            <div className="mb-4">
+              <span className="eyebrow-accent">Categorized For You</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-              Explore <span className="text-gradient">Categories</span>
+            <h2
+              className="text-4xl md:text-5xl font-medium"
+              style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+            >
+              Explore Event Categories
             </h2>
-            <p className="text-muted-foreground text-sm mt-3">
-              Find precisely what you&apos;re looking for. Select a category to see specialized workshops, seminars, and live entertainment.
+            <p
+              className="font-weight-450 mt-4 leading-relaxed"
+              style={{ color: "#616161", fontSize: "16px" }}
+            >
+              Find precisely what you&apos;re looking for. Specialized workshops,
+              seminars, and live entertainment across every interest.
             </p>
           </div>
-          <a href="#events" className="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 mt-4 md:mt-0 transition-colors group">
+
+          <a
+            href="/events"
+            className="inline-flex items-center gap-1.5 font-medium transition-all duration-200 group shrink-0"
+            style={{
+              color: "#ff7759",
+              fontSize: "14px",
+              letterSpacing: "-0.01em"
+            }}
+          >
             Browse all events
-            <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <ChevronRight
+              className="h-4 w-4 transition-transform group-hover:translate-x-1"
+            />
           </a>
         </div>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockCategories.map((cat) => {
-            const IconComponent = iconMap[cat.icon] || Cpu
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {categories.map((cat) => {
+            const IconComponent = iconMap[cat.icon] || Heart
             return (
-              <div
+              <a
                 key={cat.id}
-                className="glass-card border border-white/10 dark:border-white/5 rounded-2xl p-6 shadow-md transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:border-indigo-500/30 flex items-start gap-4 cursor-pointer group"
+                href="/events"
+                className="flex items-start gap-5 p-6 transition-all duration-200 group cursor-pointer"
+                style={{
+                  background: "#ffffff",
+                  borderRadius: "16px",
+                  border: "1px solid #d9d9dd",
+                  textDecoration: "none"
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "#ff7759"
+                  ;(e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "#d9d9dd"
+                  ;(e.currentTarget as HTMLElement).style.transform = "translateY(0)"
+                }}
               >
-                {/* Icon box */}
-                <div className="h-12 w-12 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/5 border border-indigo-500/20 flex items-center justify-center text-indigo-500 group-hover:bg-gradient-to-br group-hover:from-indigo-500 group-hover:to-purple-600 group-hover:text-white group-hover:border-transparent shrink-0 shadow-sm transition-all duration-300 group-hover:scale-105">
-                  <IconComponent className="h-6 w-6 transition-transform duration-300 group-hover:rotate-6" />
+                {/* Icon — Circular container */}
+                <div
+                  className="h-14 w-14 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-105"
+                  style={{
+                    background: "rgba(255,119,89,0.06)",
+                    border: "1px solid rgba(255,119,89,0.15)"
+                  }}
+                >
+                  <span style={{ color: "#ff7759", display: "flex" }}>
+                    <IconComponent className="h-6 w-6 transition-transform duration-300" />
+                  </span>
                 </div>
-                {/* Text description */}
-                <div className="text-left space-y-1">
-                  <div className="flex justify-between items-center">
-                    <h3 className="font-bold text-base text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+
+                {/* Text */}
+                <div className="flex-1 text-left">
+                  <div className="flex justify-between items-center gap-2 mb-1.5">
+                    <h3
+                      className="font-medium text-base"
+                      style={{ color: "#17171c", letterSpacing: "-0.01em" }}
+                    >
                       {cat.name}
                     </h3>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-muted rounded-full text-muted-foreground">
+                    <span
+                      className="text-[10px] font-bold shrink-0"
+                      style={{
+                        background: "#eeece7",
+                        color: "#616161",
+                        padding: "3px 10px",
+                        borderRadius: "999px",
+                        border: "1px solid #d9d9dd"
+                      }}
+                    >
                       {cat.count} Events
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p
+                    className="text-sm font-weight-450 leading-relaxed"
+                    style={{ color: "#616161" }}
+                  >
                     {cat.description}
                   </p>
                 </div>
-              </div>
+              </a>
             )
           })}
         </div>
