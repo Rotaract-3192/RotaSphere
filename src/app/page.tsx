@@ -7,13 +7,12 @@ import { TrustLogoStrip } from "@/components/sections/TrustLogoStrip"
 import { Categories } from "@/components/sections/Categories"
 import { DarkFeatureBand } from "@/components/sections/DarkFeatureBand"
 import { PricingCards } from "@/components/sections/PricingCards"
-import { Testimonials } from "@/components/sections/Testimonials"
 import { ContactSection } from "@/components/sections/ContactSection"
 import { Footer } from "@/components/Footer"
 import { CreateEventModal } from "@/components/sections/CreateEventModal"
 import { mockEvents, EventItem } from "@/data/mockData"
 import { getEventsAction } from "@/app/actions/eventActions"
-import { ArrowRight, Calendar, Tag, MessageSquare, Info } from "lucide-react"
+import { ArrowRight, Calendar, Tag, Info } from "lucide-react"
 import Link from "next/link"
 
 const pages = [
@@ -36,17 +35,6 @@ const pages = [
     desc: "Community, Professional, Club, International Service, Fundraisers, and PR.",
     icon: Tag,
     bg: "#ffffff",
-    textColor: "#212121",
-    accentColor: "#ff7759"
-  },
-  {
-    href: "/testimonials",
-    label: "Reviews",
-    eyebrow: "Success Stories",
-    title: "What Creators Say",
-    desc: "Thousands of organizers trust RotaSphere to power their events.",
-    icon: MessageSquare,
-    bg: "#eeece7",
     textColor: "#212121",
     accentColor: "#ff7759"
   },
@@ -336,9 +324,6 @@ export default function Home() {
 
         {/* 7. Pricing Cards */}
         <PricingCards />
-
-        {/* 8. Testimonials */}
-        <Testimonials />
 
         {/* 9. Contact Section */}
         <ContactSection />

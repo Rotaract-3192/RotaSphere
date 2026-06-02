@@ -44,7 +44,6 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
     { label: "Home", href: "/" },
     { label: "Events", href: "/events" },
     { label: "Categories", href: "/categories" },
-    { label: "Testimonials", href: "/testimonials" },
     { label: "About", href: "/about" },
   ]
 

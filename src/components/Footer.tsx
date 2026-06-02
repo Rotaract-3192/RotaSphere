@@ -22,7 +22,6 @@ export function Footer() {
       links: [
         { label: "Events", href: "/events" },
         { label: "Categories", href: "/categories" },
-        { label: "Testimonials", href: "/testimonials" },
         { label: "About", href: "/about" },
       ],
     },
