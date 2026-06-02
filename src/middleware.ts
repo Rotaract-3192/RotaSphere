@@ -3,14 +3,14 @@ import { NextResponse } from "next/server"
 
 const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"])
 
-// If Clerk publishable key is not configured, bypass the middleware
-const IS_CLERK_ACTIVE = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-
 export default clerkMiddleware(async (auth, req) => {
-  if (!IS_CLERK_ACTIVE) {
+  // Guard: if Clerk keys are not set, skip all auth logic.
+  // This prevents MIDDLEWARE_INVOCATION_FAILED on Vercel when
+  // env vars are missing, and on Edge Runtime cold starts.
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return NextResponse.next()
   }
-  
+
   if (isProtectedRoute(req)) {
     await auth.protect()
   }
@@ -18,7 +18,7 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
+    // Skip Next.js internals and static files
     '/((?!_next|[^?]*\\.(?:html|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     // Always run for API routes
     '/(api|trpc)(.*)',
