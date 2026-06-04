@@ -6,14 +6,13 @@ import { Hero } from "@/components/sections/Hero"
 import { TrustLogoStrip } from "@/components/sections/TrustLogoStrip"
 import { Categories } from "@/components/sections/Categories"
 import { DarkFeatureBand } from "@/components/sections/DarkFeatureBand"
-import { PricingCards } from "@/components/sections/PricingCards"
-import { ContactSection } from "@/components/sections/ContactSection"
 import { Footer } from "@/components/Footer"
 import { CreateEventModal } from "@/components/sections/CreateEventModal"
 import { mockEvents, EventItem } from "@/data/mockData"
 import { getEventsAction } from "@/app/actions/eventActions"
 import { ArrowRight, Calendar, Tag, Info } from "lucide-react"
 import Link from "next/link"
+import EventsMapSection from "@/components/sections/EventsMapSection"
 
 const pages = [
   {
@@ -43,7 +42,7 @@ const pages = [
     label: "About",
     eyebrow: "Our Mission",
     title: "About RotaSphere",
-    desc: "Built for the future of events — learn what makes us different.",
+    desc: "Custom-made for Rotaract District 3192 to showcase club initiatives and book event tickets.",
     icon: Info,
     bg: "#ffffff",
     textColor: "#212121",
@@ -322,11 +321,8 @@ export default function Home() {
           </section>
         )}
 
-        {/* 7. Pricing Cards */}
-        <PricingCards />
-
-        {/* 9. Contact Section */}
-        <ContactSection />
+        {/* 6.5. Find Events Near You (Interactive Discovery Map) */}
+        <EventsMapSection events={events} />
       </main>
 
       <Footer />

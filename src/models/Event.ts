@@ -21,6 +21,9 @@ export interface IEvent extends Document {
   city?: string;
   address?: string;
   pincode?: string;
+  googleMapsUrl?: string;
+  latitude?: number;
+  longitude?: number;
   category: string;
   tags: string[];
   capacity: number;
@@ -54,6 +57,9 @@ const EventSchema = new Schema<IEvent>(
     city: { type: String },
     address: { type: String },
     pincode: { type: String },
+    googleMapsUrl: { type: String },
+    latitude: { type: Number },
+    longitude: { type: Number },
     category: { type: String, required: true },
     tags: { type: [String], required: true, default: [] },
     capacity: { type: Number, required: true, default: 500 },

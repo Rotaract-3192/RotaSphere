@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   Sparkles, Calendar, MapPin, DollarSign, Users, Award, 
   Image as ImageIcon, ArrowLeft, ArrowRight, Check, Upload, Cloud, RefreshCw, X, Plus,
-  ChevronDown, ChevronUp, Trash2, ShieldCheck, CreditCard, Landmark, Ticket, Clock, AlertCircle
+  ChevronDown, ChevronUp, Trash2, ShieldCheck, CreditCard, Landmark, Ticket, Clock, AlertCircle,
+  Video, Map, Wallet
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EventItem } from "@/data/mockData"
 import { createEventAction } from "@/app/actions/eventActions"
 import { cn } from "@/lib/utils"
+import LocationPickerMap from "./LocationPickerMap"
 
 const PRESET_BANNERS = [
   { id: "community", url: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&auto=format&fit=crop&q=60", label: "Community Service" },
@@ -53,7 +55,17 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
     location: "",
     category: "community",
     image: "",
-    organizer: ""
+    organizer: "",
+    locationType: "in-person" as "in-person" | "online" | "hybrid",
+    venueName: "",
+    address: "",
+    country: "India",
+    state: "",
+    city: "",
+    pincode: "",
+    googleMapsUrl: "",
+    latitude: "" as string | number,
+    longitude: "" as string | number,
   })
   
   const [currentStep, setCurrentStep] = React.useState(1)
@@ -69,7 +81,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
       type: "Regular",
       description: "Standard entry ticket for the event.",
       price: "0",
-      currency: "USD",
+      currency: "INR",
       quantity: "100",
       maxPerUser: "5",
       startDate: "",
@@ -102,7 +114,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
   })
 
   // Payment settings state
-  const [paymentGateway, setPaymentGateway] = React.useState<"stripe" | "razorpay" | "paypal">("stripe")
+  const [paymentGateway, setPaymentGateway] = React.useState<"paytm">("paytm")
   const [taxRate, setTaxRate] = React.useState("18")
 
   // Real-time autosave state
@@ -135,7 +147,17 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
         location: "",
         category: "community",
         image: "",
-        organizer: ""
+        organizer: "",
+        locationType: "in-person" as "in-person" | "online" | "hybrid",
+        venueName: "",
+        address: "",
+        country: "India",
+        state: "",
+        city: "",
+        pincode: "",
+        googleMapsUrl: "",
+        latitude: "",
+        longitude: "",
       })
       setTickets([
         {
@@ -144,7 +166,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
           type: "Regular",
           description: "Standard entry ticket for the event.",
           price: "0",
-          currency: "USD",
+          currency: "INR",
           quantity: "100",
           maxPerUser: "5",
           startDate: "",
@@ -171,8 +193,8 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
         dietary: false,
         customQuestion: false
       })
-      setPaymentGateway("stripe")
-      setTaxRate("18")
+      setPaymentGateway("paytm")
+      setTaxRate("0")
     }
   }, [isOpen])
 
@@ -183,7 +205,15 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
       if (!formData.organizer.trim()) newErrors.organizer = "Organizer name is required"
     } else if (stepNum === 2) {
       if (!formData.date.trim()) newErrors.date = "Event date is required"
-      if (!formData.location.trim()) newErrors.location = "Event location is required"
+      if (formData.locationType === "online") {
+        if (!formData.location.trim()) newErrors.location = "Online link/URL is required"
+      } else {
+        if (!formData.venueName.trim()) newErrors.venueName = "Venue name is required"
+        if (!formData.address.trim()) newErrors.address = "Full address is required"
+        if (!formData.googleMapsUrl.trim()) newErrors.googleMapsUrl = "Google Maps Link is required"
+        if (!formData.city.trim()) newErrors.city = "City is required"
+        if (!formData.pincode.trim()) newErrors.pincode = "Pincode is required"
+      }
     } else if (stepNum === 4) {
       // Validate that at least one ticket exists and has a positive quantity
       if (tickets.length === 0) {
@@ -212,7 +242,14 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
 
   const isStepValidUpTo = (stepNum: number) => {
     if (stepNum >= 1 && (!formData.title.trim() || !formData.organizer.trim())) return false
-    if (stepNum >= 2 && (!formData.date.trim() || !formData.location.trim())) return false
+    if (stepNum >= 2) {
+      if (!formData.date.trim()) return false
+      if (formData.locationType === "online") {
+        if (!formData.location.trim()) return false
+      } else {
+        if (!formData.venueName.trim() || !formData.address.trim() || !formData.googleMapsUrl.trim() || !formData.city.trim() || !formData.pincode.trim()) return false
+      }
+    }
     return true
   }
 
@@ -247,8 +284,8 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
       name: "VIP Premium Pass",
       type: "VIP",
       description: "Includes special access and priority seating.",
-      price: "99.00",
-      currency: "USD",
+      price: "1000",
+      currency: "INR",
       quantity: "50",
       maxPerUser: "2",
       startDate: "",
@@ -281,7 +318,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
     
     // Validate final step before submitting
     if (!validateStep(currentStep)) return
-    if (!formData.title || !formData.date || !formData.location || !formData.organizer) {
+    if (!formData.title || !formData.date || !formData.organizer) {
       return
     }
 
@@ -345,11 +382,16 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
         type: typeVal as "free" | "paid",
         price: priceStr,
         visibility: "public",
-        locationType: formData.location.toLowerCase().includes("online") || formData.location.toLowerCase().includes("zoom") ? "online" : "in-person",
-        venueName: formData.location,
-        country: "India",
-        city: formData.location.split(",")[1]?.trim() || formData.location.split(",")[0]?.trim() || formData.location,
-        address: formData.location,
+        locationType: formData.locationType,
+        venueName: formData.locationType === "online" ? "Online" : formData.venueName,
+        country: formData.locationType === "online" ? undefined : formData.country,
+        state: formData.locationType === "online" ? undefined : formData.state,
+        city: formData.locationType === "online" ? "Online" : formData.city,
+        address: formData.locationType === "online" ? formData.location : formData.address,
+        pincode: formData.locationType === "online" ? undefined : formData.pincode,
+        googleMapsUrl: formData.locationType === "online" ? undefined : formData.googleMapsUrl,
+        latitude: formData.locationType === "online" ? undefined : (formData.latitude ? Number(formData.latitude) : undefined),
+        longitude: formData.locationType === "online" ? undefined : (formData.longitude ? Number(formData.longitude) : undefined),
         category: formData.category,
         tags: formData.category,
         capacity: totalCapacity,
@@ -370,7 +412,17 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
           location: "",
           category: "community",
           image: "",
-          organizer: ""
+          organizer: "",
+          locationType: "in-person" as "in-person" | "online" | "hybrid",
+          venueName: "",
+          address: "",
+          country: "India",
+          state: "",
+          city: "",
+          pincode: "",
+          googleMapsUrl: "",
+          latitude: "",
+          longitude: "",
         })
 
         setTimeout(() => {
@@ -419,15 +471,22 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
   // Payout calculation variables based on expanded ticket price
   const activeTicketForCalc = tickets.find(t => t.id === expandedTicketId) || tickets[0]
   const ticketPriceVal = activeTicketForCalc ? parseFloat(activeTicketForCalc.price) || 0 : 0
-  const platformFee = Math.round(ticketPriceVal * 0.025 * 100) / 100 // 2.5% platform fee
-  const taxVal = Math.round(ticketPriceVal * (parseFloat(taxRate) / 100) * 100) / 100
-  const netPayout = Math.max(0, Math.round((ticketPriceVal - platformFee - taxVal) * 100) / 100)
+  const platformFee = 0
+  const taxVal = 0
+  const netPayout = ticketPriceVal
+
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="glass-card sm:max-w-4xl w-[92vw] border border-white/10 dark:border-white/5 rounded-2xl shadow-2xl p-6 md:p-8 backdrop-blur-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
-        {/* Header section with autosave status */}
+      <DialogContent className="bg-gradient-to-br from-white via-[#fafafb] to-[#f4f4f6] dark:from-[#1b1b22] dark:via-[#15151b] dark:to-[#101014] sm:max-w-4xl w-[92vw] h-[95vh] sm:h-[85vh] max-h-[820px] border border-black/5 dark:border-white/5 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] p-6 md:p-8 backdrop-blur-3xl overflow-hidden">
+        <div className="flex flex-col h-full w-full overflow-hidden text-left min-h-0">
+          {/* Header section with autosave status */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-muted/50 pb-4 mb-4">
           <DialogHeader className="space-y-1">
             <div className="flex items-center gap-2">
@@ -469,13 +528,13 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
             </p>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col justify-between overflow-y-auto pr-1">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             
             {/* Horizontal Stepper Nodes */}
-            <div className="mb-6 relative flex justify-between items-center w-full px-4 md:px-8">
-              <div className="absolute left-10 right-10 top-[18px] h-0.5 bg-muted dark:bg-muted/30 z-0 rounded-full">
+            <div className="mb-6 shrink-0 relative flex justify-between items-center w-full px-4 md:px-8">
+              <div className="absolute left-10 right-10 top-[18px] h-0.5 bg-[#d9d9dd] dark:bg-white/10 z-0 rounded-full">
                 <div 
-                  className="h-full bg-primary transition-all duration-300 rounded-full"
+                  className="h-full bg-gradient-to-r from-coral to-[#ff8c73] transition-all duration-300 rounded-full"
                   style={{ width: `${progressPercentage}%` }}
                 />
               </div>
@@ -496,22 +555,22 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                     className="relative z-10 flex flex-col items-center gap-2 group focus:outline-none"
                   >
                     <div className={cn(
-                      "h-9 w-9 rounded-full flex items-center justify-center border-2 transition-all duration-300 bg-background shadow-sm",
+                      "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-sm",
                       isCompleted 
-                        ? "bg-primary border-primary text-primary-foreground shadow-sm"
+                        ? "bg-gradient-to-r from-coral to-[#ff8c73] border-transparent text-white shadow-md scale-102"
                         : isActive
-                        ? "border-accent text-accent shadow-md ring-4 ring-accent/10 font-bold scale-110"
-                        : "border-muted text-muted-foreground group-hover:border-muted-foreground/30 group-hover:text-foreground"
+                        ? "bg-white dark:bg-[#1f1f27] border-coral text-coral shadow-lg ring-4 ring-coral/10 font-bold scale-110"
+                        : "bg-white dark:bg-[#1a1a22] border-border dark:border-white/10 text-muted-foreground group-hover:border-muted-foreground/35 group-hover:text-foreground"
                     )}>
                       {isCompleted ? (
                         <Check className="h-4 w-4 stroke-[3px]" />
                       ) : (
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-4.5 w-4.5" />
                       )}
                     </div>
                     <span className={cn(
-                      "text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 hidden md:block",
-                      isActive ? "text-accent" : "text-muted-foreground"
+                      "text-[9px] font-extrabold uppercase tracking-widest transition-colors duration-200 hidden md:block",
+                      isActive ? "text-coral" : isCompleted ? "text-foreground/80" : "text-muted-foreground"
                     )}>
                       {step.label}
                     </span>
@@ -520,9 +579,9 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
               })}
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
               {/* Steps render area */}
-              <div className="flex-1 min-h-[400px] flex items-center py-2">
+              <div className="flex-1 overflow-y-auto pr-2 min-h-0 py-2">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentStep}
@@ -545,7 +604,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                               onChange={handleInputChange}
                               placeholder="e.g., Silicon Valley Venture Capital Meetup"
                               className={cn(
-                                "rounded-xl border-muted-foreground/15 bg-background/40 py-5 focus-visible:ring-purple-500 focus-visible:ring-2 focus-visible:border-purple-500/50 shadow-sm transition-all",
+                                "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent focus-visible:ring-2 focus-visible:border-accent/50 shadow-sm transition-all text-foreground",
                                 errors.title && "border-destructive focus-visible:ring-destructive"
                               )}
                             />
@@ -561,7 +620,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                 value={formData.category}
                                 onValueChange={(val) => { if (val) setFormData(prev => ({ ...prev, category: val })) }}
                               >
-                                <SelectTrigger className="rounded-xl border-muted-foreground/15 bg-background/40 py-5 focus:ring-purple-500 focus:ring-2 shadow-sm text-xs">
+                                <SelectTrigger className="rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus:ring-accent focus:ring-2 shadow-sm text-xs text-foreground">
                                   <SelectValue placeholder="Select Category" />
                                 </SelectTrigger>
                                 <SelectContent className="glass-card">
@@ -585,7 +644,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                   onChange={handleInputChange}
                                   placeholder="Host organization or name"
                                   className={cn(
-                                    "rounded-xl border-muted-foreground/15 bg-background/40 py-5 pl-9 focus-visible:ring-purple-500 focus-visible:ring-2 shadow-sm",
+                                    "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 pl-9 focus-visible:ring-accent focus-visible:ring-2 shadow-sm text-foreground",
                                     errors.organizer && "border-destructive focus-visible:ring-destructive"
                                   )}
                                 />
@@ -620,7 +679,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                 {formData.title || "Untitled Special Event"}
                               </h4>
                               <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                <Award className="h-3 w-3 text-purple-400" />
+                                <Award className="h-3 w-3 text-accent" />
                                 Host: <span className="font-semibold text-foreground/80">{formData.organizer || "Event Organizer"}</span>
                               </p>
                               <div className="flex justify-between items-center pt-2 border-t border-muted/30 text-[9px] text-muted-foreground mt-1">
@@ -642,7 +701,29 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                     {/* STEP 2: Logistics */}
                     {currentStep === 2 && (
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-start">
-                        <div className="md:col-span-3 space-y-4">
+                        <div className="md:col-span-3 space-y-4 text-left">
+                          {/* Format Selector */}
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Event Format</Label>
+                            <div className="grid grid-cols-3 gap-2 bg-slate-900/50 border border-white/5 rounded-xl p-1">
+                              {(['in-person', 'online', 'hybrid'] as const).map((type) => (
+                                <button
+                                  key={type}
+                                  type="button"
+                                  onClick={() => setFormData(prev => ({ ...prev, locationType: type }))}
+                                  className={cn(
+                                    "py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all",
+                                    formData.locationType === type
+                                      ? "bg-accent text-white shadow-md font-extrabold"
+                                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                                  )}
+                                >
+                                  {type.replace('-', ' ')}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                               <Label htmlFor="date" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Event Date *</Label>
@@ -654,7 +735,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                   value={formData.date}
                                   onChange={handleInputChange}
                                   className={cn(
-                                    "rounded-xl border-muted-foreground/15 bg-background/40 py-5 pl-9 focus-visible:ring-purple-500 focus-visible:ring-2 shadow-sm text-xs",
+                                    "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 pl-9 focus-visible:ring-accent focus-visible:ring-2 shadow-sm text-xs text-foreground",
                                     errors.date && "border-destructive focus-visible:ring-destructive"
                                   )}
                                 />
@@ -673,64 +754,203 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                 value={formData.time}
                                 onChange={handleInputChange}
                                 placeholder="e.g., 10:00 AM - 04:00 PM EST"
-                                className="rounded-xl border-muted-foreground/15 bg-background/40 py-5 focus-visible:ring-purple-500 focus-visible:ring-2 shadow-sm text-xs"
+                                className="rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent focus-visible:ring-2 shadow-sm text-xs text-foreground"
                               />
                             </div>
                           </div>
 
-                          <div className="space-y-1.5">
-                            <Label htmlFor="location" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Location *</Label>
-                            <div className="relative">
-                              <Input
-                                id="location"
-                                name="location"
-                                value={formData.location}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Moscone Center, SF or Online Zoom Link"
-                                className={cn(
-                                  "rounded-xl border-muted-foreground/15 bg-background/40 py-5 pl-9 focus-visible:ring-purple-500 focus-visible:ring-2 shadow-sm text-xs",
-                                  errors.location && "border-destructive focus-visible:ring-destructive"
-                                )}
-                              />
-                              <MapPin className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                          {formData.locationType === "online" ? (
+                            <div className="space-y-1.5">
+                              <Label htmlFor="location" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Online Stream / Broadcast URL *</Label>
+                              <div className="relative">
+                                <Input
+                                  id="location"
+                                  name="location"
+                                  value={formData.location}
+                                  onChange={handleInputChange}
+                                  placeholder="e.g., Zoom Link, YouTube Live URL"
+                                  className={cn(
+                                    "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 pl-9 focus-visible:ring-accent focus-visible:ring-2 shadow-sm text-xs text-foreground",
+                                    errors.location && "border-destructive focus-visible:ring-destructive"
+                                  )}
+                                />
+                                <Video className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                              </div>
+                              {errors.location && (
+                                <p className="text-xs text-destructive font-semibold mt-1">{errors.location}</p>
+                              )}
                             </div>
-                            {errors.location && (
-                              <p className="text-xs text-destructive font-semibold mt-1">{errors.location}</p>
-                            )}
-                          </div>
+                          ) : (
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                  <Label htmlFor="venueName" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Venue Name *</Label>
+                                  <Input
+                                    id="venueName"
+                                    name="venueName"
+                                    value={formData.venueName}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g., Moscone Center"
+                                    className={cn(
+                                      "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent shadow-sm text-xs text-foreground",
+                                      errors.venueName && "border-destructive"
+                                    )}
+                                  />
+                                  {errors.venueName && (
+                                    <p className="text-xs text-destructive font-semibold mt-1">{errors.venueName}</p>
+                                  )}
+                                </div>
+
+                                <div className="space-y-1.5">
+                                  <Label htmlFor="googleMapsUrl" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Google Maps Link *</Label>
+                                  <Input
+                                    id="googleMapsUrl"
+                                    name="googleMapsUrl"
+                                    value={formData.googleMapsUrl}
+                                    onChange={handleInputChange}
+                                    placeholder="Paste Google Maps URL"
+                                    className={cn(
+                                      "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent shadow-sm text-xs text-foreground",
+                                      errors.googleMapsUrl && "border-destructive"
+                                    )}
+                                  />
+                                  {errors.googleMapsUrl && (
+                                    <p className="text-xs text-destructive font-semibold mt-1">{errors.googleMapsUrl}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <Label htmlFor="address" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Full Address *</Label>
+                                <Input
+                                  id="address"
+                                  name="address"
+                                  value={formData.address}
+                                  onChange={handleInputChange}
+                                  placeholder="Street address, building, suite"
+                                  className={cn(
+                                    "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent shadow-sm text-xs text-foreground",
+                                    errors.address && "border-destructive"
+                                  )}
+                                />
+                                {errors.address && (
+                                  <p className="text-xs text-destructive font-semibold mt-1">{errors.address}</p>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                  <Label htmlFor="city" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">City *</Label>
+                                  <Input
+                                    id="city"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleInputChange}
+                                    className={cn(
+                                      "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent shadow-sm text-xs text-foreground",
+                                      errors.city && "border-destructive"
+                                    )}
+                                  />
+                                  {errors.city && (
+                                    <p className="text-xs text-destructive font-semibold mt-1">{errors.city}</p>
+                                  )}
+                                </div>
+
+                                <div className="space-y-1.5">
+                                  <Label htmlFor="pincode" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pincode *</Label>
+                                  <Input
+                                    id="pincode"
+                                    name="pincode"
+                                    value={formData.pincode}
+                                    onChange={handleInputChange}
+                                    className={cn(
+                                      "rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent shadow-sm text-xs text-foreground",
+                                      errors.pincode && "border-destructive"
+                                    )}
+                                  />
+                                  {errors.pincode && (
+                                    <p className="text-xs text-destructive font-semibold mt-1">{errors.pincode}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                  <Label htmlFor="state" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">State</Label>
+                                  <Input
+                                    id="state"
+                                    name="state"
+                                    value={formData.state}
+                                    onChange={handleInputChange}
+                                    className="rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent shadow-sm text-xs text-foreground"
+                                  />
+                                </div>
+
+                                <div className="space-y-1.5">
+                                  <Label htmlFor="country" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Country</Label>
+                                  <Input
+                                    id="country"
+                                    name="country"
+                                    value={formData.country}
+                                    onChange={handleInputChange}
+                                    className="rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 focus-visible:ring-accent shadow-sm text-xs text-foreground"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="md:col-span-2 space-y-2">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block px-1">Location Details</span>
-                          <div className="border border-white/10 dark:border-white/5 rounded-xl bg-background/40 backdrop-blur-xl p-4 shadow-lg flex flex-col gap-3 relative overflow-hidden">
-                            <div className="h-28 w-full rounded-lg bg-slate-900/60 dark:bg-slate-900/80 border border-white/5 flex flex-col items-center justify-center relative overflow-hidden">
-                              <div className="absolute inset-0 bg-radial-grid opacity-15" />
-                              <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/5 to-transparent" />
-                              
-                              <motion.div 
-                                animate={{ y: [0, -6, 0] }}
-                                transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                                className="z-10"
-                              >
-                                <MapPin className="h-8 w-8 text-indigo-500 drop-shadow-md" />
-                              </motion.div>
-                              
-                              <span className="text-[9px] font-semibold tracking-wide text-indigo-400 mt-2 z-10">
-                                Location Verified
-                              </span>
+                          {formData.locationType === "online" ? (
+                            <div className="border border-white/10 dark:border-white/5 rounded-xl bg-background/40 backdrop-blur-xl p-4 shadow-lg flex flex-col gap-3 relative overflow-hidden">
+                              <div className="h-28 w-full rounded-lg bg-slate-900/60 dark:bg-slate-900/80 border border-white/5 flex flex-col items-center justify-center relative overflow-hidden">
+                                <div className="absolute inset-0 bg-radial-grid opacity-15" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/5 to-transparentpointer-events-none" />
+                                <Video className="h-8 w-8 text-indigo-400 drop-shadow-md animate-pulse" />
+                                <span className="text-[9px] font-semibold tracking-wide text-indigo-400 mt-2 z-10">
+                                  Virtual Broadcast
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground text-left">
+                                <p className="font-bold text-foreground line-clamp-2">
+                                  {formData.location || "Zoom / Online streaming URL..."}
+                                </p>
+                              </div>
                             </div>
-
-                            <div className="text-[10px] space-y-1 text-muted-foreground">
-                              <p className="font-bold text-foreground line-clamp-1 flex items-center gap-1">
-                                <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                                {formData.location || "Waiting for address..."}
-                              </p>
-                              <p className="flex items-center gap-1 mt-1 text-[9px]">
-                                <Check className="h-3.5 w-3.5 text-emerald-500" />
-                                Auto-detects Zoom streaming links
-                              </p>
-                            </div>
-                          </div>
+                          ) : (
+                            <LocationPickerMap
+                              latitude={formData.latitude}
+                              longitude={formData.longitude}
+                              address={formData.address}
+                              googleMapsUrl={formData.googleMapsUrl}
+                              onChange={(mapData) => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  ...(mapData.latitude !== undefined && { latitude: mapData.latitude }),
+                                  ...(mapData.longitude !== undefined && { longitude: mapData.longitude }),
+                                  ...(mapData.address !== undefined && { address: mapData.address }),
+                                  ...(mapData.city !== undefined && { city: mapData.city }),
+                                  ...(mapData.state !== undefined && { state: mapData.state }),
+                                  ...(mapData.country !== undefined && { country: mapData.country }),
+                                  ...(mapData.pincode !== undefined && { pincode: mapData.pincode }),
+                                  location: mapData.address || prev.location
+                                }));
+                                setErrors(prev => {
+                                  const updated = { ...prev };
+                                  if (mapData.latitude !== undefined) {
+                                    delete updated.latitude;
+                                    delete updated.longitude;
+                                  }
+                                  if (mapData.address !== undefined) {
+                                    delete updated.address;
+                                  }
+                                  return updated;
+                                });
+                              }}
+                            />
+                          )}
                         </div>
                       </div>
                     )}
@@ -748,7 +968,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                 value={formData.image}
                                 onChange={handleInputChange}
                                 placeholder="https://example.com/cover.jpg"
-                                className="rounded-xl border-muted-foreground/15 bg-background/40 py-5 pl-9 focus-visible:ring-purple-500 focus-visible:ring-2 shadow-sm text-xs"
+                                className="rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 pl-9 focus-visible:ring-accent focus-visible:ring-2 shadow-sm text-xs text-foreground"
                               />
                               <ImageIcon className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
                             </div>
@@ -767,7 +987,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                     className={cn(
                                       "p-1.5 rounded-lg border text-[9px] font-semibold transition-all relative overflow-hidden h-14 flex items-end justify-center",
                                       isSelected
-                                        ? "border-purple-500 ring-2 ring-purple-500/10 text-white font-bold scale-102"
+                                        ? "border-accent ring-2 ring-accent/10 text-white font-bold scale-102"
                                         : "border-muted text-muted-foreground hover:border-muted-foreground/45"
                                     )}
                                   >
@@ -784,7 +1004,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                         <div className="md:col-span-2 space-y-2">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block px-1">Visual Banner Media</span>
                           <div className="border border-white/10 dark:border-white/5 rounded-xl bg-background/40 backdrop-blur-xl p-4 shadow-lg flex flex-col gap-3">
-                            <div className="relative border-2 border-dashed border-muted-foreground/20 rounded-lg hover:border-purple-500/40 transition-colors bg-muted/10 h-36 flex flex-col items-center justify-center p-4 text-center cursor-pointer overflow-hidden group">
+                            <div className="relative border-2 border-dashed border-muted-foreground/20 rounded-lg hover:border-accent/40 transition-colors bg-muted/10 h-36 flex flex-col items-center justify-center p-4 text-center cursor-pointer overflow-hidden group">
                               {formData.image ? (
                                 <>
                                   <img src={formData.image} alt="Selected banner" className="absolute inset-0 h-full w-full object-cover" />
@@ -796,7 +1016,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                 </>
                               ) : (
                                 <>
-                                  <Upload className="h-6 w-6 text-muted-foreground mb-2 group-hover:text-purple-400 transition-colors" />
+                                  <Upload className="h-6 w-6 text-muted-foreground mb-2 group-hover:text-accent transition-colors" />
                                   <span className="text-[10px] font-bold text-foreground/80 block">Drag & Drop Banner</span>
                                   <span className="text-[9px] text-muted-foreground block mt-0.5">Supports PNG, JPG (up to 4MB)</span>
                                 </>
@@ -815,7 +1035,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
 
                     {/* STEP 4: TICKETS & BOOKING SETUP */}
                     {currentStep === 4 && (
-                      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start text-xs max-h-[50vh] overflow-y-auto pr-1">
+                      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start text-xs">
                         
                         {/* Dynamic ticket configuration panels */}
                         <div className="lg:col-span-3 space-y-4">
@@ -861,7 +1081,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                     </div>
 
                                     <div className="flex items-center gap-3">
-                                      <span className="font-bold text-foreground/80">{parseFloat(t.price) === 0 ? "Free" : `$${t.price}`}</span>
+                                      <span className="font-bold text-foreground/80">{parseFloat(t.price) === 0 ? "Free" : `₹${t.price}`}</span>
                                       <span className="text-[10px] text-muted-foreground font-semibold">Qty: {t.quantity}</span>
                                       
                                       <div className="flex items-center gap-1">
@@ -929,16 +1149,9 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                         </div>
                                         <div className="space-y-1">
                                           <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Currency</Label>
-                                          <select 
-                                            value={t.currency}
-                                            onChange={(e) => updateTicketField(t.id, "currency", e.target.value)}
-                                            className="h-8 w-full rounded-lg border border-muted bg-background px-2 py-1 text-xs outline-none text-foreground"
-                                          >
-                                            <option value="USD">USD ($)</option>
-                                            <option value="INR">INR (₹)</option>
-                                            <option value="EUR">EUR (€)</option>
-                                            <option value="GBP">GBP (£)</option>
-                                          </select>
+                                          <div className="h-8 w-full rounded-lg border border-muted bg-[#f4f4f5]/10 dark:bg-slate-900/60 px-3 py-2 text-xs text-foreground font-semibold flex items-center">
+                                            INR (₹)
+                                          </div>
                                         </div>
                                         <div className="space-y-1">
                                           <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Quantity *</Label>
@@ -1117,48 +1330,29 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                             </h4>
                             
                             <div className="flex gap-2 text-[10px]">
-                              {[
-                                { id: "stripe", label: "Stripe Connect", desc: "Cards & Apple Pay", icon: CreditCard },
-                                { id: "razorpay", label: "Razorpay Checkout", desc: "UPI, Cards, Netbanking", icon: Landmark },
-                                { id: "paypal", label: "PayPal Business", desc: "Global PayPal & Credit", icon: ShieldCheck }
-                              ].map((gateway) => (
-                                <button
-                                  key={gateway.id}
-                                  type="button"
-                                  onClick={() => setPaymentGateway(gateway.id as any)}
-                                  className={cn(
-                                    "flex-1 p-2 rounded-lg border-2 text-left transition-all flex items-center gap-2",
-                                    paymentGateway === gateway.id
-                                      ? "border-accent bg-accent/5 ring-1 ring-accent/15"
-                                      : "border-muted hover:bg-muted/30 text-muted-foreground"
-                                  )}
-                                >
-                                  <gateway.icon className="h-4 w-4 text-accent shrink-0" />
-                                  <div className="truncate">
-                                    <span className="font-bold text-foreground block leading-tight">{gateway.label}</span>
-                                    <span className="text-[8px] opacity-75 truncate block">{gateway.desc}</span>
-                                  </div>
-                                </button>
-                              ))}
+                              <button
+                                type="button"
+                                className="flex-1 p-3 rounded-lg border-2 border-accent bg-accent/5 ring-1 ring-accent/15 text-left flex items-center gap-3"
+                              >
+                                <Wallet className="h-5 w-5 text-accent shrink-0" />
+                                <div className="truncate">
+                                  <span className="font-bold text-foreground block leading-tight">Paytm Gateway</span>
+                                  <span className="text-[8px] opacity-75 truncate block">Wallet, UPI, Netbanking & Cards</span>
+                                </div>
+                              </button>
                             </div>
 
-                            <div className="bg-muted/15 rounded-lg p-3 grid grid-cols-2 gap-4 text-[10px] items-center pt-2">
-                              <div className="space-y-1">
-                                <Label className="text-[8px] font-bold uppercase tracking-wider text-muted-foreground block">Tax / GST rate (%)</Label>
-                                <Input 
-                                  value={taxRate}
-                                  onChange={(e) => setTaxRate(e.target.value)}
-                                  className="h-7 rounded text-xs border-muted-foreground/15 max-w-[80px]"
-                                />
+                            <div className="bg-muted/15 rounded-lg p-4 flex justify-between items-center text-[10px] pt-3 mt-2">
+                              <div className="text-left space-y-1 text-muted-foreground">
+                                <p className="font-bold text-foreground">Organizer Payout breakdown</p>
+                                <p>Platform Fee (Paytm): <span className="text-emerald-500 font-semibold">₹0.00 (Free)</span></p>
+                                <p>Tax / GST: <span className="text-emerald-500 font-semibold">₹0.00 (Exempt)</span></p>
                               </div>
 
-                              <div className="text-right space-y-1 text-muted-foreground">
-                                <p className="font-bold text-foreground">Organizer Payout breakdown</p>
-                                <p>Ticket Price: <span className="text-foreground font-semibold">${ticketPriceVal.toFixed(2)}</span></p>
-                                <p>Platform Fee (2.5%): <span className="text-foreground font-semibold">-${platformFee.toFixed(2)}</span></p>
-                                <p>Tax ({taxRate}%): <span className="text-foreground font-semibold">-${taxVal.toFixed(2)}</span></p>
-                                <p className="font-extrabold text-accent text-xs border-t border-muted/50 pt-1 mt-1">
-                                  Est. Payout per Sale: ${netPayout.toFixed(2)}
+                              <div className="text-right space-y-1">
+                                <p className="text-muted-foreground font-medium">Est. Payout per Sale</p>
+                                <p className="font-extrabold text-accent text-base">
+                                  ₹{ticketPriceVal.toFixed(2)}
                                 </p>
                               </div>
                             </div>
@@ -1238,7 +1432,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
 
                     {/* STEP 5: REVIEW & PUBLISH SUMMARY */}
                     {currentStep === 5 && (
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-start text-xs max-h-[50vh] overflow-y-auto pr-1">
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-start text-xs">
                         
                         {/* Summary overview check panels */}
                         <div className="md:col-span-3 space-y-4">
@@ -1287,7 +1481,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                     <span className="font-bold text-foreground">{t.name}</span>
                                   </div>
                                   <div className="flex gap-4 font-semibold text-muted-foreground">
-                                    <span>Price: <span className="text-foreground">${t.price}</span></span>
+                                    <span>Price: <span className="text-foreground">₹{t.price}</span></span>
                                     <span>Quantity: <span className="text-foreground">{t.quantity}</span></span>
                                   </div>
                                 </div>
@@ -1307,7 +1501,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                               onChange={handleInputChange}
                               placeholder="Write a summary about details, speaker panel highlights, or food/drinks availability..."
                               rows={6}
-                              className="rounded-xl border-muted-foreground/15 bg-background/50 focus-visible:ring-purple-500 focus-visible:ring-2 shadow-sm text-xs resize-none"
+                              className="rounded-xl border-muted-foreground/15 bg-background/50 focus-visible:ring-accent focus-visible:ring-2 shadow-sm text-xs resize-none"
                             />
                             <div className="flex justify-between items-center text-[9px] text-muted-foreground mt-1">
                               <span>Recommended: 100 - 300 characters</span>
@@ -1323,16 +1517,16 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
               </div>
 
               {/* Wizard Footer Controls */}
-              <DialogFooter className="pt-6 border-t border-muted/30 flex gap-3 sm:justify-end mt-4">
+              <DialogFooter className="mx-0! mb-0! p-0! bg-transparent! border-t! border-muted/50 pt-4 flex gap-3 sm:justify-end mt-4 shrink-0">
                 <div className="flex justify-between items-center w-full gap-3">
                   {currentStep > 1 ? (
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleBack}
-                      className="rounded-full border-muted hover:bg-muted/50 text-foreground flex items-center gap-1.5 py-5 px-4 text-xs font-bold"
+                      className="rounded-full border-[#d9d9dd] dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-foreground flex items-center gap-1.5 py-5 px-5 text-xs font-bold transition-all"
                     >
-                      <ArrowLeft className="h-4 w-4" />
+                      <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
                       Back
                     </Button>
                   ) : (
@@ -1340,7 +1534,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                       type="button"
                       variant="outline"
                       onClick={onClose}
-                      className="rounded-full border-muted hover:bg-muted/50 text-foreground py-5 px-4 text-xs font-bold"
+                      className="rounded-full border-[#d9d9dd] dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 text-foreground py-5 px-5 text-xs font-bold transition-all"
                     >
                       Cancel
                     </Button>
@@ -1351,16 +1545,16 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                       <Button
                         type="button"
                         onClick={handleNext}
-                        className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm flex items-center gap-1.5 py-5 px-5 text-xs font-bold"
+                        className="rounded-full bg-gradient-to-r from-coral to-[#ff8c73] hover:brightness-105 text-white shadow-[0_4px_14px_rgba(255,119,89,0.25)] border-0 flex items-center gap-1.5 py-5 px-6 text-xs font-extrabold tracking-wide transition-all"
                       >
                         Next Step
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </Button>
                     ) : (
                       <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm flex items-center gap-1.5 py-5 px-6 text-xs font-bold"
+                        className="rounded-full bg-gradient-to-r from-coral to-[#ff8c73] hover:brightness-105 text-white shadow-[0_4px_14px_rgba(255,119,89,0.25)] border-0 flex items-center gap-1.5 py-5 px-7 text-xs font-extrabold tracking-wide transition-all disabled:opacity-50"
                       >
                         {isSubmitting ? (
                           "Publishing..."
@@ -1378,6 +1572,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
             </form>
           </div>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   )

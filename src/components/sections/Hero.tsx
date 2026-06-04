@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { ArrowRight, Star, Ticket, Users, Scan, CheckCircle2, TrendingUp, Zap } from "lucide-react"
+import { ArrowRight, Star } from "lucide-react"
 import { AuroraBackground } from "@/components/ui/aurora-background"
 
 interface HeroProps {
@@ -33,21 +33,13 @@ export function Hero({ onCreateEventClick }: HeroProps) {
     "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
   ]
 
-  const [scanCount, setScanCount] = React.useState(142)
-  React.useEffect(() => {
-    const t = setInterval(() => {
-      setScanCount(c => c + Math.floor(Math.random() * 2))
-    }, 3200)
-    return () => clearInterval(t)
-  }, [])
-
   return (
     <AuroraBackground
       className="!h-auto !bg-transparent !text-inherit"
       showRadialGradient={true}
     >
     <section
-      className="relative flex flex-col items-center justify-center pt-32 pb-0 overflow-hidden w-full"
+      className="relative flex flex-col items-center justify-center pt-32 pb-16 overflow-hidden w-full"
       style={{ background: "transparent" }}
     >
       {/* Ghost Watermark */}
@@ -147,7 +139,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
             {/* Social Proof Row */}
             <motion.div
               variants={itemVariants}
-              className="flex items-center justify-center gap-5 pt-6 w-full max-w-md mb-20"
+              className="flex items-center justify-center gap-5 pt-6 w-full max-w-md mb-8"
               style={{ borderTop: "1px solid #d9d9dd" }}
             >
               <div className="flex -space-x-3">
@@ -175,175 +167,6 @@ export function Hero({ onCreateEventClick }: HeroProps) {
             </motion.div>
           </motion.div>
         </div>
-
-        {/* ─── Two-Card Media Composition ─── */}
-        <motion.div
-          initial={{ opacity: 0, y: 48 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="grid grid-cols-1 lg:grid-cols-5 gap-4 w-full max-w-6xl mx-auto pb-0"
-        >
-          {/* ── Left: Agent Console Card (3/5 width) ── */}
-          <div
-            className="lg:col-span-3 relative flex flex-col overflow-hidden"
-            style={{
-              background: "#17171c",
-              borderRadius: "22px 22px 0 0",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderBottom: "none",
-              padding: "28px 28px 0",
-              minHeight: "340px"
-            }}
-          >
-            {/* Header row */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <span
-                  className="text-[10px] font-bold uppercase tracking-[0.12em] block mb-1"
-                  style={{ color: "#ff7759" }}
-                >
-                  Live Dashboard
-                </span>
-                <span
-                  className="font-medium text-sm"
-                  style={{ color: "#ffffff", letterSpacing: "-0.01em" }}
-                >
-                  District Assembly 2026
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.5)" }}>Live</span>
-              </div>
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              {[
-                { icon: Users, label: "Registered", value: "1,248", sub: "+24 today" },
-                { icon: Scan, label: "Checked In", value: String(scanCount), sub: "of 1,248" },
-                { icon: Ticket, label: "Revenue", value: "₹2.4L", sub: "100% target" }
-              ].map((stat, i) => (
-                <div
-                  key={i}
-                  className="p-3 flex flex-col"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: "12px"
-                  }}
-                >
-                  <stat.icon className="h-4 w-4 mb-2" style={{ color: "#ff7759" }} />
-                  <span className="text-lg font-medium" style={{ color: "#ffffff", letterSpacing: "-0.02em" }}>
-                    {stat.value}
-                  </span>
-                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>{stat.label}</span>
-                  <span className="text-[10px] mt-0.5" style={{ color: "#ff7759" }}>{stat.sub}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-6">
-              <div className="flex justify-between text-[11px] mb-2">
-                <span style={{ color: "rgba(255,255,255,0.5)" }}>Gate Check-in Progress</span>
-                <span style={{ color: "#ff7759" }}>{Math.round((scanCount / 1248) * 100)}%</span>
-              </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${Math.round((scanCount / 1248) * 100)}%`, background: "#ff7759" }}
-                />
-              </div>
-            </div>
-
-            {/* Recent scans */}
-            <div className="space-y-2">
-              {[
-                { name: "Priya Menon", ticket: "ROTASM-4821", status: "Checked In" },
-                { name: "Arjun Rajan", ticket: "ROTASM-4820", status: "Checked In" },
-                { name: "Nisha Pillai", ticket: "ROTASM-4819", status: "Checked In" },
-              ].map((entry, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between py-2 px-3"
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    borderRadius: "8px",
-                    border: "1px solid rgba(255,255,255,0.05)"
-                  }}
-                >
-                  <div>
-                    <span className="text-xs font-medium block" style={{ color: "#ffffff" }}>{entry.name}</span>
-                    <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>{entry.ticket}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5" style={{ color: "#4ade80" }} />
-                    <span className="text-[10px]" style={{ color: "#4ade80" }}>{entry.status}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Right: Hero Photo Card (2/5 width) ── */}
-          <div
-            className="lg:col-span-2 relative overflow-hidden flex flex-col"
-            style={{
-              background: "#eeece7",
-              borderRadius: "22px 22px 0 0",
-              border: "1px solid #d9d9dd",
-              borderBottom: "none",
-              minHeight: "340px"
-            }}
-          >
-            {/* Photo */}
-            <div className="relative flex-1 overflow-hidden" style={{ minHeight: "220px" }}>
-              <img
-                src="https://images.unsplash.com/photo-1559223607-a43c990c692c?w=700&auto=format&fit=crop&q=80"
-                alt="Rotaract community event"
-                className="w-full h-full object-cover"
-                style={{ borderRadius: "20px 20px 0 0" }}
-              />
-              {/* Overlay gradient */}
-              <div
-                className="absolute inset-0"
-                style={{ background: "linear-gradient(to top, rgba(238,236,231,1) 0%, transparent 60%)" }}
-              />
-            </div>
-
-            {/* Caption block */}
-            <div className="p-6 pt-2">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-[0.1em] block mb-1" style={{ color: "#ff7759" }}>
-                    Community Service
-                  </span>
-                  <p className="font-medium text-sm leading-snug" style={{ color: "#17171c", letterSpacing: "-0.01em" }}>
-                    Club fellowship & tree planting drive, Calicut North
-                  </p>
-                </div>
-                <div
-                  className="shrink-0 h-10 w-10 rounded-full flex items-center justify-center"
-                  style={{ background: "#17171c" }}
-                >
-                  <TrendingUp className="h-4 w-4" style={{ color: "#ff7759" }} />
-                </div>
-              </div>
-
-              {/* Mini stat */}
-              <div
-                className="mt-4 flex items-center gap-3 py-2.5 px-3"
-                style={{ background: "#ffffff", borderRadius: "10px", border: "1px solid #d9d9dd" }}
-              >
-                <Zap className="h-4 w-4 shrink-0" style={{ color: "#ff7759" }} />
-                <span className="text-xs" style={{ color: "#616161" }}>
-                  <strong style={{ color: "#17171c" }}>342 members</strong> participated across 6 clubs
-                </span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
     </AuroraBackground>

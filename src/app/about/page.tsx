@@ -20,7 +20,7 @@ const features = [
   {
     icon: Shield,
     title: "Secure Payments",
-    desc: "Razorpay-integrated checkout with end-to-end encryption and instant payout support."
+    desc: "Paytm Gateway integration with end-to-end encryption, accepting Indian Rupees (INR)."
   },
   {
     icon: BarChart3,
@@ -29,8 +29,8 @@ const features = [
   },
   {
     icon: Globe,
-    title: "Global Reach",
-    desc: "Sell tickets internationally with multi-currency support and localized event pages."
+    title: "District-Wide Reach",
+    desc: "Coordinate and showcase events across all Rotaract clubs in District 3192."
   },
   {
     icon: Users,
@@ -88,16 +88,15 @@ export default function AboutPage() {
               className="text-5xl md:text-6xl font-medium mb-4"
               style={{ color: "var(--primary-foreground)", letterSpacing: "-0.02em" }}
             >
-              Built for the Future
+              Rotaract District 3192
               <br />
-              of Events
+              Event Hub
             </h1>
             <p
               className="font-weight-450 max-w-xl"
               style={{ color: "var(--primary-foreground)", opacity: 0.7, fontSize: "16px" }}
             >
-              RotaSphere is a premium SaaS event management platform designed to make every
-              event — from local club fellowships to district-wide assemblies — extraordinary.
+              This web application was custom-built for Rotaract District 3192 to facilitate showcasing events, managing registrations, and booking ticket passes for all club and district-wide initiatives.
             </p>
           </div>
         </div>
@@ -187,9 +186,8 @@ export default function AboutPage() {
                 className="font-weight-450 leading-relaxed mb-10 text-lg"
                 style={{ color: "var(--body-muted)" }}
               >
-                We believe that great events have the power to connect people, inspire communities,
-                and create lasting memories. RotaSphere exists to remove the friction from event
-                management — so organizers can focus on what truly matters: the experience.
+                We believe that Rotaract events have the power to connect youth, inspire community service,
+                and create lasting memories. This platform removes the friction from event registration and showcasing — so clubs across District 3192 can focus on making a real difference.
               </p>
               <a
                 href="/events"

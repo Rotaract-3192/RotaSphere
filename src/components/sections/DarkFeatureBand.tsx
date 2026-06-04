@@ -45,18 +45,15 @@ const capabilities = [
   },
   {
     id: "cap-3",
-    title: "Instant Multi-Currency Payouts",
-    body: "Accept INR, USD, EUR, and GBP. Automated payout reconciliation and one-click Razorpay settlement so clubs get their funds fast.",
+    title: "Instant Paytm Payouts",
+    body: "Accept Indian Rupees (INR) with 0% platform cuts. Get direct payout settlements to your Paytm account so clubs receive funds immediately.",
     illustration: (
       <svg viewBox="0 0 80 60" fill="none" className="w-full h-full">
         <circle cx="40" cy="30" r="20" stroke="rgba(255,255,255,0.15)" strokeWidth="1.2" />
         <path d="M26 30 Q33 18 40 30 Q47 42 54 30" stroke="#ff7759" strokeWidth="1.5" strokeLinecap="round" fill="none" />
         <line x1="20" y1="30" x2="60" y2="30" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
         <line x1="40" y1="10" x2="40" y2="50" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-        <text x="8" y="24" fill="rgba(255,255,255,0.4)" fontSize="7" fontFamily="monospace">₹</text>
-        <text x="62" y="24" fill="rgba(255,255,255,0.4)" fontSize="7" fontFamily="monospace">$</text>
-        <text x="36" y="10" fill="rgba(255,255,255,0.4)" fontSize="7" fontFamily="monospace">€</text>
-        <text x="36" y="56" fill="rgba(255,255,255,0.4)" fontSize="7" fontFamily="monospace">£</text>
+        <text x="36" y="34" fill="#ff7759" fontSize="13" fontFamily="sans-serif" fontWeight="bold">₹</text>
       </svg>
     )
   }

@@ -144,8 +144,7 @@ export function Footer() {
               className="font-weight-450 mb-6 max-w-xs leading-relaxed"
               style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px" }}
             >
-              The premium, all-in-one event management platform for Rotaract. Host community service
-              projects, professional webinars, fundraisers, and fellowship events with seamless ticketing.
+              Made for Rotaract District 3192 to facilitate showcasing club events, managing registrations, and booking passes with ease.
             </p>
 
             {/* Social Icons — circular on ink */}

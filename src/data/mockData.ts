@@ -17,6 +17,10 @@ export interface EventItem {
   pricePaid?: number | string;
   status?: string;
   purchasedAt?: string;
+  latitude?: number;
+  longitude?: number;
+  googleMapsUrl?: string;
+  locationType?: 'in-person' | 'online' | 'hybrid';
 }
 
 export interface CategoryItem {
@@ -109,7 +113,11 @@ export const mockEvents: EventItem[] = [
     price: "$299.00",
     category: "professional",
     capacity: "1500",
-    attendees: 1240
+    attendees: 1240,
+    latitude: 37.7749,
+    longitude: -122.4194,
+    googleMapsUrl: "https://maps.google.com/?q=37.7749,-122.4194",
+    locationType: "in-person"
   },
   {
     id: "evt-2",
@@ -123,7 +131,11 @@ export const mockEvents: EventItem[] = [
     price: "$149.00",
     category: "fundraiser",
     capacity: "5000",
-    attendees: 4200
+    attendees: 4200,
+    latitude: 30.2672,
+    longitude: -97.7431,
+    googleMapsUrl: "https://maps.google.com/?q=30.2672,-97.7431",
+    locationType: "in-person"
   },
   {
     id: "evt-3",
@@ -137,7 +149,11 @@ export const mockEvents: EventItem[] = [
     price: "$199.00",
     category: "professional",
     capacity: "800",
-    attendees: 642
+    attendees: 642,
+    latitude: 40.7128,
+    longitude: -74.0060,
+    googleMapsUrl: "https://maps.google.com/?q=40.7128,-74.0060",
+    locationType: "in-person"
   },
   {
     id: "evt-4",
@@ -151,7 +167,11 @@ export const mockEvents: EventItem[] = [
     price: "$85.00",
     category: "club",
     capacity: "1000",
-    attendees: 890
+    attendees: 890,
+    latitude: 38.2975,
+    longitude: -122.2869,
+    googleMapsUrl: "https://maps.google.com/?q=38.2975,-122.2869",
+    locationType: "in-person"
   },
   {
     id: "evt-5",
@@ -165,7 +185,11 @@ export const mockEvents: EventItem[] = [
     price: "Free (RSVP Req.)",
     category: "pr",
     capacity: "2000",
-    attendees: 1650
+    attendees: 1650,
+    latitude: 41.8781,
+    longitude: -87.6298,
+    googleMapsUrl: "https://maps.google.com/?q=41.8781,-87.6298",
+    locationType: "in-person"
   },
   {
     id: "evt-6",
@@ -179,7 +203,11 @@ export const mockEvents: EventItem[] = [
     price: "$45.00",
     category: "community",
     capacity: "3000",
-    attendees: 2100
+    attendees: 2100,
+    latitude: 47.6062,
+    longitude: -122.3321,
+    googleMapsUrl: "https://maps.google.com/?q=47.6062,-122.3321",
+    locationType: "in-person"
   }
 ];
 

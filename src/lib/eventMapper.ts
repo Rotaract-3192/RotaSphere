@@ -23,6 +23,9 @@ export function mapRowToEventItem(row: any): any {
     category: row.category,
     capacity: String(row.capacity),
     attendees: row.attendees_count || 0,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    googleMapsUrl: row.google_maps_url,
     // Raw fields for editing/details if needed
     slug: row.slug,
     fullDescription: row.full_description,

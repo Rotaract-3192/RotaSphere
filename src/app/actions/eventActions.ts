@@ -31,6 +31,9 @@ export interface EventFormInput {
   contactEmail: string;
   contactPhone?: string;
   organizer: string;
+  googleMapsUrl?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 
@@ -49,7 +52,7 @@ export async function createEventAction(input: EventFormInput) {
     const locStr = input.locationType === "online" ? "Virtual Online Link" : `${input.venueName}, ${input.city}`
     const priceVal = input.type === "free" ? 0 : parseFloat(input.price || "0")
     const tagsArr = input.tags ? input.tags.split(",").map(t => t.trim()).filter(Boolean) : []
-    const priceStr = input.type === "free" ? "Free" : `$${priceVal.toFixed(2)}`
+    const priceStr = input.type === "free" ? "Free" : `₹${priceVal.toFixed(2)}`
 
     const simulatedEvent = {
       id: `evt-${Date.now()}`,
@@ -63,7 +66,11 @@ export async function createEventAction(input: EventFormInput) {
       price: priceStr,
       category: input.category,
       capacity: String(input.capacity),
-      attendees: 0
+      attendees: 0,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      googleMapsUrl: input.googleMapsUrl,
+      locationType: input.locationType
     }
 
     if (!isSupabaseAdminConfigured) {
@@ -108,6 +115,9 @@ export async function createEventAction(input: EventFormInput) {
         city: input.city,
         address: input.address,
         pincode: input.pincode,
+        google_maps_url: input.googleMapsUrl,
+        latitude: input.latitude,
+        longitude: input.longitude,
         category: input.category,
         tags: tagsArr,
         capacity: Number(input.capacity),
@@ -364,4 +374,28 @@ export async function getHeroFeaturedEventAction() {
     }
   }
 }
+
+export async function resolveGoogleMapsUrlAction(url: string) {
+  try {
+    if (!url) return { success: false, error: "Empty URL" }
+    
+    // Check if it's a shortened Google Maps URL
+    if (url.includes("maps.app.goo.gl") || url.includes("goo.gl/maps")) {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        redirect: "follow"
+      })
+      const resolvedUrl = response.url
+      return { success: true, resolvedUrl }
+    }
+    return { success: true, resolvedUrl: url }
+  } catch (err) {
+    console.error("Error resolving Google Maps URL:", err)
+    return { success: false, error: err instanceof Error ? err.message : "Failed to resolve URL" }
+  }
+}
+
 

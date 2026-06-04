@@ -21,6 +21,11 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const [bookingEvent, setBookingEvent] = React.useState<EventItem | null>(null)
   const [bookingSuccess, setBookingSuccess] = React.useState(false)
   const [isPaying, setIsPaying] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Registration Form State
   const [formData, setFormData] = React.useState({
@@ -495,228 +500,230 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
       </div>
 
       {/* ─── Ticket Booking Dialog ─── */}
-      <Dialog open={!!bookingEvent} onOpenChange={(open) => { if (!open) setBookingEvent(null) }}>
-        <DialogContent
-          className="max-w-md p-0 overflow-hidden"
-          style={{
-            borderRadius: "16px",
-            border: "1px solid #d9d9dd",
-            boxShadow: "rgba(0,0,0,0.04) 0px 24px 48px",
-            background: "#ffffff"
-          }}
-        >
-          {bookingSuccess ? (
-            <div className="py-10 flex flex-col items-center justify-center text-center px-8">
-              <div
-                className="h-14 w-14 rounded-full flex items-center justify-center mb-4"
-                style={{ background: "rgba(34,197,94,0.1)" }}
-              >
-                <Check className="h-7 w-7" style={{ color: "#16a34a" }} />
+      {mounted && (
+        <Dialog open={!!bookingEvent} onOpenChange={(open) => { if (!open) setBookingEvent(null) }}>
+          <DialogContent
+            className="max-w-md p-0 overflow-hidden"
+            style={{
+              borderRadius: "16px",
+              border: "1px solid #d9d9dd",
+              boxShadow: "rgba(0,0,0,0.04) 0px 24px 48px",
+              background: "#ffffff"
+            }}
+          >
+            {bookingSuccess ? (
+              <div className="py-10 flex flex-col items-center justify-center text-center px-8">
+                <div
+                  className="h-14 w-14 rounded-full flex items-center justify-center mb-4"
+                  style={{ background: "rgba(34,197,94,0.1)" }}
+                >
+                  <Check className="h-7 w-7" style={{ color: "#16a34a" }} />
+                </div>
+                <h3
+                  className="text-xl font-medium mb-2"
+                  style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+                >
+                  {formData.ticketCount > 1 ? `${formData.ticketCount} Tickets Booked!` : "Ticket Booked!"}
+                </h3>
+                <p className="text-sm font-weight-450" style={{ color: "#616161" }}>
+                  Your confirmation has been sent to {formData.email}. See you there!
+                </p>
               </div>
-              <h3
-                className="text-xl font-medium mb-2"
-                style={{ color: "#17171c", letterSpacing: "-0.02em" }}
-              >
-                {formData.ticketCount > 1 ? `${formData.ticketCount} Tickets Booked!` : "Ticket Booked!"}
-              </h3>
-              <p className="text-sm font-weight-450" style={{ color: "#616161" }}>
-                Your confirmation has been sent to {formData.email}. See you there!
-              </p>
-            </div>
-          ) : (
-            bookingEvent && (
-              <div className="p-7 max-h-[90vh] overflow-y-auto">
-                <DialogHeader className="items-center text-center mb-5">
-                  <div
-                    className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
-                    style={{ background: "rgba(255,119,89,0.1)" }}
-                  >
-                    <Ticket className="h-6 w-6" style={{ color: "#ff7759" }} />
-                  </div>
-                  <div className="mb-1">
-                    <span className="eyebrow-accent" style={{ fontSize: "11px" }}>Secure Checkout</span>
-                  </div>
-                  <DialogTitle
-                    className="text-xl font-medium line-clamp-1"
-                    style={{ color: "#17171c", letterSpacing: "-0.02em" }}
-                  >
-                    {bookingEvent.title}
-                  </DialogTitle>
-                  <DialogDescription className="text-sm font-weight-450" style={{ color: "#616161" }}>
-                    Please fill out the registration details to complete your order.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={confirmBooking} className="space-y-4 text-left">
-                  {/* Name Input */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
-                      style={{
-                        background: "#ffffff",
-                        borderColor: "#d9d9dd",
-                        color: "#212121"
-                      }}
-                      placeholder="Enter attendee's full name"
-                    />
-                  </div>
-
-                  {/* Email Input */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
-                      style={{
-                        background: "#ffffff",
-                        borderColor: "#d9d9dd",
-                        color: "#212121"
-                      }}
-                      placeholder="email@example.com"
-                    />
-                  </div>
-
-                  {/* Phone Input */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
-                      style={{
-                        background: "#ffffff",
-                        borderColor: "#d9d9dd",
-                        color: "#212121"
-                      }}
-                      placeholder="+91 98765 43210"
-                    />
-                  </div>
-
-                  {/* Quantity and Special Requests */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-1">
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        Tickets *
-                      </label>
-                      <select
-                        value={formData.ticketCount}
-                        onChange={(e) => setFormData({ ...formData, ticketCount: parseInt(e.target.value) })}
-                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
-                        style={{
-                          background: "#ffffff",
-                          borderColor: "#d9d9dd",
-                          color: "#212121"
-                        }}
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                          <option key={num} value={num}>
-                            {num}
-                          </option>
-                        ))}
-                      </select>
+            ) : (
+              bookingEvent && (
+                <div className="p-7 max-h-[90vh] overflow-y-auto">
+                  <DialogHeader className="items-center text-center mb-5">
+                    <div
+                      className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
+                      style={{ background: "rgba(255,119,89,0.1)" }}
+                    >
+                      <Ticket className="h-6 w-6" style={{ color: "#ff7759" }} />
                     </div>
-                    <div className="col-span-2">
+                    <div className="mb-1">
+                      <span className="eyebrow-accent" style={{ fontSize: "11px" }}>Secure Checkout</span>
+                    </div>
+                    <DialogTitle
+                      className="text-xl font-medium line-clamp-1"
+                      style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+                    >
+                      {bookingEvent.title}
+                    </DialogTitle>
+                    <DialogDescription className="text-sm font-weight-450" style={{ color: "#616161" }}>
+                      Please fill out the registration details to complete your order.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <form onSubmit={confirmBooking} className="space-y-4 text-left">
+                    {/* Name Input */}
+                    <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        Special Requests
+                        Full Name *
                       </label>
                       <input
                         type="text"
-                        value={formData.specialRequests}
-                        onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
+                        required
+                        value={formData.fullName}
+                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                         className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
                         style={{
                           background: "#ffffff",
                           borderColor: "#d9d9dd",
                           color: "#212121"
                         }}
-                        placeholder="Dietary, access needs..."
+                        placeholder="Enter attendee's full name"
                       />
                     </div>
-                  </div>
 
-                  {/* Event Details Card & Price Calculation */}
-                  <div
-                    className="mb-5 p-4 mt-4 space-y-2"
-                    style={{
-                      background: "#eeece7",
-                      borderRadius: "8px",
-                      border: "1px solid #d9d9dd"
-                    }}
-                  >
-                    <div className="flex justify-between text-sm">
-                      <span className="font-weight-450" style={{ color: "#616161" }}>Price per Ticket</span>
-                      <span className="font-medium" style={{ color: "#212121" }}>{bookingEvent.price}</span>
+                    {/* Email Input */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                        style={{
+                          background: "#ffffff",
+                          borderColor: "#d9d9dd",
+                          color: "#212121"
+                        }}
+                        placeholder="email@example.com"
+                      />
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="font-weight-450" style={{ color: "#616161" }}>Ticket Count</span>
-                      <span className="font-medium" style={{ color: "#212121" }}>{formData.ticketCount}</span>
-                    </div>
-                    <div className="border-t border-[#d9d9dd] my-2 pt-2 flex justify-between text-sm font-bold">
-                      <span style={{ color: "#212121" }}>Total Due</span>
-                      <span style={{ color: "#ff7759" }}>
-                        {isFree ? "Free" : `${currencySymbol}${totalPrice.toFixed(2)}`}
-                      </span>
-                    </div>
-                  </div>
 
-                  <DialogFooter className="flex gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setBookingEvent(null)}
-                      className="flex-1 text-sm font-medium transition-colors cursor-pointer"
+                    {/* Phone Input */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                        style={{
+                          background: "#ffffff",
+                          borderColor: "#d9d9dd",
+                          color: "#212121"
+                        }}
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+
+                    {/* Quantity and Special Requests */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="col-span-1">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Tickets *
+                        </label>
+                        <select
+                          value={formData.ticketCount}
+                          onChange={(e) => setFormData({ ...formData, ticketCount: parseInt(e.target.value) })}
+                          className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                          style={{
+                            background: "#ffffff",
+                            borderColor: "#d9d9dd",
+                            color: "#212121"
+                          }}
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                            <option key={num} value={num}>
+                              {num}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                          Special Requests
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.specialRequests}
+                          onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
+                          className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                          style={{
+                            background: "#ffffff",
+                            borderColor: "#d9d9dd",
+                            color: "#212121"
+                          }}
+                          placeholder="Dietary, access needs..."
+                        />
+                      </div>
+                    </div>
+
+                    {/* Event Details Card & Price Calculation */}
+                    <div
+                      className="mb-5 p-4 mt-4 space-y-2"
                       style={{
-                        background: "#ffffff",
-                        color: "#17171c",
-                        borderRadius: "32px",
-                        padding: "10px",
+                        background: "#eeece7",
+                        borderRadius: "8px",
                         border: "1px solid #d9d9dd"
                       }}
                     >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isPaying}
-                      className="flex-1 flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-60 cursor-pointer"
-                      style={{
-                        background: "#17171c",
-                        color: "#ffffff",
-                        borderRadius: "32px",
-                        padding: "10px",
-                        border: "1px solid #17171c",
-                        letterSpacing: "-0.01em"
-                      }}
-                    >
-                      {isPaying ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Processing…
-                        </>
-                      ) : isFree ? "Book Free Pass" : "Proceed to Checkout"}
-                    </button>
-                  </DialogFooter>
-                </form>
-              </div>
-            )
-          )}
-        </DialogContent>
-      </Dialog>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-weight-450" style={{ color: "#616161" }}>Price per Ticket</span>
+                        <span className="font-medium" style={{ color: "#212121" }}>{bookingEvent.price}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-weight-450" style={{ color: "#616161" }}>Ticket Count</span>
+                        <span className="font-medium" style={{ color: "#212121" }}>{formData.ticketCount}</span>
+                      </div>
+                      <div className="border-t border-[#d9d9dd] my-2 pt-2 flex justify-between text-sm font-bold">
+                        <span style={{ color: "#212121" }}>Total Due</span>
+                        <span style={{ color: "#ff7759" }}>
+                          {isFree ? "Free" : `${currencySymbol}${totalPrice.toFixed(2)}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <DialogFooter className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setBookingEvent(null)}
+                        className="flex-1 text-sm font-medium transition-colors cursor-pointer"
+                        style={{
+                          background: "#ffffff",
+                          color: "#17171c",
+                          borderRadius: "32px",
+                          padding: "10px",
+                          border: "1px solid #d9d9dd"
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isPaying}
+                        className="flex-1 flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-60 cursor-pointer"
+                        style={{
+                          background: "#17171c",
+                          color: "#ffffff",
+                          borderRadius: "32px",
+                          padding: "10px",
+                          border: "1px solid #17171c",
+                          letterSpacing: "-0.01em"
+                        }}
+                      >
+                        {isPaying ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Processing…
+                          </>
+                        ) : isFree ? "Book Free Pass" : "Proceed to Checkout"}
+                      </button>
+                    </DialogFooter>
+                  </form>
+                </div>
+              )
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </section>
   )
 }
