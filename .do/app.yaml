@@ -4,7 +4,7 @@ spec:
   services:
     - name: rotasphere
       github:
-        repo: techrotaract3192/digital-ocean-nodeJS-Rotaract3192
+        repo: Rotaract-3192/RotaSphere
         branch: master
       build_command: npm run build
       run_command: npm run start
@@ -14,6 +14,9 @@ spec:
       routes:
         - path: /
       envs:
+        - key: NPM_CONFIG_PRODUCTION
+          scope: RUN_AND_BUILD_TIME
+          value: "false"
         - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
           scope: RUN_AND_BUILD_TIME
           type: SECRET
