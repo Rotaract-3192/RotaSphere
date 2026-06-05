@@ -1,0 +1,46 @@
+spec:
+  name: digital-ocean-nodejs-rotaract3192
+  region: blr
+  services:
+    - name: rotasphere
+      github:
+        repo: techrotaract3192/digital-ocean-nodeJS-Rotaract3192
+        branch: master
+      build_command: npm run build
+      run_command: npm run start
+      http_port: 3000
+      instance_count: 1
+      instance_size_slug: basic-xxs
+      routes:
+        - path: /
+      envs:
+        - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+          scope: RUN_AND_BUILD_TIME
+          type: SECRET
+        - key: CLERK_SECRET_KEY
+          scope: RUN_TIME
+          type: SECRET
+        - key: NEXT_PUBLIC_CLERK_SIGN_IN_URL
+          scope: RUN_AND_BUILD_TIME
+          value: /sign-in
+        - key: NEXT_PUBLIC_CLERK_SIGN_UP_URL
+          scope: RUN_AND_BUILD_TIME
+          value: /sign-up
+        - key: NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL
+          scope: RUN_AND_BUILD_TIME
+          value: /dashboard
+        - key: NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
+          scope: RUN_AND_BUILD_TIME
+          value: /dashboard
+        - key: NEXT_PUBLIC_SUPABASE_URL
+          scope: RUN_AND_BUILD_TIME
+          type: SECRET
+        - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+          scope: RUN_AND_BUILD_TIME
+          type: SECRET
+        - key: SUPABASE_SERVICE_ROLE_KEY
+          scope: RUN_TIME
+          type: SECRET
+        - key: NEXT_PUBLIC_OLA_MAPS_API_KEY
+          scope: RUN_AND_BUILD_TIME
+          type: SECRET
