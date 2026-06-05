@@ -3,18 +3,19 @@ import { NextResponse } from "next/server"
 
 const isProtectedRoute = createRouteMatcher(["/dashboard(.*)"])
 
-export default clerkMiddleware(async (auth, req) => {
+export default function middleware(req: any, event: any) {
   // Guard: if Clerk keys are not set, skip all auth logic.
-  // This prevents MIDDLEWARE_INVOCATION_FAILED on Vercel when
-  // env vars are missing, and on Edge Runtime cold starts.
+  // This prevents Edge Runtime initialization failures when env vars are missing.
   if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
     return NextResponse.next()
   }
 
-  if (isProtectedRoute(req)) {
-    await auth.protect()
-  }
-})
+  return clerkMiddleware(async (auth, req) => {
+    if (isProtectedRoute(req)) {
+      await auth.protect()
+    }
+  })(req, event)
+}
 
 export const config = {
   matcher: [
