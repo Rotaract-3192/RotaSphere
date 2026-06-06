@@ -3,7 +3,6 @@
 import * as React from "react"
 import { Navbar } from "@/components/Navbar"
 import { Hero } from "@/components/sections/Hero"
-import { TrustLogoStrip } from "@/components/sections/TrustLogoStrip"
 import { Categories } from "@/components/sections/Categories"
 import { DarkFeatureBand } from "@/components/sections/DarkFeatureBand"
 import { Footer } from "@/components/Footer"
@@ -54,6 +53,7 @@ const pages = [
 ]
 
 export default function Home() {
+  // Trigger Next.js SSR cache rebuild
   const [events, setEvents] = React.useState<EventItem[]>([])
   const [isCreateEventOpen, setIsCreateEventOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(true)
@@ -69,7 +69,7 @@ export default function Home() {
           } else {
             const saved = localStorage.getItem("rotasphere_events")
             const currentEvents = saved ? JSON.parse(saved) : mockEvents
-            setEvents(currentEvents)
+            setEvents(currentEvents.filter((e: any) => e.status === "PUBLISHED" || !e.status))
           }
         }
       } catch (err) {
@@ -93,9 +93,6 @@ export default function Home() {
       <main className="flex-grow">
         {/* 1. Hero — editorial h1 + two-card composition */}
         <Hero onCreateEventClick={() => setIsCreateEventOpen(true)} />
-
-        {/* 2. Trust Logo Strip */}
-        <TrustLogoStrip />
 
         {/* 3. Explore Platform — 2×2 page-link grid */}
         <section

@@ -2,15 +2,13 @@
  
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { useAuthSession } from "@/context/AuthContext"
+import { useAuthSession, UserRole } from "@/context/AuthContext"
 import { SignUp as ClerkSignUp } from "@clerk/nextjs"
 import { Sparkles, Mail, Lock, User, Loader2, Users, Calendar, ShieldCheck, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
- 
-type UserRole = "attendee" | "organizer" | "admin"
  
 export default function SignUpPage() {
   const { isClerkActive, signUp, loginWithGoogle, isSignedIn } = useAuthSession()
@@ -19,7 +17,7 @@ export default function SignUpPage() {
   const [fullName, setFullName] = React.useState("")
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
-  const [selectedRole, setSelectedRole] = React.useState<UserRole>("attendee")
+  const [selectedRole, setSelectedRole] = React.useState<UserRole>("ATTENDEE")
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState("")
  
@@ -74,19 +72,19 @@ export default function SignUpPage() {
  
   const roles = [
     {
-      id: "attendee" as UserRole,
+      id: "ATTENDEE" as UserRole,
       title: "Attendee",
       desc: "Book tickets & join events",
       icon: Users,
     },
     {
-      id: "organizer" as UserRole,
+      id: "ORGANIZER" as UserRole,
       title: "Organizer",
       desc: "Create & manage events",
       icon: Calendar,
     },
     {
-      id: "admin" as UserRole,
+      id: "ADMIN" as UserRole,
       title: "Admin",
       desc: "Oversee operations",
       icon: ShieldCheck,

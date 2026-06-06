@@ -31,6 +31,8 @@ export interface IEvent extends Document {
   contactPhone?: string;
   organizer: string; // Organizer full name or email/clerkId
   attendeesCount: number;
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'PUBLISHED' | 'REJECTED';
+  reviewNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -66,7 +68,9 @@ const EventSchema = new Schema<IEvent>(
     contactEmail: { type: String, required: true },
     contactPhone: { type: String },
     organizer: { type: String, required: true },
-    attendeesCount: { type: Number, required: true, default: 0 }
+    attendeesCount: { type: Number, required: true, default: 0 },
+    status: { type: String, enum: ['DRAFT', 'PENDING_APPROVAL', 'PUBLISHED', 'REJECTED'], default: 'DRAFT' },
+    reviewNotes: { type: String }
   },
   { timestamps: true }
 )

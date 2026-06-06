@@ -65,8 +65,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
   const handleBookTicket = (event: EventItem) => {
     if (!isSignedIn) { router.push("/sign-in"); return }
-    if (role !== "attendee") {
-      alert(`Only Attendees can book tickets. Your current role is "${role?.toUpperCase() || 'unknown'}".`)
+    if (role !== "ATTENDEE") {
+      alert(`Only Attendees can book tickets. Your current role is "${role || 'unknown'}".`)
       return
     }
     setBookingEvent(event)

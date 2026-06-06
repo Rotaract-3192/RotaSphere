@@ -23,7 +23,7 @@ export default function CreateEventPage() {
     if (isLoaded) {
       if (!isSignedIn) {
         router.push("/sign-in")
-      } else if (user && user.role !== "organizer" && user.role !== "admin") {
+      } else if (user && user.role !== "ORGANIZER" && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
         // Attendees are not allowed to create events, send to dashboard
         router.push("/dashboard")
       }
@@ -85,7 +85,7 @@ export default function CreateEventPage() {
   }, [])
 
   // Loading state or unauthorized state
-  if (!isLoaded || !user || (user.role !== "organizer" && user.role !== "admin")) {
+  if (!isLoaded || !user || (user.role !== "ORGANIZER" && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {
     return (
       <div className="min-h-screen flex bg-background">
         {/* Left Sidebar Skeleton */}

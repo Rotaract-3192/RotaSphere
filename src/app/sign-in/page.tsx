@@ -2,7 +2,7 @@
  
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { useAuthSession } from "@/context/AuthContext"
+import { useAuthSession, UserRole } from "@/context/AuthContext"
 import { SignIn as ClerkSignIn } from "@clerk/nextjs"
 import { Sparkles, Mail, Lock, Loader2, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -49,10 +49,10 @@ export default function SignInPage() {
     try {
       // Find role from mock registry if user registered before
       const registryStr = localStorage.getItem("rotasphere_mock_registry")
-      let matchedRole: "attendee" | "organizer" | "admin" = "attendee"
+      let matchedRole: UserRole = "ATTENDEE"
       
       if (registryStr) {
-        const registry = JSON.parse(registryStr) as { email: string; role: "attendee" | "organizer" | "admin" }[]
+        const registry = JSON.parse(registryStr) as { email: string; role: UserRole }[]
         const matched = registry.find((u) => u.email.toLowerCase() === email.toLowerCase())
         if (matched) matchedRole = matched.role
       }
@@ -69,7 +69,7 @@ export default function SignInPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     try {
-      await loginWithGoogle("attendee") // Default to attendee role on mock google login
+      await loginWithGoogle("ATTENDEE") // Default to attendee role on mock google login
       router.push("/dashboard")
     } catch {
       setError("Google Login failed")

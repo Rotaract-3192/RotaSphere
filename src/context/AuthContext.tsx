@@ -4,11 +4,15 @@ import * as React from "react"
 import { useUser as useClerkUser, useClerk } from "@clerk/nextjs"
 import { syncClerkUserAction } from "@/app/actions/userActions"
 
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'ORGANIZER' | 'ATTENDEE' | 'PENDING_USER';
+export type UserStatus = 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'REJECTED';
+
 export interface UserSession {
   id: string;
   email: string;
   fullName: string;
-  role: 'attendee' | 'organizer' | 'admin';
+  role: UserRole;
+  status: UserStatus;
   imageUrl?: string;
 }
 
@@ -16,11 +20,11 @@ interface AuthContextType {
   user: UserSession | null;
   isSignedIn: boolean;
   isLoaded: boolean;
-  role: 'attendee' | 'organizer' | 'admin' | null;
-  signIn: (email: string, role?: 'attendee' | 'organizer' | 'admin') => Promise<void>;
-  signUp: (email: string, fullName: string, role: 'attendee' | 'organizer' | 'admin') => Promise<void>;
+  role: UserRole | null;
+  signIn: (email: string, role?: UserRole) => Promise<void>;
+  signUp: (email: string, fullName: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
-  loginWithGoogle: (role: 'attendee' | 'organizer' | 'admin') => Promise<void>;
+  loginWithGoogle: (role: UserRole) => Promise<void>;
   isClerkActive: boolean;
 }
 
@@ -59,13 +63,18 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
 
         const finalRole = (syncResult.success && syncResult.role)
           ? syncResult.role
-          : ((clerkUser.publicMetadata?.role as 'attendee' | 'organizer' | 'admin') || 'attendee')
+          : ((clerkUser.publicMetadata?.role as UserRole) || 'PENDING_USER')
+
+        const finalStatus = (syncResult.success && syncResult.status)
+          ? syncResult.status
+          : ((clerkUser.publicMetadata?.status as UserStatus) || 'PENDING')
 
         setSyncedUser({
           id: clerkUser.id,
           email,
           fullName,
-          role: finalRole,
+          role: finalRole as UserRole,
+          status: finalStatus as UserStatus,
           imageUrl
         })
       } else {
@@ -80,12 +89,12 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
     }
   }, [clerkUser, isSignedIn, isLoaded])
 
-  const signIn = async (email: string, role?: 'attendee' | 'organizer' | 'admin') => {
+  const signIn = async (email: string, role?: UserRole) => {
     // Handled by Clerk's login components or flow
     console.log("SignIn requested with Clerk. Use Clerk UI instead. Target:", email, role)
   }
 
-  const signUp = async (email: string, fullName: string, role: 'attendee' | 'organizer' | 'admin') => {
+  const signUp = async (email: string, fullName: string, role: UserRole) => {
     // Handled by Clerk's signup components or flow
     console.log("SignUp requested with Clerk. Use Clerk UI instead. Target:", email, fullName, role)
   }
@@ -94,7 +103,7 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
     await clerkSignOut()
   }
 
-  const loginWithGoogle = async (role: 'attendee' | 'organizer' | 'admin') => {
+  const loginWithGoogle = async (role: UserRole) => {
     // Handled by Clerk's social auth flow
     console.log("Social login with Clerk. Use Clerk UI instead. Role:", role)
   }
@@ -147,7 +156,7 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer)
   }, [])
 
-  const signIn = async (email: string, role?: 'attendee' | 'organizer' | 'admin') => {
+  const signIn = async (email: string, role?: UserRole) => {
     setIsLoaded(false)
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 800))
@@ -161,11 +170,15 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       existingUser = registry.find((u) => u.email.toLowerCase() === email.toLowerCase())
     }
 
+    const SUPER_ADMIN_EMAIL = "tech.rotaract3192@gmail.com"
+    const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
+
     const resolvedUser: UserSession = existingUser || {
       id: `mock-usr-${Date.now()}`,
       email: email,
       fullName: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
-      role: role || 'attendee',
+      role: isSuperAdmin ? 'SUPER_ADMIN' : (role || 'PENDING_USER'),
+      status: isSuperAdmin ? 'ACTIVE' : 'PENDING',
       imageUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${email}`
     }
 
@@ -174,15 +187,19 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
     setIsLoaded(true)
   }
 
-  const signUp = async (email: string, fullName: string, role: 'attendee' | 'organizer' | 'admin') => {
+  const signUp = async (email: string, fullName: string, role: UserRole) => {
     setIsLoaded(false)
     await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const SUPER_ADMIN_EMAIL = "tech.rotaract3192@gmail.com"
+    const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
 
     const newUser: UserSession = {
       id: `mock-usr-${Date.now()}`,
       email: email,
       fullName: fullName,
-      role: role,
+      role: isSuperAdmin ? 'SUPER_ADMIN' : 'PENDING_USER',
+      status: isSuperAdmin ? 'ACTIVE' : 'PENDING',
       imageUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${fullName}`
     }
 
@@ -208,15 +225,19 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
     setIsLoaded(true)
   }
 
-  const loginWithGoogle = async (role: 'attendee' | 'organizer' | 'admin') => {
+  const loginWithGoogle = async (role: UserRole) => {
     setIsLoaded(false)
     await new Promise((resolve) => setTimeout(resolve, 1200))
     const email = "google.user@example.com"
+    const SUPER_ADMIN_EMAIL = "tech.rotaract3192@gmail.com"
+    const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
+
     const newUser: UserSession = {
       id: `mock-usr-google`,
       email,
       fullName: "Alex Rivera",
-      role: role,
+      role: isSuperAdmin ? 'SUPER_ADMIN' : 'PENDING_USER',
+      status: isSuperAdmin ? 'ACTIVE' : 'PENDING',
       imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
     }
     localStorage.setItem("rotasphere_mock_user", JSON.stringify(newUser))

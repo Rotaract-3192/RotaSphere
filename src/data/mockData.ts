@@ -16,6 +16,7 @@ export interface EventItem {
   ticketCode?: string;
   pricePaid?: number | string;
   status?: string;
+  reviewNotes?: string;
   purchasedAt?: string;
   latitude?: number;
   longitude?: number;

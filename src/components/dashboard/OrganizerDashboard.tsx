@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { EventItem } from "@/data/mockData"
 import { cn } from "@/lib/utils"
 import { MultiStepCreateEvent } from "./MultiStepCreateEvent"
-import { deleteEventAction } from "@/app/actions/eventActions"
+import { deleteEventAction, submitEventForApprovalAction } from "@/app/actions/eventActions"
 
 interface OrganizerDashboardProps {
   events: EventItem[];
@@ -96,6 +96,21 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       showToast("🗑️ Event removed successfully.")
     } else {
       showToast(`❌ Failed to delete: ${res.error}`)
+    }
+  }
+
+  const handleSubmitForApproval = async (id: string) => {
+    try {
+      const res = await submitEventForApprovalAction(id)
+      if (res.success) {
+        showToast("✈️ Event submitted for approval!")
+        // Update local events list state
+        setEvents(prev => prev.map(e => e.id === id ? { ...e, status: "PENDING_APPROVAL" } : e))
+      } else {
+        showToast(`❌ Failed to submit: ${res.error}`)
+      }
+    } catch (err) {
+      showToast("❌ Failed to submit event.")
     }
   }
 
@@ -512,15 +527,14 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         Add Event
                       </Button>
                     </div>
-                  </div>
-
-                  {/* Desktop View */}
+                       {/* Desktop View */}
                   <div className="hidden md:block overflow-x-auto text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
                           <th className="pb-3">Event Details</th>
                           <th className="pb-3">Date</th>
+                          <th className="pb-3">Status</th>
                           <th className="pb-3">Tickets Sold</th>
                           <th className="pb-3">Price</th>
                           <th className="pb-3 text-right">Actions</th>
@@ -531,6 +545,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
                           .map((evt) => {
                             const registeredPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
+                            const status = evt.status || 'DRAFT'
                             return (
                               <tr key={evt.id} className="group hover:bg-muted/20 dark:hover:bg-muted/10">
                                 <td className="py-3">
@@ -542,10 +557,28 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                         <MapPin className="h-3 w-3" />
                                         {evt.location}
                                       </span>
+                                      {evt.reviewNotes && (status === 'DRAFT' || status === 'REJECTED') && (
+                                        <span className="text-[10px] text-amber-500 font-medium block mt-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl max-w-xs leading-normal">
+                                          Feedback: "{evt.reviewNotes}"
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 </td>
                                 <td className="py-3 text-muted-foreground">{evt.date}</td>
+                                <td className="py-3">
+                                  <span className={cn(
+                                    "inline-block text-[9px] font-mono font-medium px-2.5 py-0.5 rounded-full border",
+                                    status === "PUBLISHED" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" :
+                                    status === "PENDING_APPROVAL" ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 animate-pulse" :
+                                    status === "REJECTED" ? "bg-destructive/10 border-destructive/20 text-destructive" :
+                                    "bg-muted border-border text-muted-foreground"
+                                  )}>
+                                    {status === "PUBLISHED" ? "PUBLISHED" :
+                                     status === "PENDING_APPROVAL" ? "PENDING APPROVAL" :
+                                     status === "REJECTED" ? "REJECTED" : "DRAFT"}
+                                  </span>
+                                </td>
                                 <td className="py-3">
                                   <div className="w-24 bg-muted h-1.5 rounded-full overflow-hidden flex mb-1">
                                     <div 
@@ -559,15 +592,26 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 </td>
                                 <td className="py-3 font-semibold text-foreground">{evt.price}</td>
                                 <td className="py-3 text-right">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => handleDeleteEvent(evt.id)}
-                                    className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
-                                    title="Delete Event"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
+                                  <div className="flex justify-end items-center gap-2">
+                                    {(status === "DRAFT" || status === "REJECTED") && (
+                                      <Button
+                                        onClick={() => handleSubmitForApproval(evt.id)}
+                                        size="xs"
+                                        className="rounded-full bg-accent hover:opacity-90 text-white font-semibold text-[10px] py-1 px-3 shadow-none border border-accent/20"
+                                      >
+                                        Submit
+                                      </Button>
+                                    )}
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => handleDeleteEvent(evt.id)}
+                                      className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
+                                      title="Delete Event"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
                                 </td>
                               </tr>
                             )
@@ -583,17 +627,34 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
                       .map((evt) => {
                         const registeredPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
+                        const status = evt.status || 'DRAFT'
                         return (
                           <div key={evt.id} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs">
                             <div className="flex items-start gap-3">
                               <img src={evt.image} alt={evt.title} className="h-12 w-12 rounded-lg object-cover border border-border shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <span className="font-semibold text-foreground block truncate">{evt.title}</span>
+                                <div className="flex justify-between items-start gap-2">
+                                  <span className="font-semibold text-foreground block truncate">{evt.title}</span>
+                                  <span className={cn(
+                                    "text-[9px] font-mono font-medium px-2 py-0.5 rounded-full border shrink-0",
+                                    status === "PUBLISHED" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" :
+                                    status === "PENDING_APPROVAL" ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400" :
+                                    status === "REJECTED" ? "bg-destructive/10 border-destructive/20 text-destructive" :
+                                    "bg-muted border-border text-muted-foreground"
+                                  )}>
+                                    {status}
+                                  </span>
+                                </div>
                                 <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                                   <MapPin className="h-3 w-3" />
                                   {evt.location}
                                 </span>
                                 <span className="text-[10px] text-muted-foreground block mt-0.5">{evt.date}</span>
+                                {evt.reviewNotes && (status === 'DRAFT' || status === 'REJECTED') && (
+                                  <span className="text-[10px] text-amber-500 font-medium block mt-2 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">
+                                    Feedback: "{evt.reviewNotes}"
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -612,21 +673,32 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
                             <div className="flex justify-between items-center pt-2 border-t border-border/20">
                               <span className="font-semibold text-foreground">{evt.price}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => handleDeleteEvent(evt.id)}
-                                className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
-                                title="Delete Event"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                              <div className="flex items-center gap-2">
+                                {(status === "DRAFT" || status === "REJECTED") && (
+                                  <Button
+                                    onClick={() => handleSubmitForApproval(evt.id)}
+                                    size="xs"
+                                    className="rounded-full bg-accent hover:opacity-90 text-white font-semibold text-[10px] py-1 px-3 shadow-none border border-accent/20"
+                                  >
+                                    Submit
+                                  </Button>
+                                )}
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={() => handleDeleteEvent(evt.id)}
+                                  className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
+                                  title="Delete Event"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         )
                       })
                     }
-                  </div>
+                  </div>               </div>
                 </Card>
               )}
 

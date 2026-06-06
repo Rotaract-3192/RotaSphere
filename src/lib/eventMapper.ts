@@ -46,6 +46,8 @@ export function mapRowToEventItem(row: any): any {
     tags: row.tags ? row.tags.join(", ") : "",
     contactEmail: row.contact_email,
     contactPhone: row.contact_phone,
-    organizerId: row.organizer_id
+    organizerId: row.organizer_id,
+    status: row.status || 'DRAFT',
+    reviewNotes: row.review_notes || ''
   }
 }

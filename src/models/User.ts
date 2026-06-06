@@ -4,7 +4,8 @@ export interface IUser extends Document {
   clerkId: string; // Clerk user ID or simulated user ID
   email: string;
   fullName: string;
-  role: 'attendee' | 'organizer' | 'admin';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'ORGANIZER' | 'ATTENDEE' | 'PENDING_USER';
+  status: 'ACTIVE' | 'PENDING' | 'SUSPENDED' | 'REJECTED';
   imageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -15,7 +16,8 @@ const UserSchema = new Schema<IUser>(
     clerkId: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     fullName: { type: String, required: true },
-    role: { type: String, enum: ['attendee', 'organizer', 'admin'], default: 'attendee' },
+    role: { type: String, enum: ['SUPER_ADMIN', 'ADMIN', 'ORGANIZER', 'ATTENDEE', 'PENDING_USER'], default: 'PENDING_USER' },
+    status: { type: String, enum: ['ACTIVE', 'PENDING', 'SUSPENDED', 'REJECTED'], default: 'PENDING' },
     imageUrl: { type: String },
   },
   { timestamps: true }

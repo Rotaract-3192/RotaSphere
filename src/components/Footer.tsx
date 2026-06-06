@@ -5,6 +5,7 @@ import { Send } from "lucide-react"
 import Link from "next/link"
 
 export function Footer() {
+  // Trigger Next.js SSR cache rebuild
   const [email, setEmail] = React.useState("")
   const [subscribed, setSubscribed] = React.useState(false)
 

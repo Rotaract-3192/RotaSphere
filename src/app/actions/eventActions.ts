@@ -1,7 +1,7 @@
 "use server"
 
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabaseAdmin"
-import { auth } from "@clerk/nextjs/server"
+import { auth, clerkClient } from "@clerk/nextjs/server"
 import { mapRowToEventItem } from "@/lib/eventMapper"
 
 export interface EventFormInput {
@@ -36,13 +36,140 @@ export interface EventFormInput {
   longitude?: number;
 }
 
+const SUPER_ADMIN_EMAIL = "tech.rotaract3192@gmail.com"
 
+// Helper to log audit actions
+async function logAuditAction(adminId: string, adminEmail: string, action: string, targetId: string, details: any) {
+  try {
+    if (isSupabaseAdminConfigured) {
+      await supabaseAdmin.from("audit_logs").insert({
+        user_id: adminId,
+        user_email: adminEmail,
+        action,
+        target_id: targetId,
+        details: details || {}
+      })
+    } else {
+      console.log(`[Simulated Audit Log] Admin: ${adminEmail} (${adminId}), Action: ${action}, Target: ${targetId}, Details:`, details)
+    }
+  } catch (err) {
+    console.error("[AuditLog] Error logging action:", err)
+  }
+}
+
+// Normalize DB lowercase role → uppercase for code comparisons
+function normalizeRole(role: string): string {
+  return role.toUpperCase()
+}
+function normalizeStatus(status: string): string {
+  return status.toUpperCase()
+}
+// Convert code uppercase role → lowercase for DB storage
+function dbRole(role: string): string {
+  return role.toLowerCase()
+}
+function dbStatus(status: string): string {
+  return status.toLowerCase()
+}
+
+// Helper to resolve user roles/status
+async function getCallerProfile(userId: string) {
+  if (!isSupabaseAdminConfigured) {
+    try {
+      const client = await clerkClient()
+      const clerkUser = await client.users.getUser(userId)
+      const email = clerkUser.primaryEmailAddress?.emailAddress || ""
+      const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
+      const rawRole = (clerkUser.publicMetadata?.role as string) || (isSuperAdmin ? "SUPER_ADMIN" : "PENDING_USER")
+      const rawStatus = (clerkUser.publicMetadata?.status as string) || (isSuperAdmin ? "ACTIVE" : "PENDING")
+      // Normalize to uppercase for consistent RBAC checks
+      return { role: normalizeRole(rawRole), status: normalizeStatus(rawStatus), email }
+    } catch (e) {
+      return { role: "SUPER_ADMIN", status: "ACTIVE", email: SUPER_ADMIN_EMAIL }
+    }
+  }
+
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("role, status, email")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error || !profile) {
+    // FALLBACK: Auto-sync from Clerk if profile is missing in the database
+    try {
+      const client = await clerkClient()
+      const clerkUser = await client.users.getUser(userId)
+      const email = clerkUser.primaryEmailAddress?.emailAddress || ""
+      const fullName = clerkUser.fullName || clerkUser.username || "Event Enthusiast"
+      const imageUrl = clerkUser.imageUrl
+
+      const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
+      // DB stores lowercase roles, code uses uppercase
+      const roleForDb = isSuperAdmin ? "super_admin" : "pending_user"
+      const statusForDb = isSuperAdmin ? "ACTIVE" : "PENDING"
+
+      const { error: upsertError } = await supabaseAdmin
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            email: email.toLowerCase(),
+            full_name: fullName,
+            role: roleForDb,
+            status: statusForDb,
+            image_url: imageUrl,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" }
+        )
+
+      if (upsertError) {
+        throw new Error(`Profile auto-sync failed: ${upsertError.message}`)
+      }
+
+      try {
+        await client.users.updateUserMetadata(userId, {
+          publicMetadata: { role: normalizeRole(roleForDb), status: normalizeStatus(statusForDb) }
+        })
+      } catch (clerkErr) {
+        console.warn("[Auth] Clerk metadata update failed (non-fatal):", clerkErr)
+      }
+
+      // Return uppercase for code-level comparisons
+      return { role: normalizeRole(roleForDb), status: normalizeStatus(statusForDb), email }
+    } catch (fallbackErr: any) {
+      console.error("[Auth] Auto-sync fallback failed:", fallbackErr)
+      throw new Error(`Profile auto-sync failed: ${fallbackErr?.message || String(fallbackErr)}`)
+    }
+  }
+  // Normalize DB lowercase → uppercase for consistent RBAC checks
+  return {
+    role: normalizeRole(profile.role),
+    status: normalizeStatus(profile.status),
+    email: profile.email
+  }
+}
 
 export async function createEventAction(input: EventFormInput) {
   try {
     const { userId } = await auth()
     if (!userId) {
       return { success: false, error: "You must be signed in to create events." }
+    }
+
+    // RBAC check: only ACTIVE, approved organizers or admins can create events
+    const caller = await getCallerProfile(userId)
+    if (!caller) {
+      return { success: false, error: "User profile not found." }
+    }
+
+    if (caller.status !== "ACTIVE") {
+      return { success: false, error: `Unauthorized. Your account status is: ${caller.status}. Only ACTIVE accounts can create events.` }
+    }
+
+    if (caller.role !== "SUPER_ADMIN" && caller.role !== "ADMIN" && caller.role !== "ORGANIZER") {
+      return { success: false, error: `Unauthorized. Your role (${caller.role}) does not have permission to create events.` }
     }
 
     const startD = new Date(input.startDate)
@@ -70,7 +197,9 @@ export async function createEventAction(input: EventFormInput) {
       latitude: input.latitude,
       longitude: input.longitude,
       googleMapsUrl: input.googleMapsUrl,
-      locationType: input.locationType
+      locationType: input.locationType,
+      status: "DRAFT",
+      reviewNotes: ""
     }
 
     if (!isSupabaseAdminConfigured) {
@@ -91,7 +220,7 @@ export async function createEventAction(input: EventFormInput) {
     
     const organizerName = profile?.full_name || input.organizer || "Event Organizer"
 
-    // Insert into Supabase
+    // Insert into Supabase with default status DRAFT
     const { data, error } = await supabaseAdmin
       .from("events")
       .insert({
@@ -125,7 +254,9 @@ export async function createEventAction(input: EventFormInput) {
         contact_phone: input.contactPhone,
         organizer: organizerName,
         organizer_id: userId,
-        attendees_count: 0
+        attendees_count: 0,
+        status: "DRAFT",
+        review_notes: null
       })
       .select()
       .single()
@@ -141,23 +272,211 @@ export async function createEventAction(input: EventFormInput) {
       event: mapped,
       simulated: false
     }
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : "Failed to create event"
+  } catch (error: any) {
+    const errorMsg = error?.message || (typeof error === 'string' ? error : "Failed to create event")
     console.error("Failed to create event in Supabase:", error)
     return { success: false, error: errorMsg }
   }
 }
 
-export async function getEventsAction() {
+export async function submitEventForApprovalAction(eventId: string) {
   try {
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    const caller = await getCallerProfile(userId)
+    if (!caller) return { success: false, error: "Profile not found." }
+
     if (!isSupabaseAdminConfigured) {
-      return { success: true, events: [], simulated: true }
+      return { success: true, simulated: true }
     }
 
-    const { data, error } = await supabaseAdmin
+    // Check if event exists and caller is owner or admin
+    const { data: event, error: fetchError } = await supabaseAdmin
       .from("events")
-      .select("*")
-      .order("created_at", { ascending: false })
+      .select("organizer_id")
+      .eq("id", eventId)
+      .maybeSingle()
+
+    if (fetchError || !event) {
+      return { success: false, error: "Event not found" }
+    }
+
+    if (event.organizer_id !== userId && caller.role !== "SUPER_ADMIN" && caller.role !== "ADMIN") {
+      return { success: false, error: "Unauthorized to submit this event." }
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from("events")
+      .update({
+        status: "PENDING_APPROVAL"
+      })
+      .eq("id", eventId)
+
+    if (updateError) throw updateError
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error submitting event for approval:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Failed to submit event" }
+  }
+}
+
+export async function reviewEventAction(eventId: string, action: 'approve' | 'reject' | 'request_changes', notes?: string) {
+  try {
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    const caller = await getCallerProfile(userId)
+    if (!caller || (caller.role !== "SUPER_ADMIN" && caller.role !== "ADMIN")) {
+      return { success: false, error: "Unauthorized. Administrative privileges required." }
+    }
+
+    if (!isSupabaseAdminConfigured) {
+      return { success: true, simulated: true }
+    }
+
+    let status: 'PUBLISHED' | 'REJECTED' | 'DRAFT'
+    if (action === 'approve') {
+      status = 'PUBLISHED'
+    } else if (action === 'reject') {
+      status = 'REJECTED'
+    } else {
+      // request changes reverts to draft
+      status = 'DRAFT'
+    }
+
+    const updatePayload: any = { status }
+    if (action === 'request_changes') {
+      updatePayload.review_notes = notes || ''
+    } else {
+      updatePayload.review_notes = null
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from("events")
+      .update(updatePayload)
+      .eq("id", eventId)
+
+    if (updateError) throw updateError
+
+    // Write audit log
+    await logAuditAction(userId, caller.email || "", "REVIEW_EVENT", eventId, { action, notes })
+
+    return { success: true }
+  } catch (error) {
+    console.error("Error in reviewEventAction:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Failed to review event" }
+  }
+}
+
+export async function getEventsAction() {
+  try {
+    const { userId } = await auth()
+    let callerRole: string | null = null
+
+    if (userId) {
+      const caller = await getCallerProfile(userId)
+      if (caller) callerRole = caller.role
+    }
+
+    if (!isSupabaseAdminConfigured) {
+      // Return filtered mock events
+      const mockEvents = [
+        {
+          id: "evt-mock-1",
+          title: "Beach Cleanup Campaign",
+          description: "Help clean up our local beach!",
+          fullDescription: "Join us for a morning of environmental service followed by beach volleyball and lunch.",
+          bannerUrl: "https://images.unsplash.com/photo-1618477388954-7852f32655ec?w=800&auto=format&fit=crop&q=80",
+          thumbnailUrl: "https://images.unsplash.com/photo-1618477388954-7852f32655ec?w=800&auto=format&fit=crop&q=80",
+          startDate: new Date(Date.now() + 86400000).toISOString(),
+          endDate: new Date(Date.now() + 96400000).toISOString(),
+          timezone: "IST",
+          type: "free" as const,
+          price: 0,
+          visibility: "public" as const,
+          locationType: "in-person" as const,
+          venueName: "Besant Nagar Beach",
+          city: "Chennai",
+          organizer: "Rotaract Club of Chennai",
+          organizer_id: "usr_1",
+          status: "PUBLISHED",
+          latitude: 13.0012,
+          longitude: 80.2707,
+          category: "Community Service",
+          review_notes: ""
+        },
+        {
+          id: "evt-mock-2",
+          title: "District Leadership Seminar",
+          description: "Annual leadership training.",
+          fullDescription: "Empowering young leaders with essential communication, coordination, and team management skills.",
+          bannerUrl: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80",
+          thumbnailUrl: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80",
+          startDate: new Date(Date.now() + 86400000 * 3).toISOString(),
+          endDate: new Date(Date.now() + 86400000 * 3 + 18000 * 1000).toISOString(),
+          timezone: "IST",
+          type: "paid" as const,
+          price: 150,
+          visibility: "public" as const,
+          locationType: "in-person" as const,
+          venueName: "District Hall",
+          city: "Bangalore",
+          organizer: "Sarah Jenkins",
+          organizer_id: "usr_4",
+          status: "PENDING_APPROVAL",
+          latitude: 12.9716,
+          longitude: 77.5946,
+          category: "Professional Development",
+          review_notes: ""
+        },
+        {
+          id: "evt-mock-3",
+          title: "Ocean Wave Art Workshop",
+          description: "Paint beautiful ocean landscapes.",
+          fullDescription: "An art workshop celebrating the beauty of the ocean with resin and acrylic paints.",
+          bannerUrl: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80",
+          thumbnailUrl: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80",
+          startDate: new Date(Date.now() + 86400000 * 5).toISOString(),
+          endDate: new Date(Date.now() + 86400000 * 5 + 10000 * 1000).toISOString(),
+          timezone: "IST",
+          type: "free" as const,
+          price: 0,
+          visibility: "public" as const,
+          locationType: "online" as const,
+          organizer: "Sophia Martinez",
+          organizer_id: "usr_1",
+          status: "DRAFT",
+          category: "Arts & Culture",
+          review_notes: "Please add a detailed outline of the artwork materials."
+        }
+      ]
+
+      const filtered = mockEvents.filter(evt => {
+        if (!userId) return evt.status === "PUBLISHED"
+        if (callerRole === "SUPER_ADMIN" || callerRole === "ADMIN") return true
+        if (callerRole === "ORGANIZER") return evt.status === "PUBLISHED" || evt.organizer_id === userId
+        return evt.status === "PUBLISHED"
+      })
+
+      const mapped = filtered.map(mapRowToEventItem)
+      return { success: true, events: mapped, simulated: true }
+    }
+
+    // Build Supabase Query
+    let query = supabaseAdmin.from("events").select("*")
+
+    // Filter query based on role
+    if (callerRole !== "SUPER_ADMIN" && callerRole !== "ADMIN") {
+      if (callerRole === "ORGANIZER") {
+        query = query.or(`status.eq.PUBLISHED,organizer_id.eq.${userId}`)
+      } else {
+        query = query.eq("status", "PUBLISHED")
+      }
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false })
 
     if (error) {
       throw error
@@ -180,6 +499,9 @@ export async function deleteEventAction(id: string) {
       return { success: false, error: "Unauthorized" }
     }
 
+    const caller = await getCallerProfile(userId)
+    if (!caller) return { success: false, error: "Profile not found." }
+
     if (!isSupabaseAdminConfigured) {
       return { success: true, simulated: true }
     }
@@ -196,16 +518,8 @@ export async function deleteEventAction(id: string) {
       return { success: false, error: "Event not found" }
     }
 
-    if (event.organizer_id !== userId) {
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle()
-      
-      if (profile?.role !== "admin") {
-        return { success: false, error: "Unauthorized: You did not create this event." }
-      }
+    if (event.organizer_id !== userId && caller.role !== "ADMIN" && caller.role !== "SUPER_ADMIN") {
+      return { success: false, error: "Unauthorized: You did not create this event and do not have administrative permissions." }
     }
 
     const { error: deleteError } = await supabaseAdmin
@@ -214,6 +528,9 @@ export async function deleteEventAction(id: string) {
       .eq("id", id)
 
     if (deleteError) throw deleteError
+
+    // Write audit log
+    await logAuditAction(userId, caller.email || "", "DELETE_EVENT", id, {})
 
     return { success: true, simulated: false }
   } catch (error) {
@@ -292,10 +609,11 @@ export async function getHeroFeaturedEventAction() {
       }
     }
 
-    // Fetch the most popular event (highest attendees count)
+    // Fetch the most popular event that is PUBLISHED
     const { data: event, error: eventError } = await supabaseAdmin
       .from("events")
       .select("*")
+      .eq("status", "PUBLISHED")
       .order("attendees_count", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(1)
@@ -397,5 +715,3 @@ export async function resolveGoogleMapsUrlAction(url: string) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to resolve URL" }
   }
 }
-
-

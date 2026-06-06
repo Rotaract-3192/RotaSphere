@@ -49,7 +49,7 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
 
   const handleCreateEventClick = () => {
     if (!isSignedIn) { router.push("/sign-in"); return }
-    if (role === "attendee") {
+    if (role === "ATTENDEE" || role === "PENDING_USER") {
       alert("Only Organizers and Admins can create events.")
       return
     }

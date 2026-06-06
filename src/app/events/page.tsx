@@ -27,7 +27,7 @@ export default function EventsPage() {
           } else {
             const saved = localStorage.getItem("rotasphere_events")
             const current = saved ? JSON.parse(saved) : mockEvents
-            setEvents(current)
+            setEvents(current.filter((e: any) => e.status === "PUBLISHED" || !e.status))
           }
         }
       } catch (err) {

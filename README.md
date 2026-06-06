@@ -102,6 +102,58 @@ CREATE TABLE IF NOT EXISTS attendees (
     registered_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     UNIQUE(event_id, clerk_id)
 );
+
+-- 5. Add RBAC and status columns to profiles table
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'PENDING';
+
+-- 6. Add status and review_notes columns to events table
+ALTER TABLE events ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'DRAFT';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS review_notes TEXT;
+
+-- 7. Create Audit Logs Table
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id TEXT NOT NULL,
+    user_email TEXT,
+    action TEXT NOT NULL,
+    target_id TEXT,
+    details JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+```
+
+> **⚠️ RBAC Fix Required** — Run this additional migration to fix the role check constraint and register the Super Admin:
+
+```sql
+-- ============================================================
+-- RBAC FIX: Update profiles role check constraint
+-- Run this in Supabase Dashboard -> SQL Editor
+-- ============================================================
+
+-- 1. Drop old role check constraint (only allowed: admin, organizer, attendee)
+ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+
+-- 2. Add new constraint with ALL required roles (stored as lowercase)
+ALTER TABLE profiles ADD CONSTRAINT profiles_role_check 
+  CHECK (role IN ('super_admin', 'admin', 'organizer', 'attendee', 'pending_user'));
+
+-- 3. Insert the Super Admin profile (replace Clerk ID if needed)
+INSERT INTO profiles (id, email, full_name, role, status, updated_at)
+VALUES (
+  'user_3Em0kZTExxLWsW1RcUbWLr0Fn7L',
+  'tech.rotaract3192@gmail.com',
+  'Tech Rotaract 3192',
+  'super_admin',
+  'ACTIVE',
+  NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  role = 'super_admin',
+  status = 'ACTIVE',
+  updated_at = NOW();
+
+-- 4. Verify
+SELECT id, email, full_name, role, status FROM profiles ORDER BY created_at DESC;
 ```
 
 ---
