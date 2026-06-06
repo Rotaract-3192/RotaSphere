@@ -225,7 +225,7 @@ export async function createEventAction(input: EventFormInput) {
       .from("events")
       .insert({
         title: input.title,
-        slug: input.slug || `evt-${Date.now()}`,
+        slug: input.slug || `evt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         description: input.description,
         full_description: input.fullDescription,
         banner_url: input.bannerUrl,

@@ -203,17 +203,18 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
   const bannerValue = watch("bannerUrl")
   const thumbnailValue = watch("thumbnailUrl")
 
-  // Auto-generate slug from event title
+  // Auto-generate slug from event title (with short random suffix for uniqueness)
   React.useEffect(() => {
     if (titleValue) {
-      const generatedSlug = titleValue
+      const base = titleValue
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, "") // remove non-alphanumeric except spaces/hyphens
         .replace(/\s+/g, "-") // spaces to hyphens
         .replace(/-+/g, "-") // collapse multiple hyphens
         .trim()
-      
-      setValue("slug", generatedSlug, { shouldValidate: true })
+      // Append a short random hex suffix to guarantee uniqueness
+      const suffix = Math.random().toString(36).slice(2, 7)
+      setValue("slug", `${base}-${suffix}`, { shouldValidate: true })
     }
   }, [titleValue, setValue])
 
