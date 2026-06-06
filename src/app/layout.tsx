@@ -4,7 +4,6 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { AuthProvider } from "@/context/AuthContext";
-import { AnnouncementBar } from "@/components/AnnouncementBar";
 import Script from "next/script";
 
 const geistSans = Geist({
@@ -49,7 +48,6 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AnnouncementBar />
           {clerkKey ? (
             <ClerkProvider publishableKey={clerkKey}>
               <AuthProvider>
