@@ -69,7 +69,7 @@ export function ContactSection() {
                     className="h-11 w-11 rounded-full flex items-center justify-center shrink-0"
                     style={{ background: "#ffffff", border: "1px solid #d9d9dd" }}
                   >
-                    <item.icon className="h-4.5 w-4.5" style={{ color: "#ff7759" }} />
+                    <item.icon className="h-4.5 w-4.5" style={{ color: "var(--accent)" }} />
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#93939f" }}>
@@ -143,8 +143,8 @@ export function ContactSection() {
                         outline: "none"
                       }}
                       onFocus={e => {
-                        (e.target as HTMLInputElement).style.borderColor = "#9b60aa"
-                        ;(e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px rgba(155,96,170,0.08)"
+                        (e.target as HTMLInputElement).style.borderColor = "#17458f"
+                        ;(e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px rgba(23,69,143,0.08)"
                       }}
                       onBlur={e => {
                         (e.target as HTMLInputElement).style.borderColor = "#d9d9dd"
@@ -175,8 +175,8 @@ export function ContactSection() {
                         outline: "none"
                       }}
                       onFocus={e => {
-                        (e.target as HTMLInputElement).style.borderColor = "#9b60aa"
-                        ;(e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px rgba(155,96,170,0.08)"
+                        (e.target as HTMLInputElement).style.borderColor = "#17458f"
+                        ;(e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px rgba(23,69,143,0.08)"
                       }}
                       onBlur={e => {
                         (e.target as HTMLInputElement).style.borderColor = "#d9d9dd"
@@ -206,8 +206,8 @@ export function ContactSection() {
                         outline: "none"
                       }}
                       onFocus={e => {
-                        (e.target as HTMLInputElement).style.borderColor = "#9b60aa"
-                        ;(e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px rgba(155,96,170,0.08)"
+                        (e.target as HTMLInputElement).style.borderColor = "#17458f"
+                        ;(e.target as HTMLInputElement).style.boxShadow = "0 0 0 3px rgba(23,69,143,0.08)"
                       }}
                       onBlur={e => {
                         (e.target as HTMLInputElement).style.borderColor = "#d9d9dd"
@@ -236,8 +236,8 @@ export function ContactSection() {
                       outline: "none"
                     }}
                     onFocus={e => {
-                      (e.target as HTMLTextAreaElement).style.borderColor = "#9b60aa"
-                      ;(e.target as HTMLTextAreaElement).style.boxShadow = "0 0 0 3px rgba(155,96,170,0.08)"
+                      (e.target as HTMLTextAreaElement).style.borderColor = "#17458f"
+                      ;(e.target as HTMLTextAreaElement).style.boxShadow = "0 0 0 3px rgba(23,69,143,0.08)"
                     }}
                     onBlur={e => {
                       (e.target as HTMLTextAreaElement).style.borderColor = "#d9d9dd"

@@ -122,7 +122,7 @@ export function PricingCards() {
                     <span
                       className="text-[10px] font-bold uppercase tracking-[0.1em]"
                       style={{
-                        background: "#ff7759",
+                        background: "var(--accent)",
                         color: "#ffffff",
                         padding: "3px 12px",
                         borderRadius: "999px"

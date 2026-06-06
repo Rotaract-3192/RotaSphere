@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
       <main className="flex-grow pt-28 pb-16 bg-background bg-dot-grid relative overflow-hidden">
         <div className="container mx-auto px-4 md:px-6 relative z-10 max-w-4xl">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#ff7759]/20 bg-[#ff7759]/8 text-xs font-mono text-[#ff7759] mb-3 uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-accent/20 bg-accent/8 text-xs font-mono text-accent mb-3 uppercase tracking-wider">
               <Shield className="h-3.5 w-3.5" />
               <span>Trust & Security</span>
             </div>
@@ -27,7 +27,7 @@ export default function PrivacyPolicyPage() {
           <div className="border border-border bg-card p-6 md:p-10 rounded-[16px] shadow-none space-y-8 text-sm leading-relaxed text-muted-foreground">
             <section className="space-y-3">
               <h2 className="text-lg font-heading font-medium text-foreground flex items-center gap-2">
-                <Eye className="h-5 w-5 text-[#ff7759]" />
+                <Eye className="h-5 w-5 text-accent" />
                 1. Information We Collect
               </h2>
               <p>
@@ -37,7 +37,7 @@ export default function PrivacyPolicyPage() {
  
             <section className="space-y-3">
               <h2 className="text-lg font-heading font-medium text-foreground flex items-center gap-2">
-                <Lock className="h-5 w-5 text-[#ff7759]" />
+                <Lock className="h-5 w-5 text-accent" />
                 2. How We Protect Your Data
               </h2>
               <p>
@@ -47,7 +47,7 @@ export default function PrivacyPolicyPage() {
  
             <section className="space-y-3">
               <h2 className="text-lg font-heading font-medium text-foreground flex items-center gap-2">
-                <FileText className="h-5 w-5 text-[#ff7759]" />
+                <FileText className="h-5 w-5 text-accent" />
                 3. Sharing & Disclosures
               </h2>
               <p>
@@ -57,7 +57,7 @@ export default function PrivacyPolicyPage() {
  
             <section className="space-y-3">
               <h2 className="text-lg font-heading font-medium text-foreground flex items-center gap-2">
-                <Shield className="h-5 w-5 text-[#ff7759]" />
+                <Shield className="h-5 w-5 text-accent" />
                 4. Your Rights & Preferences
               </h2>
               <p>

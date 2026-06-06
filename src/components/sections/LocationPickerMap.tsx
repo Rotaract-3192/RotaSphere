@@ -301,7 +301,7 @@ export default function LocationPickerMap({
       // Initialize Pin Marker
       markerRef.current = new maplibregl.Marker({
         draggable: true,
-        color: '#ff7759'
+        color: '#1E88E5'
       })
         .setLngLat([defaultLng, defaultLat])
         .addTo(mapInstanceRef.current);

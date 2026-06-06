@@ -85,13 +85,13 @@ export default function SignInPage() {
         <div className="flex flex-col items-center mb-8 text-center">
           <Link href="/" className="flex items-center gap-2 mb-2 group">
             <div className="h-9 w-9 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c]">
-              <Sparkles className="h-4.5 w-4.5 text-[#ff7759]" />
+              <Sparkles className="h-4.5 w-4.5 text-accent" />
             </div>
             <span className="font-heading font-medium text-2xl tracking-tight text-[#17171c] dark:text-white">
               RotaSphere
             </span>
           </Link>
-          <span className="font-mono text-xs text-[#ff7759] tracking-wider uppercase bg-[#ff7759]/10 px-2.5 py-1 rounded-full border border-[#ff7759]/20">
+          <span className="font-mono text-xs text-accent tracking-wider uppercase bg-accent/10 px-2.5 py-1 rounded-full border border-accent/20">
             Simulated Auth Sandbox
           </span>
         </div>
@@ -124,7 +124,7 @@ export default function SignInPage() {
                   placeholder="name@example.com"
                   required
                   disabled={isLoading}
-                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-accent focus-visible:border-accent"
                 />
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
@@ -144,7 +144,7 @@ export default function SignInPage() {
                   placeholder="••••••••"
                   required
                   disabled={isLoading}
-                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-accent focus-visible:border-accent"
                 />
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
@@ -204,7 +204,7 @@ export default function SignInPage() {
             Don&apos;t have an account?{" "}
             <Link
               href="/sign-up"
-              className="text-[#ff7759] font-medium hover:underline"
+              className="text-accent font-medium hover:underline"
             >
               Sign up for free
             </Link>

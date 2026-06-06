@@ -9,13 +9,13 @@ export function Testimonials() {
     <section
       id="testimonials"
       className="section-padding relative overflow-hidden"
-      style={{ background: "var(--soft-stone)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}
+      style={{ background: "var(--muted)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}
     >
       {/* Ghost Watermark */}
       <div
-        className="ghost-watermark absolute bottom-8 right-0 w-full overflow-hidden pointer-events-none"
+        className="ghost-watermark absolute bottom-8 right-0 w-full overflow-hidden pointer-events-none select-none"
         aria-hidden="true"
-        style={{ fontSize: "clamp(60px,12vw,180px)", textAlign: "center", color: "rgba(23, 23, 28, 0.012)" }}
+        style={{ fontSize: "clamp(60px,12vw,180px)", textAlign: "center", color: "var(--foreground)", opacity: 0.012 }}
       >
         REVIEWS
       </div>
@@ -33,7 +33,7 @@ export function Testimonials() {
           </h2>
           <p
             className="font-weight-450 leading-relaxed"
-            style={{ color: "var(--body-muted)", fontSize: "16px" }}
+            style={{ color: "var(--muted-foreground)", fontSize: "16px" }}
           >
             Discover how clubs and organizations are using our platform to bring people together.
           </p>
@@ -62,7 +62,7 @@ export function Testimonials() {
                 {/* Content */}
                 <p
                   className="font-weight-450 leading-relaxed text-sm italic"
-                  style={{ color: "var(--body-muted)" }}
+                  style={{ color: "var(--muted-foreground)" }}
                 >
                   "{item.content}"
                 </p>
@@ -116,7 +116,7 @@ export function Testimonials() {
                 {/* Content */}
                 <p
                   className="font-weight-450 leading-relaxed text-sm italic"
-                  style={{ color: "var(--body-muted)" }}
+                  style={{ color: "var(--muted-foreground)" }}
                 >
                   "{item.content}"
                 </p>

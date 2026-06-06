@@ -9,6 +9,8 @@ import { CreateEventModal } from "@/components/sections/CreateEventModal"
 import { mockEvents, EventItem } from "@/data/mockData"
 import { getEventsAction } from "@/app/actions/eventActions"
 
+import { EventCardSkeleton } from "@/components/skeletons/EventCardSkeleton"
+
 export default function EventsPage() {
   const [events, setEvents] = React.useState<EventItem[]>([])
   const [isCreateEventOpen, setIsCreateEventOpen] = React.useState(false)
@@ -81,12 +83,26 @@ export default function EventsPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-40">
-            <div
-              className="h-12 w-12 rounded-full border-2 animate-spin"
-              style={{ borderColor: "var(--border)", borderTopColor: "var(--accent)" }}
-            />
-          </div>
+          <section className="relative py-20" style={{ background: "#eeece7" }}>
+            <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+              {/* Category filter pills loader */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-14">
+                {Array.from({ length: 7 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="h-8 w-28 animate-pulse rounded-full bg-violet-600/10 dark:bg-violet-400/5 border border-violet-500/10 dark:border-violet-400/5"
+                  />
+                ))}
+              </div>
+
+              {/* Event card grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-14">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <EventCardSkeleton key={idx} />
+                ))}
+              </div>
+            </div>
+          </section>
         ) : (
           <FeaturedEvents events={events} onEventBooked={handleEventBooked} />
         )}

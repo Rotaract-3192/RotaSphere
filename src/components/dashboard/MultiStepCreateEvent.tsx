@@ -325,7 +325,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
       <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
         <div className="relative flex justify-between items-center w-full">
           {/* Progress bar line */}
-          <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-[#eeece7] dark:bg-muted z-0">
+          <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-muted z-0">
             <div 
               className="h-full bg-primary transition-all duration-300"
               style={{ 
@@ -356,10 +356,10 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                     isCompleted
                       ? "bg-primary border-primary text-primary-foreground"
                       : isActive
-                      ? "bg-[#ff7759] border-[#ff7759] text-white shadow-none ring-4 ring-[#ff7759]/20"
+                      ? "bg-accent border-accent text-white shadow-none ring-4 ring-accent/20"
                       : isSkipped
-                      ? "bg-[#eeece7] border-border text-[#93939f]/50 line-through cursor-not-allowed dark:bg-muted"
-                      : "bg-background border-border text-[#93939f] hover:border-[#ff7759]/50"
+                      ? "bg-muted border-border text-muted-foreground/50 line-through cursor-not-allowed"
+                      : "bg-background border-border text-muted-foreground hover:border-accent/50"
                   )}
                 >
                   {isCompleted ? (
@@ -370,7 +370,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                 </button>
                 <span className={cn(
                   "hidden sm:block text-[10px] font-bold uppercase tracking-wider",
-                  isActive ? "text-[#ff7759]" : "text-[#93939f]",
+                  isActive ? "text-accent" : "text-muted-foreground",
                   isSkipped && "line-through opacity-40"
                 )}>
                   {s.label}
@@ -393,7 +393,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
               transition={{ duration: 0.2 }}
             >
               <Card className="border border-border bg-card p-6 shadow-none relative overflow-hidden rounded-[16px]">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-[#ff7759]" />
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-secondary to-accent" />
                 
                 <CardContent className="p-0 space-y-6">
                   
@@ -694,11 +694,11 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                       className={cn(
                                         "flex flex-col items-center justify-between p-4 rounded-2xl border-2 text-center text-xs transition-all gap-2",
                                         isSelected
-                                          ? "border-[#ff7759] bg-[#ff7759]/8 text-foreground ring-2 ring-[#ff7759]/20"
-                                          : "border-border hover:bg-[#eeece7]/40 text-[#93939f]"
+                                          ? "border-accent bg-accent/10 text-foreground ring-2 ring-accent/20"
+                                          : "border-border hover:bg-muted/40 text-muted-foreground"
                                       )}
                                     >
-                                      <Icon className="h-5 w-5 text-[#ff7759]" />
+                                      <Icon className="h-5 w-5 text-accent" />
                                       <div>
                                         <span className="font-bold block text-[11px]">{option.label}</span>
                                         <span className="text-[9px] opacity-75">{option.desc}</span>
@@ -756,11 +756,11 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                     className={cn(
                                       "flex items-center gap-3 p-4 rounded-xl border-2 text-left text-xs transition-all",
                                       isSelected
-                                        ? "border-[#ff7759] bg-[#ff7759]/8 text-foreground ring-2 ring-[#ff7759]/20"
-                                        : "border-border hover:bg-[#eeece7]/40 text-[#93939f]"
+                                        ? "border-accent bg-accent/8 text-foreground ring-2 ring-accent/20"
+                                        : "border-border hover:bg-muted/40 text-muted-foreground"
                                     )}
                                   >
-                                    <div className="h-8 w-8 rounded-lg bg-[#ff7759]/10 flex items-center justify-center text-[#ff7759] shrink-0">
+                                    <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0">
                                       <Icon className="h-4 w-4" />
                                     </div>
                                     <div>
@@ -799,11 +799,11 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                     className={cn(
                                       "flex flex-col items-center justify-between p-4 rounded-xl border-2 text-center text-xs transition-all gap-2",
                                       isSelected
-                                        ? "border-[#ff7759] bg-[#ff7759]/8 text-foreground ring-2 ring-[#ff7759]/20"
-                                        : "border-border hover:bg-[#eeece7]/40 text-[#93939f]"
+                                        ? "border-accent bg-accent/8 text-foreground ring-2 ring-accent/20"
+                                        : "border-border hover:bg-muted/40 text-muted-foreground"
                                     )}
                                   >
-                                    <Icon className="h-5 w-5 text-[#ff7759]" />
+                                    <Icon className="h-5 w-5 text-accent" />
                                     <div>
                                       <span className="font-bold block text-[11px]">{option.label}</span>
                                       <span className="text-[9px] opacity-75">{option.desc}</span>
@@ -1024,13 +1024,13 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                                 {tagsList.map((tag) => (
                                   <span 
                                     key={tag} 
-                                    className="inline-flex items-center gap-1.5 bg-[#ff7759]/10 text-[#ff7759] border border-[#ff7759]/20 px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                                    className="inline-flex items-center gap-1.5 bg-accent/10 text-accent border border-accent/20 px-2.5 py-0.5 rounded-full text-[10px] font-bold"
                                   >
                                     {tag}
                                     <button 
                                       type="button" 
                                       onClick={() => handleRemoveTag(tag)}
-                                      className="text-[#ff7759] hover:text-[#ff7759]/80 font-bold"
+                                      className="text-accent hover:text-accent/80 font-bold"
                                     >
                                       &times;
                                     </button>

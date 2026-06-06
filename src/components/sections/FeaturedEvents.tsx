@@ -277,13 +277,13 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
     <section
       id="events"
       className="relative section-padding"
-      style={{ background: "#eeece7" }}
+      style={{ background: "var(--background)" }}
     >
       {/* Ghost Watermark */}
       <div
         className="ghost-watermark absolute top-8 left-0 w-full overflow-hidden pointer-events-none"
         aria-hidden="true"
-        style={{ fontSize: "clamp(60px,12vw,180px)", textAlign: "center", color: "rgba(23, 23, 28, 0.015)" }}
+        style={{ fontSize: "clamp(60px,12vw,180px)", textAlign: "center", color: "rgba(30, 136, 229, 0.015)" }}
       >
         EVENTS
       </div>
@@ -296,14 +296,14 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
             <span className="eyebrow-accent">Discover What's Happening</span>
           </div>
           <h2
-            className="text-4xl md:text-5xl font-medium mb-5"
-            style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+            className="text-4xl md:text-5xl font-extrabold mb-5"
+            style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
           >
             Featured Platform Events
           </h2>
           <p
             className="font-weight-450 leading-relaxed"
-            style={{ color: "#616161", fontSize: "16px" }}
+            style={{ color: "var(--muted-foreground)", fontSize: "16px" }}
           >
             Browse top curated events — from local community service drives to professional webinars.
             Explore events that make a difference.
@@ -323,9 +323,9 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   padding: "8px 22px",
                   borderRadius: "32px",
                   letterSpacing: "0.05em",
-                  background: isActive ? "#17171c" : "#ffffff",
-                  color: isActive ? "#ffffff" : "#212121",
-                  border: `1px solid ${isActive ? "#17171c" : "#d9d9dd"}`
+                  background: isActive ? "var(--primary)" : "var(--card)",
+                  color: isActive ? "var(--primary-foreground)" : "var(--foreground)",
+                  border: `1px solid ${isActive ? "var(--primary)" : "var(--border)"}`
                 }}
               >
                 {cat.label}
@@ -339,23 +339,23 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           <div
             className="text-center py-20 max-w-sm mx-auto"
             style={{
-              background: "#ffffff",
+              background: "var(--card)",
               borderRadius: "16px",
-              border: "1px solid #d9d9dd"
+              border: "1px solid var(--border)"
             }}
           >
-            <p className="font-weight-450 mb-5" style={{ color: "#616161" }}>
+            <p className="font-weight-450 mb-5" style={{ color: "var(--muted-foreground)" }}>
               No events found in this category.
             </p>
             <button
               onClick={() => setSelectedCategory("all")}
               style={{
-                background: "#17171c",
-                color: "#ffffff",
+                background: "var(--primary)",
+                color: "var(--primary-foreground)",
                 borderRadius: "32px",
                 padding: "8px 24px",
                 fontSize: "14px",
-                border: "1px solid #17171c"
+                border: "1px solid var(--primary)"
               }}
             >
               Reset Filters
@@ -368,7 +368,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
               return (
                 <div
                   key={evt.id}
-                  className={`flex flex-col items-center text-center group relative ${
+                  className={`flex flex-col items-center text-center p-6 bg-white/40 dark:bg-[#06101F]/40 backdrop-blur-md border border-white/20 dark:border-white/5 rounded-3xl shadow-sm hover:shadow-sky-500/10 transition-all duration-300 group hover:translate-y-[-4px] relative ${
                     index % 2 === 1 ? "md-stagger-even" : ""
                   }`}
                 >
@@ -381,7 +381,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                     >
                       <path
                         d="M0 30 Q40 -10 80 30"
-                        stroke="#ff7759" strokeWidth="1.5" strokeLinecap="round"
+                        stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"
                         fill="none" opacity="0.3"
                       />
                     </svg>
@@ -390,7 +390,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   {/* Circular Portrait Container */}
                   <div className="relative w-60 h-60 mx-auto mb-6">
                     {/* Portrait circle */}
-                    <div className="circular-portrait w-full h-full bg-muted overflow-hidden group-hover:shadow-lg transition-all duration-500">
+                    <div className="circular-portrait w-full h-full bg-muted overflow-hidden group-hover:shadow-lg group-hover:shadow-sky-500/15 transition-all duration-500 border border-sky-400/20">
                       <img
                         src={evt.image}
                         alt={evt.title}
@@ -403,12 +403,12 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                     <div
                       className="absolute -top-1 -left-1 font-bold text-[10px]"
                       style={{
-                        background: "#17171c",
-                        color: "#ffffff",
+                        background: "var(--primary)",
+                        color: "var(--primary-foreground)",
                         padding: "4px 14px",
                         borderRadius: "999px",
                         letterSpacing: "0.02em",
-                        border: "1px solid #17171c"
+                        border: "1px solid var(--primary)"
                       }}
                     >
                       {evt.price}
@@ -417,7 +417,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                     {/* Satellite CTA — docked bottom-right */}
                     <button
                       onClick={() => handleBookTicket(evt)}
-                      className="satellite-cta absolute bottom-1 right-1 animate-satellite-pop cursor-pointer"
+                      className="satellite-cta absolute bottom-1 right-1 animate-satellite-pop cursor-pointer bg-white text-slate-900 border-sky-400 hover:bg-[#1E88E5] hover:text-white"
                       title="Get Ticket"
                     >
                       <Ticket className="h-5 w-5" />
@@ -431,8 +431,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
                   {/* Title — H3 style */}
                   <h3
-                    className="text-xl font-medium mb-2 line-clamp-2 max-w-xs transition-colors"
-                    style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+                    className="text-xl font-bold mb-2 line-clamp-2 max-w-xs transition-colors group-hover:text-sky-500"
+                    style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
                   >
                     {evt.title}
                   </h3>
@@ -441,15 +441,15 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   <div className="flex items-center justify-center gap-3 mb-5">
                     <span
                       className="flex items-center gap-1 text-xs font-weight-450"
-                      style={{ color: "#616161" }}
+                      style={{ color: "var(--muted-foreground)" }}
                     >
                       <Calendar className="h-3.5 w-3.5" />
                       {evt.date}
                     </span>
-                    <span style={{ color: "#d9d9dd" }}>•</span>
+                    <span style={{ color: "var(--border)" }}>•</span>
                     <span
                       className="flex items-center gap-1 text-xs font-weight-450"
-                      style={{ color: "#616161" }}
+                      style={{ color: "var(--muted-foreground)" }}
                     >
                       <MapPin className="h-3.5 w-3.5" />
                       {evt.location}
@@ -459,18 +459,18 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   {/* Capacity Bar */}
                   <div className="w-full max-w-[220px] mb-5">
                     <div className="flex justify-between text-[10px] font-bold mb-1.5">
-                      <span style={{ color: "#616161" }}>Registered</span>
-                      <span style={{ color: "#17171c" }}>{evt.attendees} / {evt.capacity}</span>
+                      <span style={{ color: "var(--muted-foreground)" }}>Registered</span>
+                      <span style={{ color: "var(--foreground)" }}>{evt.attendees} / {evt.capacity}</span>
                     </div>
                     <div
                       className="w-full h-1.5 rounded-full overflow-hidden"
-                      style={{ background: "#d9d9dd" }}
+                      style={{ background: "var(--border)" }}
                     >
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${attendeesPct}%`,
-                          background: attendeesPct > 85 ? "#b30000" : "#ff7759"
+                          background: attendeesPct > 85 ? "#d32f2f" : "var(--accent)"
                         }}
                       />
                     </div>
@@ -479,13 +479,11 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   {/* Near-Black CTA Button */}
                   <button
                     onClick={() => handleBookTicket(evt)}
-                    className="text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm cursor-pointer"
+                    className="text-sm font-bold transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-sky-500/20 cursor-pointer bg-gradient-to-r from-[#17458F] to-[#1E88E5] text-white"
                     style={{
-                      background: "#17171c",
-                      color: "#ffffff",
                       borderRadius: "32px",
-                      padding: "9px 24px",
-                      border: "1px solid #17171c",
+                      padding: "10px 26px",
+                      border: "none",
                       letterSpacing: "-0.02em"
                     }}
                   >
@@ -534,20 +532,20 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   <DialogHeader className="items-center text-center mb-5">
                     <div
                       className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
-                      style={{ background: "rgba(255,119,89,0.1)" }}
+                      style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}
                     >
-                      <Ticket className="h-6 w-6" style={{ color: "#ff7759" }} />
+                      <Ticket className="h-6 w-6" style={{ color: "var(--accent)" }} />
                     </div>
                     <div className="mb-1">
                       <span className="eyebrow-accent" style={{ fontSize: "11px" }}>Secure Checkout</span>
                     </div>
                     <DialogTitle
                       className="text-xl font-medium line-clamp-1"
-                      style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+                      style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
                     >
                       {bookingEvent.title}
                     </DialogTitle>
-                    <DialogDescription className="text-sm font-weight-450" style={{ color: "#616161" }}>
+                    <DialogDescription className="text-sm font-weight-450" style={{ color: "var(--muted-foreground)" }}>
                       Please fill out the registration details to complete your order.
                     </DialogDescription>
                   </DialogHeader>
@@ -563,7 +561,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                         required
                         value={formData.fullName}
                         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
                         style={{
                           background: "#ffffff",
                           borderColor: "#d9d9dd",
@@ -583,7 +581,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                         required
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
                         style={{
                           background: "#ffffff",
                           borderColor: "#d9d9dd",
@@ -603,7 +601,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                         required
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
                         style={{
                           background: "#ffffff",
                           borderColor: "#d9d9dd",
@@ -622,7 +620,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                         <select
                           value={formData.ticketCount}
                           onChange={(e) => setFormData({ ...formData, ticketCount: parseInt(e.target.value) })}
-                          className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                          className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
                           style={{
                             background: "#ffffff",
                             borderColor: "#d9d9dd",
@@ -644,7 +642,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                           type="text"
                           value={formData.specialRequests}
                           onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
-                          className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#9b60aa] focus:ring-1 focus:ring-[#9b60aa]/20 transition-all duration-200"
+                          className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
                           style={{
                             background: "#ffffff",
                             borderColor: "#d9d9dd",
@@ -659,22 +657,22 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                     <div
                       className="mb-5 p-4 mt-4 space-y-2"
                       style={{
-                        background: "#eeece7",
+                        background: "var(--muted)",
                         borderRadius: "8px",
-                        border: "1px solid #d9d9dd"
+                        border: "1px solid var(--border)"
                       }}
                     >
                       <div className="flex justify-between text-sm">
-                        <span className="font-weight-450" style={{ color: "#616161" }}>Price per Ticket</span>
-                        <span className="font-medium" style={{ color: "#212121" }}>{bookingEvent.price}</span>
+                        <span className="font-weight-450" style={{ color: "var(--muted-foreground)" }}>Price per Ticket</span>
+                        <span className="font-medium" style={{ color: "var(--foreground)" }}>{bookingEvent.price}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="font-weight-450" style={{ color: "#616161" }}>Ticket Count</span>
-                        <span className="font-medium" style={{ color: "#212121" }}>{formData.ticketCount}</span>
+                        <span className="font-weight-450" style={{ color: "var(--muted-foreground)" }}>Ticket Count</span>
+                        <span className="font-medium" style={{ color: "var(--foreground)" }}>{formData.ticketCount}</span>
                       </div>
-                      <div className="border-t border-[#d9d9dd] my-2 pt-2 flex justify-between text-sm font-bold">
-                        <span style={{ color: "#212121" }}>Total Due</span>
-                        <span style={{ color: "#ff7759" }}>
+                      <div className="border-t border-border my-2 pt-2 flex justify-between text-sm font-bold">
+                        <span style={{ color: "var(--foreground)" }}>Total Due</span>
+                        <span style={{ color: "var(--accent)" }}>
                           {isFree ? "Free" : `${currencySymbol}${totalPrice.toFixed(2)}`}
                         </span>
                       </div>
@@ -686,11 +684,11 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                         onClick={() => setBookingEvent(null)}
                         className="flex-1 text-sm font-medium transition-colors cursor-pointer"
                         style={{
-                          background: "#ffffff",
-                          color: "#17171c",
+                          background: "var(--card)",
+                          color: "var(--foreground)",
                           borderRadius: "32px",
                           padding: "10px",
-                          border: "1px solid #d9d9dd"
+                          border: "1px solid var(--border)"
                         }}
                       >
                         Cancel

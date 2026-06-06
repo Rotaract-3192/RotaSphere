@@ -43,9 +43,9 @@ export function AnnouncementBar() {
           <a
             href="/events"
             className="underline ml-1.5 transition-colors"
-            style={{ color: "#ff7759", textDecoration: "underline" }}
+            style={{ color: "var(--accent)", textDecoration: "underline" }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#ffffff"}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#ff7759"}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--accent)"}
           >
             Learn more
           </a>

@@ -100,13 +100,13 @@ export default function SignUpPage() {
         <div className="flex flex-col items-center mb-6 text-center">
           <Link href="/" className="flex items-center gap-2 mb-2 group">
             <div className="h-9 w-9 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c]">
-              <Sparkles className="h-4.5 w-4.5 text-[#ff7759]" />
+              <Sparkles className="h-4.5 w-4.5 text-accent" />
             </div>
             <span className="font-heading font-medium text-2xl tracking-tight text-[#17171c] dark:text-white">
               RotaSphere
             </span>
           </Link>
-          <span className="font-mono text-xs text-[#ff7759] tracking-wider uppercase bg-[#ff7759]/10 px-2.5 py-1 rounded-full border border-[#ff7759]/20">
+          <span className="font-mono text-xs text-accent tracking-wider uppercase bg-accent/10 px-2.5 py-1 rounded-full border border-accent/20">
             Simulated Auth Sandbox
           </span>
         </div>
@@ -139,7 +139,7 @@ export default function SignUpPage() {
                   placeholder="Alex Rivera"
                   required
                   disabled={isLoading}
-                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-accent focus-visible:border-accent"
                 />
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
@@ -157,7 +157,7 @@ export default function SignUpPage() {
                   placeholder="name@example.com"
                   required
                   disabled={isLoading}
-                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-accent focus-visible:border-accent"
                 />
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
@@ -175,7 +175,7 @@ export default function SignUpPage() {
                   placeholder="••••••••"
                   required
                   disabled={isLoading}
-                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-[#9b60aa] focus-visible:border-[#9b60aa]"
+                  className="rounded-[8px] border-border bg-background/50 pl-9 focus-visible:ring-1 focus-visible:ring-accent focus-visible:border-accent"
                 />
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
@@ -196,12 +196,12 @@ export default function SignUpPage() {
                       onClick={() => setSelectedRole(r.id)}
                       className={`flex flex-col items-center text-center p-3 rounded-[12px] border transition-all duration-200 ${
                         isSelected
-                          ? "bg-[#ff7759]/8 border-[#ff7759] ring-2 ring-[#ff7759]/20"
+                          ? "bg-accent/8 border-accent ring-2 ring-accent/20"
                           : "bg-background/40 border-border hover:bg-[#eeece7] dark:hover:bg-[#2c2c35]"
                       }`}
                     >
                       <div className={`h-8 w-8 rounded-lg flex items-center justify-center mb-2 ${
-                        isSelected ? "text-[#ff7759] bg-[#ff7759]/10" : "text-muted-foreground bg-muted/40"
+                        isSelected ? "text-accent bg-accent/10" : "text-muted-foreground bg-muted/40"
                       }`}>
                         <Icon className="h-4 w-4" />
                       </div>
@@ -268,7 +268,7 @@ export default function SignUpPage() {
             Already have an account?{" "}
             <Link
               href="/sign-in"
-              className="text-[#ff7759] font-medium hover:underline"
+              className="text-accent font-medium hover:underline"
             >
               Sign In
             </Link>

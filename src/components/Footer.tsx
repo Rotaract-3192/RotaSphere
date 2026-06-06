@@ -128,7 +128,7 @@ export function Footer() {
             <Link href="/" className="inline-flex items-center gap-2 mb-5">
               <div
                 className="h-9 w-9 rounded-full flex items-center justify-center font-black text-sm"
-                style={{ background: "#ffffff", color: "#17171c" }}
+                style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
               >
                 R
               </div>
@@ -136,7 +136,7 @@ export function Footer() {
                 className="font-bold text-xl tracking-tight"
                 style={{ color: "#FFFFFF", letterSpacing: "-0.03em" }}
               >
-                Rota<span style={{ color: "#ff7759" }}>Sphere</span>
+                Rota<span style={{ color: "var(--accent)" }}>Sphere</span>
               </span>
             </Link>
 
@@ -159,8 +159,8 @@ export function Footer() {
                     color: "rgba(255,255,255,0.6)"
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.borderColor = "#ff7759"
-                    ;(e.currentTarget as HTMLElement).style.color = "#ff7759"
+                    (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)"
+                    ;(e.currentTarget as HTMLElement).style.color = "var(--accent)"
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"
@@ -234,13 +234,13 @@ export function Footer() {
               <button
                 type="submit"
                 className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 hover:opacity-90 cursor-pointer"
-                style={{ background: "#ff7759", color: "#FFFFFF", border: "none" }}
+                style={{ background: "var(--accent)", color: "#FFFFFF", border: "none" }}
               >
                 <Send className="h-4 w-4" />
               </button>
             </form>
             {subscribed && (
-              <p className="text-xs mt-2 font-medium" style={{ color: "#ff7759" }}>
+              <p className="text-xs mt-2 font-medium" style={{ color: "var(--accent)" }}>
                 ✓ You&apos;re subscribed! Welcome aboard.
               </p>
             )}

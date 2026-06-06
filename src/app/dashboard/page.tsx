@@ -11,6 +11,10 @@ import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
 import { CreateEventModal } from "@/components/sections/CreateEventModal"
 import { OrganizerDashboard } from "@/components/dashboard/OrganizerDashboard"
+import { Skeleton } from "@/components/ui/skeleton"
+import { DashboardCardSkeleton } from "@/components/skeletons/DashboardCardSkeleton"
+import { TableSkeleton } from "@/components/skeletons/TableSkeleton"
+import { AnalyticsSkeleton } from "@/components/skeletons/AnalyticsSkeleton"
 import { 
   Calendar, MapPin, Users, DollarSign, Ticket, 
   Plus, ShieldCheck, UserCheck, Trash2, AlertCircle
@@ -159,9 +163,51 @@ export default function DashboardPage() {
   // Loading state
   if (!isLoaded || !user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4" />
-        <p className="text-muted-foreground text-sm font-medium">Securing session...</p>
+      <div className="min-h-screen flex bg-background">
+        {/* Left Sidebar Skeleton (hidden on mobile, visible on lg) */}
+        <div className="hidden lg:flex flex-col w-64 border-r border-violet-500/10 p-6 space-y-6">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+          <div className="space-y-3 pt-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <Skeleton key={i} className="h-9 w-full rounded-full" />
+            ))}
+          </div>
+        </div>
+
+        {/* Main Dashboard Panel Skeleton */}
+        <div className="flex-1 flex flex-col p-6 lg:p-8 space-y-8 overflow-y-auto">
+          {/* Header row */}
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+
+          {/* Stats metrics widgets row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <DashboardCardSkeleton key={i} />
+            ))}
+          </div>
+
+          {/* Main content split */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Table / List column (2/3) */}
+            <div className="lg:col-span-2 space-y-6">
+              <TableSkeleton rows={4} columns={4} />
+            </div>
+            
+            {/* Analytics / Side panel column (1/3) */}
+            <div className="space-y-6">
+              <AnalyticsSkeleton />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -212,7 +258,7 @@ export default function DashboardPage() {
                   <span className={`font-mono text-[10px] font-medium uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
                     userRole === 'admin' 
                       ? 'bg-primary/10 border-border text-primary dark:text-white' 
-                      : 'bg-[#ff7759]/10 border-[#ff7759]/20 text-[#ff7759]'
+                      : 'bg-accent/10 border-accent/20 text-accent'
                   }`}>
                     {userRole}
                   </span>
@@ -261,7 +307,7 @@ export default function DashboardPage() {
                         <span className="text-3xl font-heading font-medium tracking-tight text-foreground mt-1.5 block">{s.val}</span>
                         <span className="text-[10px] text-muted-foreground mt-1 block">{s.desc}</span>
                       </div>
-                      <div className="h-12 w-12 rounded-full bg-[#ff7759]/10 border border-[#ff7759]/20 text-[#ff7759] flex items-center justify-center">
+                      <div className="h-12 w-12 rounded-full bg-accent/10 border border-accent/20 text-accent flex items-center justify-center">
                         <Icon className="h-6 w-6" />
                       </div>
                     </div>
@@ -272,7 +318,7 @@ export default function DashboardPage() {
               {/* Tickets Section */}
               <div className="border border-border bg-card rounded-[16px] p-6 shadow-none">
                 <h3 className="text-lg font-heading font-medium tracking-tight text-foreground mb-6 flex items-center gap-2">
-                  <Ticket className="h-5 w-5 text-[#ff7759]" />
+                  <Ticket className="h-5 w-5 text-accent" />
                   Your Active Event Passes
                 </h3>
 
@@ -280,7 +326,7 @@ export default function DashboardPage() {
                   <div className="py-12 text-center">
                     <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                     <p className="text-muted-foreground text-sm font-medium">No tickets booked yet.</p>
-                    <Link href="#events" className="text-[#ff7759] text-xs font-medium hover:underline mt-2 inline-block">
+                    <Link href="#events" className="text-accent text-xs font-medium hover:underline mt-2 inline-block">
                       Browse Upcoming Events
                     </Link>
                   </div>
@@ -291,12 +337,12 @@ export default function DashboardPage() {
                       const details = ticketDetails[code] || {}
 
                       return (
-                        <div key={idx} className="relative border border-border bg-card rounded-[16px] overflow-hidden flex flex-col justify-between hover:border-[#ff7759] transition-all duration-300 shadow-none">
+                        <div key={idx} className="relative border border-border bg-card rounded-[16px] overflow-hidden flex flex-col justify-between hover:border-accent transition-all duration-300 shadow-none">
                           <div className="p-5 flex gap-4">
                             <img src={evt.image} alt={evt.title} className="h-16 w-16 rounded-xl object-cover border border-border" />
                             <div className="space-y-1 flex-grow">
                               <div className="flex justify-between items-start">
-                                <span className="text-[10px] font-bold text-[#ff7759] uppercase tracking-wide bg-[#ff7759]/10 px-2.5 py-0.5 rounded-full border border-[#ff7759]/20">
+                                <span className="text-[10px] font-bold text-accent uppercase tracking-wide bg-accent/10 px-2.5 py-0.5 rounded-full border border-accent/20">
                                   {evt.category}
                                 </span>
                                 {evt.pricePaid !== undefined && (
@@ -345,7 +391,7 @@ export default function DashboardPage() {
                           <div className="border-t border-border bg-muted/20 px-5 py-3 flex justify-between items-center">
                             <div className="font-mono text-[9px] text-muted-foreground leading-none">
                               <span className="block font-bold text-[10px] text-foreground mb-1">TICKET PASS CODE</span>
-                              <span className="font-mono text-[#ff7759] font-medium">{code}</span>
+                              <span className="font-mono text-accent font-medium">{code}</span>
                             </div>
                             <span className="text-[10px] font-bold text-emerald-400">REGISTERED</span>
                           </div>
@@ -369,9 +415,9 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
                   { label: "Global Platform Users", val: sysUsersCount, icon: UserCheck, color: "text-primary bg-primary/10" },
-                  { label: "Active Events Listed", val: events.length, icon: Calendar, color: "text-[#ff7759] bg-[#ff7759]/10" },
+                  { label: "Active Events Listed", val: events.length, icon: Calendar, color: "text-accent bg-accent/10" },
                   { label: "Global Ticket Sales", val: sysTicketSales, icon: Ticket, color: "text-primary bg-primary/10" },
-                  { label: "Platform Commission", val: typeof sysCommission === "number" ? `$${sysCommission.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : sysCommission, icon: DollarSign, color: "text-[#ff7759] bg-[#ff7759]/10" }
+                  { label: "Platform Commission", val: typeof sysCommission === "number" ? `$${sysCommission.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : sysCommission, icon: DollarSign, color: "text-accent bg-accent/10" }
                 ].map((s, i) => {
                   const Icon = s.icon
                   return (
@@ -394,13 +440,13 @@ export default function DashboardPage() {
                 {/* Events list manager */}
                 <div className="lg:col-span-2 border border-border bg-card rounded-[16px] p-6 shadow-none">
                   <h3 className="text-lg font-heading font-medium tracking-tight text-foreground mb-6 flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-[#ff7759]" />
+                    <ShieldCheck className="h-5 w-5 text-accent" />
                     Global Event Control Queue
                   </h3>
 
                   <div className="space-y-4">
                     {events.map((evt) => (
-                      <div key={evt.id} className="flex justify-between items-center p-3 rounded-xl bg-[#eeece7]/40 dark:bg-muted/10 border border-border text-xs">
+                      <div key={evt.id} className="flex justify-between items-center p-3 rounded-xl bg-muted/40 dark:bg-muted/10 border border-border text-xs">
                         <div className="flex items-center gap-3">
                           <img src={evt.image} alt={evt.title} className="h-9 w-9 rounded-lg object-cover" />
                           <div>
@@ -430,7 +476,7 @@ export default function DashboardPage() {
                 <div className="border border-border bg-card rounded-[16px] p-6 shadow-none flex flex-col justify-between">
                   <div>
                     <h3 className="text-lg font-heading font-medium tracking-tight text-foreground mb-4 flex items-center gap-2">
-                      <Users className="h-5 w-5 text-[#ff7759]" />
+                      <Users className="h-5 w-5 text-accent" />
                       Platform Users
                     </h3>
 
@@ -444,14 +490,14 @@ export default function DashboardPage() {
                           const displayRole = item.role.charAt(0).toUpperCase() + item.role.slice(1)
                           const roleLower = item.role.toLowerCase()
                           return (
-                            <div key={item.id || idx} className="flex justify-between items-center p-2.5 rounded-xl bg-[#eeece7]/20 dark:bg-muted/10 border border-border text-xs">
+                            <div key={item.id || idx} className="flex justify-between items-center p-2.5 rounded-xl bg-muted/20 dark:bg-muted/10 border border-border text-xs">
                               <div>
                                 <span className="font-medium text-foreground block">{item.full_name}</span>
                                 <span className="text-[10px] text-muted-foreground">{item.email}</span>
                               </div>
                               <span className={`font-mono text-[9px] font-medium px-2 py-0.5 rounded-full border ${
                                 roleLower === 'admin' ? 'bg-primary/10 text-primary border-border' :
-                                roleLower === 'organizer' ? 'bg-[#ff7759]/10 text-[#ff7759] border-[#ff7759]/20' :
+                                roleLower === 'organizer' ? 'bg-accent/10 text-accent border-accent/20' :
                                 'bg-muted-foreground/10 text-muted-foreground border-border'
                               }`}>
                                 {displayRole}

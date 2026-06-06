@@ -116,11 +116,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       {/* Brand logo */}
       <div className="space-y-6">
         <div className={cn("flex items-center gap-2 py-3", isMobile ? "px-2" : "px-2 lg:px-2 justify-center lg:justify-start")}>
-          <div className="h-8 w-8 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c] shrink-0">
-            <Sparkles className="h-4 w-4 text-[#ff7759]" />
+          <div className="h-8 w-8 rounded-full bg-primary dark:bg-primary-foreground flex items-center justify-center text-primary-foreground dark:text-primary shrink-0">
+            <Sparkles className="h-4 w-4 text-accent" />
           </div>
           <span className={cn(
-            "font-heading font-medium text-lg tracking-tight text-[#17171c] dark:text-white truncate",
+            "font-heading font-medium text-lg tracking-tight text-foreground truncate",
             isMobile ? "inline-block" : "hidden lg:inline-block"
           )}>
             RotaSphere
@@ -145,8 +145,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     ? "justify-start gap-3 px-3.5 py-2.5"
                     : "justify-center lg:justify-start gap-0 lg:gap-3 px-0 py-2.5 lg:px-3.5",
                   isActive
-                    ? "bg-[#17171c] text-white dark:bg-white dark:text-[#17171c] shadow-none"
-                    : "text-[#616161] dark:text-[#93939f] hover:text-[#212121] dark:hover:text-white hover:bg-[#eeece7] dark:hover:bg-[#2c2c35]"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-muted/50"
                 )}
                 title={isMobile ? undefined : item.label}
               >
@@ -163,7 +163,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       {/* Logout / User Info footer inside sidebar */}
       <div className="space-y-4 pt-4 border-t border-muted/50">
         <div className={cn("flex items-center gap-3", isMobile ? "px-2" : "px-0 lg:px-2 justify-center lg:justify-start")}>
-          <div className="h-9 w-9 rounded-full bg-[#ff7759]/15 border border-[#ff7759]/30 text-[#ff7759] flex items-center justify-center font-medium text-xs overflow-hidden shrink-0">
+          <div className="h-9 w-9 rounded-full bg-accent/15 border border-accent/30 text-accent flex items-center justify-center font-medium text-xs overflow-hidden shrink-0">
             {user.imageUrl ? (
               <img src={user.imageUrl} alt={user.fullName} className="h-full w-full object-cover" />
             ) : (
@@ -204,17 +204,17 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 16, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-[#17171c] dark:bg-[#eeece7] text-white dark:text-[#17171c] text-xs font-medium shadow-none border border-border flex items-center gap-2"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-none border border-border flex items-center gap-2"
           >
-            <Sparkles className="h-3.5 w-3.5 text-[#ff7759]" />
+            <Sparkles className="h-3.5 w-3.5 text-accent" />
             <span>{toastMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Decorative Glow elements */}
-      <div className="absolute top-1/4 left-1/4 h-[350px] w-[350px] rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-purple-500/5 blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/4 h-[350px] w-[350px] rounded-full bg-sky-500/5 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none" />
 
       {/* Desktop Sidebar (Persistent) */}
       <aside className="hidden md:block w-16 lg:w-64 h-screen border-r border-border bg-card p-3 lg:p-4 sticky top-0 shrink-0 transition-all duration-300">
@@ -253,7 +253,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
           <div className="flex items-center gap-3">
             {/* Search Input (Desktop) */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-muted bg-muted/20 w-64 text-xs text-muted-foreground focus-within:border-[#9b60aa] transition-colors">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-muted bg-muted/20 w-64 text-xs text-muted-foreground focus-within:border-accent transition-colors">
               <Search className="h-3.5 w-3.5" />
               <input 
                 type="text" 
@@ -275,14 +275,14 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
               {theme === "dark" ? (
                 <Sun className="h-4 w-4 text-amber-500" />
               ) : (
-                <Moon className="h-4 w-4 text-[#ff7759]" />
+                <Moon className="h-4 w-4 text-accent" />
               )}
             </Button>
 
             {/* Notifications icon */}
             <button className="h-9 w-9 rounded-xl border border-muted hover:bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground relative transition-colors">
               <Bell className="h-4 w-4" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#ff7759]" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent" />
             </button>
           </div>
         </header>
@@ -307,14 +307,14 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   {/* Grid Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                      { label: "Total Events", value: totalEvents, desc: "Created active lists", icon: Calendar, color: "text-[#ff7759] bg-[#ff7759]/10" },
+                      { label: "Total Events", value: totalEvents, desc: "Created active lists", icon: Calendar, color: "text-accent bg-accent/10" },
                       { label: "Tickets Sold", value: totalTicketsSold, desc: "Attendee signups", icon: Ticket, color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400" },
                       { label: "Revenue Earned", value: `$${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, desc: "Stripe payout value", icon: DollarSign, color: "text-amber-600 bg-amber-500/10 dark:text-amber-400" },
-                      { label: "Active Attendees", value: activeAttendees, desc: "Checked-in guest counts", icon: UserCheck, color: "text-[#9b60aa] bg-[#9b60aa]/10" }
+                      { label: "Active Attendees", value: activeAttendees, desc: "Checked-in guest counts", icon: UserCheck, color: "text-secondary bg-secondary/10" }
                     ].map((card, i) => {
                       const Icon = card.icon
                       return (
-                        <Card key={i} className="border border-border bg-card hover:border-[#ff7759] transition-all duration-300 shadow-none rounded-[16px]">
+                        <Card key={i} className="border border-border bg-card hover:border-accent transition-all duration-300 shadow-none rounded-[16px]">
                           <CardContent className="p-4 flex items-center justify-between">
                             <div className="space-y-1">
                               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider block">{card.label}</span>
@@ -359,7 +359,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           { day: "Sun", val: "h-[85%]" }
                         ].map((bar, idx) => (
                           <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                            <div className={cn("w-full bg-[#ff7759] rounded-t-sm transition-all duration-500 hover:opacity-85", bar.val)} />
+                            <div className={cn("w-full bg-accent rounded-t-sm transition-all duration-500 hover:opacity-85", bar.val)} />
                             <span className="text-[9px] text-muted-foreground font-semibold">{bar.day}</span>
                           </div>
                         ))}
@@ -370,7 +370,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     <Card className="border border-border bg-card shadow-none p-5 flex flex-col justify-between rounded-[16px]">
                       <div className="space-y-4">
                         <h3 className="text-sm font-heading font-medium text-foreground flex items-center gap-2">
-                          <Award className="h-4.5 w-4.5 text-[#ff7759]" />
+                          <Award className="h-4.5 w-4.5 text-accent" />
                           Top Category Performance
                         </h3>
                         
@@ -386,7 +386,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 <span className="text-muted-foreground">{item.val} ({item.pct}%)</span>
                               </div>
                               <div className="w-full bg-muted/50 h-1.5 rounded-full overflow-hidden">
-                                <div className="bg-[#ff7759] h-full rounded-full" style={{ width: `${item.pct}%` }} />
+                                <div className="bg-accent h-full rounded-full" style={{ width: `${item.pct}%` }} />
                               </div>
                             </div>
                           ))}
@@ -419,7 +419,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         </thead>
                         <tbody className="divide-y divide-border/40">
                           {attendeeRegistry.slice(0, 3).map((item, idx) => (
-                            <tr key={idx} className="hover:bg-[#eeece7]/30 dark:hover:bg-[#2c2c35]/30">
+                            <tr key={idx} className="hover:bg-muted/30 dark:hover:bg-muted/10">
                               <td className="py-2.5 font-medium text-foreground">{item.name}</td>
                               <td className="py-2.5 text-muted-foreground">{item.eventTitle}</td>
                               <td className="py-2.5 text-muted-foreground">{item.date}</td>
@@ -442,7 +442,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     {/* Mobile View */}
                     <div className="block md:hidden space-y-3">
                       {attendeeRegistry.slice(0, 3).map((item, idx) => (
-                        <div key={idx} className="p-4 rounded-xl border border-border bg-[#eeece7]/10 dark:bg-[#2c2c35]/10 space-y-2 text-xs">
+                        <div key={idx} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-2 text-xs">
                           <div className="flex justify-between items-start">
                             <div>
                               <span className="font-semibold text-foreground block">{item.name}</span>
@@ -493,7 +493,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     
                     {/* Search & Add CTA */}
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-[#eeece7]/20 dark:bg-muted/10 text-xs text-muted-foreground w-full sm:w-60 focus-within:border-[#9b60aa] transition-colors">
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-xs text-muted-foreground w-full sm:w-60 focus-within:border-accent transition-colors">
                         <Search className="h-3.5 w-3.5" />
                         <input 
                           type="text" 
@@ -532,12 +532,12 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           .map((evt) => {
                             const registeredPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
                             return (
-                              <tr key={evt.id} className="group hover:bg-[#eeece7]/20 dark:hover:bg-[#2c2c35]/20">
+                              <tr key={evt.id} className="group hover:bg-muted/20 dark:hover:bg-muted/10">
                                 <td className="py-3">
                                   <div className="flex items-center gap-3">
                                     <img src={evt.image} alt={evt.title} className="h-9 w-9 rounded-lg object-cover border border-border" />
                                     <div>
-                                      <span className="font-medium text-foreground block group-hover:text-[#ff7759] transition-colors">{evt.title}</span>
+                                      <span className="font-medium text-foreground block group-hover:text-accent transition-colors">{evt.title}</span>
                                       <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                                         <MapPin className="h-3 w-3" />
                                         {evt.location}
@@ -549,7 +549,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 <td className="py-3">
                                   <div className="w-24 bg-muted h-1.5 rounded-full overflow-hidden flex mb-1">
                                     <div 
-                                      className="bg-[#ff7759] h-full rounded-full" 
+                                      className="bg-accent h-full rounded-full" 
                                       style={{ width: `${registeredPct}%` }} 
                                     />
                                   </div>
@@ -584,7 +584,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       .map((evt) => {
                         const registeredPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
                         return (
-                          <div key={evt.id} className="p-4 rounded-xl border border-border bg-[#eeece7]/10 dark:bg-[#2c2c35]/10 space-y-3 text-xs">
+                          <div key={evt.id} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs">
                             <div className="flex items-start gap-3">
                               <img src={evt.image} alt={evt.title} className="h-12 w-12 rounded-lg object-cover border border-border shrink-0" />
                               <div className="flex-1 min-w-0">
@@ -604,7 +604,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                               </div>
                               <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden flex">
                                 <div 
-                                  className="bg-[#ff7759] h-full rounded-full" 
+                                  className="bg-accent h-full rounded-full" 
                                   style={{ width: `${registeredPct}%` }} 
                                 />
                               </div>
@@ -654,7 +654,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       </thead>
                       <tbody className="divide-y divide-border/40">
                         {bookedTickets.map((evt, idx) => (
-                          <tr key={idx} className="hover:bg-[#eeece7]/30 dark:hover:bg-[#2c2c35]/30">
+                          <tr key={idx} className="hover:bg-muted/30 dark:hover:bg-muted/10">
                             <td className="py-3 font-mono font-bold text-foreground">#EVT-{evt.id.toUpperCase()}-{idx}</td>
                             <td className="py-3">
                               <span className="font-medium text-foreground block">{evt.title}</span>
@@ -669,7 +669,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                             <td className="py-3 text-right">
                               <button 
                                 onClick={() => showToast(`Simulating barcode scan for EVT-${evt.id}`)}
-                                className="text-[#ff7759] hover:underline font-medium"
+                                className="text-accent hover:underline font-medium"
                               >
                                 Scan Ticket
                               </button>
@@ -683,7 +683,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   {/* Mobile View */}
                   <div className="block md:hidden space-y-3">
                     {bookedTickets.map((evt, idx) => (
-                      <div key={idx} className="p-4 rounded-xl border border-border bg-[#eeece7]/10 dark:bg-[#2c2c35]/10 space-y-2 text-xs">
+                      <div key={idx} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-2 text-xs">
                         <div className="flex justify-between items-start">
                           <div>
                             <span className="font-mono font-bold text-foreground block">#EVT-{evt.id.toUpperCase()}-{idx}</span>
@@ -699,7 +699,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <span className="font-semibold text-foreground">{evt.price}</span>
                           <button 
                             onClick={() => showToast(`Simulating barcode scan for EVT-${evt.id}`)}
-                            className="text-[#ff7759] hover:underline font-medium text-[11px]"
+                            className="text-accent hover:underline font-medium text-[11px]"
                           >
                             Scan Ticket
                           </button>
@@ -731,7 +731,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                               <span className="text-muted-foreground">{evt.check}/{evt.total} checked ({evt.pct}%)</span>
                             </div>
                             <div className="w-full bg-muted/50 h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-[#003c33] h-full rounded-full" style={{ width: `${evt.pct}%` }} />
+                              <div className="bg-accent h-full rounded-full" style={{ width: `${evt.pct}%` }} />
                             </div>
                           </div>
                         ))}
@@ -760,8 +760,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   </div>
 
                   {/* General summary alerts */}
-                  <Card className="border border-border bg-[#eeece7]/40 dark:bg-muted/10 p-5 flex items-start gap-4 rounded-[16px] shadow-none">
-                    <Info className="h-5 w-5 text-[#ff7759] shrink-0 mt-0.5" />
+                  <Card className="border border-border bg-muted/40 dark:bg-muted/10 p-5 flex items-start gap-4 rounded-[16px] shadow-none">
+                    <Info className="h-5 w-5 text-accent shrink-0 mt-0.5" />
                     <div className="text-xs space-y-1.5">
                       <h4 className="font-heading font-medium text-foreground">Analytics Data Resolution</h4>
                       <p className="text-muted-foreground">
@@ -797,10 +797,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       </thead>
                       <tbody className="divide-y divide-border/40">
                         {attendeeRegistry.map((item) => (
-                          <tr key={item.id} className="hover:bg-[#eeece7]/20 dark:hover:bg-[#2c2c35]/20">
+                          <tr key={item.id} className="hover:bg-muted/20 dark:hover:bg-muted/10">
                             <td className="py-3">
                               <div className="flex items-center gap-2">
-                                <div className="h-7 w-7 rounded-full bg-[#ff7759]/10 text-[#ff7759] flex items-center justify-center font-semibold text-[10px]">
+                                <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px]">
                                   {item.name.charAt(0)}
                                 </div>
                                 <span className="font-medium text-foreground">{item.name}</span>
@@ -816,7 +816,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                   "inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold border transition-colors",
                                   item.checkedIn
                                     ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
-                                    : "bg-[#eeece7] border-border text-foreground hover:bg-[#d9d9dd]"
+                                    : "bg-muted border-border text-foreground hover:bg-muted/80"
                                 )}
                               >
                                 {item.checkedIn ? (
@@ -838,10 +838,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   {/* Mobile View */}
                   <div className="block md:hidden space-y-3">
                     {attendeeRegistry.map((item) => (
-                      <div key={item.id} className="p-4 rounded-xl border border-border bg-[#eeece7]/10 dark:bg-[#2c2c35]/10 space-y-3 text-xs">
+                      <div key={item.id} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-full bg-[#ff7759]/10 text-[#ff7759] flex items-center justify-center font-semibold text-[10px] shrink-0">
+                            <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px] shrink-0">
                               {item.name.charAt(0)}
                             </div>
                             <div>
@@ -869,7 +869,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                               "inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-colors w-full justify-center sm:w-auto",
                               item.checkedIn
                                 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
-                                : "bg-[#eeece7] border-border text-foreground hover:bg-[#d9d9dd]"
+                                : "bg-muted border-border text-foreground hover:bg-muted/80"
                             )}
                           >
                             {item.checkedIn ? (
@@ -901,7 +901,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       <input 
                         type="text" 
                         required
-                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-[#9b60aa] focus:outline-none"
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-accent focus:outline-none"
                         value={orgName}
                         onChange={(e) => setOrgName(e.target.value)}
                       />
@@ -913,7 +913,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       <input 
                         type="text" 
                         required
-                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-[#9b60aa] focus:outline-none"
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-accent focus:outline-none"
                         value={profileName}
                         onChange={(e) => setProfileName(e.target.value)}
                       />
@@ -924,7 +924,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       <input 
                         type="email" 
                         required
-                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-[#9b60aa] focus:outline-none"
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-accent focus:outline-none"
                         value={profileEmail}
                         onChange={(e) => setProfileEmail(e.target.value)}
                       />
@@ -933,10 +933,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     <div className="space-y-2 pt-2">
                       <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px] block">Security Preference</label>
                       <div className="flex gap-2">
-                        <span className="font-mono px-2.5 py-1 rounded-full bg-[#ff7759]/10 text-[#ff7759] border border-[#ff7759]/15">
+                        <span className="font-mono px-2.5 py-1 rounded-full bg-accent/10 text-accent border border-accent/15">
                           2FA Enabled
                         </span>
-                        <span className="font-mono px-2.5 py-1 rounded-full bg-stone-100 text-slate-500 dark:bg-muted/30 dark:text-slate-400 border border-border">
+                        <span className="font-mono px-2.5 py-1 rounded-full bg-muted text-muted-foreground border border-border">
                           OAuth Login Active
                         </span>
                       </div>

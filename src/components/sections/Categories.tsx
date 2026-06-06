@@ -42,13 +42,18 @@ export function Categories() {
     <section
       id="categories"
       className="relative section-padding overflow-hidden"
-      style={{ background: "#ffffff" }}
+      style={{ background: "var(--background)" }}
     >
       {/* Ghost Watermark */}
       <div
-        className="ghost-watermark absolute top-0 right-0 pointer-events-none overflow-hidden"
+        className="ghost-watermark absolute top-0 right-0 pointer-events-none overflow-hidden select-none"
         aria-hidden="true"
-        style={{ fontSize: "clamp(60px, 11vw, 160px)", color: "rgba(23, 23, 28, 0.015)" }}
+        style={{
+          fontSize: "clamp(60px, 11vw, 160px)",
+          color: "var(--foreground)",
+          opacity: 0.015,
+          fontWeight: 700
+        }}
       >
         EXPLORE
       </div>
@@ -56,7 +61,7 @@ export function Categories() {
       {/* Atmospheric blob */}
       <div
         className="absolute bottom-0 left-0 h-96 w-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(255,119,89,0.04) 0%, transparent 70%)" }}
+        style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--accent) 4%, transparent) 0%, transparent 70%)" }}
       />
 
       <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
@@ -69,13 +74,13 @@ export function Categories() {
             </div>
             <h2
               className="text-4xl md:text-5xl font-medium"
-              style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+              style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
             >
               Explore Event Categories
             </h2>
             <p
               className="font-weight-450 mt-4 leading-relaxed"
-              style={{ color: "#616161", fontSize: "16px" }}
+              style={{ color: "var(--muted-foreground)", fontSize: "16px" }}
             >
               Find precisely what you&apos;re looking for. Specialized workshops,
               seminars, and live entertainment across every interest.
@@ -86,7 +91,7 @@ export function Categories() {
             href="/events"
             className="inline-flex items-center gap-1.5 font-medium transition-all duration-200 group shrink-0"
             style={{
-              color: "#ff7759",
+              color: "var(--accent)",
               fontSize: "14px",
               letterSpacing: "-0.01em"
             }}
@@ -108,17 +113,17 @@ export function Categories() {
                 href="/events"
                 className="flex items-start gap-5 p-6 transition-all duration-200 group cursor-pointer"
                 style={{
-                  background: "#ffffff",
-                  borderRadius: "16px",
-                  border: "1px solid #d9d9dd",
+                  background: "var(--card)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--border)",
                   textDecoration: "none"
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "#ff7759"
+                  (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)"
                   ;(e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "#d9d9dd"
+                  (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"
                   ;(e.currentTarget as HTMLElement).style.transform = "translateY(0)"
                 }}
               >
@@ -126,11 +131,11 @@ export function Categories() {
                 <div
                   className="h-14 w-14 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-105"
                   style={{
-                    background: "rgba(255,119,89,0.06)",
-                    border: "1px solid rgba(255,119,89,0.15)"
+                    background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)"
                   }}
                 >
-                  <span style={{ color: "#ff7759", display: "flex" }}>
+                  <span style={{ color: "var(--accent)", display: "flex" }}>
                     <IconComponent className="h-6 w-6 transition-transform duration-300" />
                   </span>
                 </div>
@@ -140,18 +145,18 @@ export function Categories() {
                   <div className="flex justify-between items-center gap-2 mb-1.5">
                     <h3
                       className="font-medium text-base"
-                      style={{ color: "#17171c", letterSpacing: "-0.01em" }}
+                      style={{ color: "var(--foreground)", letterSpacing: "-0.01em" }}
                     >
                       {cat.name}
                     </h3>
                     <span
                       className="text-[10px] font-bold shrink-0"
                       style={{
-                        background: "#eeece7",
-                        color: "#616161",
+                        background: "var(--muted)",
+                        color: "var(--muted-foreground)",
                         padding: "3px 10px",
                         borderRadius: "999px",
-                        border: "1px solid #d9d9dd"
+                        border: "1px solid var(--border)"
                       }}
                     >
                       {cat.count} Events
@@ -159,7 +164,7 @@ export function Categories() {
                   </div>
                   <p
                     className="text-sm font-weight-450 leading-relaxed"
-                    style={{ color: "#616161" }}
+                    style={{ color: "var(--muted-foreground)" }}
                   >
                     {cat.description}
                   </p>

@@ -58,43 +58,43 @@
    ============================================ */
 
 :root {
-  /* Stark Canvas White background */
-  --background: #ffffff;
-  /* Ink Black default body text */
-  --foreground: #212121;
+  /* Soft White Canvas background */
+  --background: #F8FBFF;
+  /* Deep Ocean Blue default body text */
+  --foreground: #0A2342;
 
   /* Card and dialog surfaces */
   --card: #ffffff;
-  --card-foreground: #212121;
+  --card-foreground: #0A2342;
 
   --popover: #ffffff;
-  --popover-foreground: #212121;
+  --popover-foreground: #0A2342;
 
-  /* Primary — Near-Black primary buttons and frames */
-  --primary: #17171c;
-  --primary-foreground: #ffffff;
+  /* Primary — Deep Ocean Blue */
+  --primary: #0A2342;
+  --primary-foreground: #F8FBFF;
 
-  /* Secondary — Soft Stone outline elements */
-  --secondary: #eeece7;
-  --secondary-foreground: #17171c;
+  /* Secondary — Royal Blue */
+  --secondary: #17458F;
+  --secondary-foreground: #ffffff;
 
-  /* Muted — Soft Stone or Slate backgrounds */
-  --muted: #eeece7;
-  --muted-foreground: #93939f;
+  /* Muted — Soft Blue-Gray elements */
+  --muted: #E8F0FA;
+  --muted-foreground: #5C7694;
 
-  /* Accent — Coral tag outlines and taxonomy markers */
-  --accent: #ff7759;
+  /* Accent — Bright Ocean Blue */
+  --accent: #1E88E5;
   --accent-foreground: #ffffff;
 
   /* Destructive — Stark error red */
-  --destructive: #b30000;
+  --destructive: #d32f2f;
 
-  /* Borders — Standard hairline gray */
-  --border: #d9d9dd;
-  --input: #d9d9dd;
+  /* Borders — Soft Blue-Gray borders */
+  --border: #D1E1F0;
+  --input: #D1E1F0;
 
-  /* Ring — Focus Blue keyboard ring */
-  --ring: #4c6ee6;
+  /* Ring — Accent Blue focus ring */
+  --ring: #1E88E5;
 
   /* Cohere Corner Radii scale */
   --radius-xs: 4px;
@@ -111,33 +111,27 @@
 
   /* Sidebar */
   --sidebar: #ffffff;
-  --sidebar-foreground: #212121;
-  --sidebar-primary: #17171c;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eeece7;
-  --sidebar-accent-foreground: #17171c;
-  --sidebar-border: #d9d9dd;
-  --sidebar-ring: #4c6ee6;
+  --sidebar-foreground: #0A2342;
+  --sidebar-primary: #0A2342;
+  --sidebar-primary-foreground: #F8FBFF;
+  --sidebar-accent: #E8F0FA;
+  --sidebar-accent-foreground: #17458F;
+  --sidebar-border: #D1E1F0;
+  --sidebar-ring: #1E88E5;
 
-  /* Brand direct variables */
-  --cohere-black: #000000;
-  --ink: #212121;
-  --deep-green: #003c33;
-  --dark-navy: #071829;
-  --soft-stone: #eeece7;
-  --pale-green: #edfce9;
-  --pale-blue: #f1f5ff;
-  --hairline: #d9d9dd;
-  --border-light: #e5e7eb;
-  --card-border: #f2f2f2;
-  --slate: #75758a;
-  --body-muted: #616161;
-  --action-blue: #1863dc;
-  --coral: #ff7759;
-  --coral-soft: #ffad9b;
-  --form-focus: #9b60aa;
+  /* Theme direct colors */
+  --ocean-deep: #0A2342;
+  --ocean-royal: #17458F;
+  --ocean-bright: #1E88E5;
+  --ocean-aqua: #4FC3F7;
+  --ocean-soft-white: #F8FBFF;
 
-  /* ── Aurora gradient color tokens (replaces addVariablesForColors plugin) ── */
+  /* Backward compatibility alias for coral styles in tailwind */
+  --coral: #1E88E5;
+  --coral-soft: #4FC3F7;
+  --form-focus: #17458F;
+
+  /* Aurora gradient color tokens (replaces addVariablesForColors plugin) */
   --white: #ffffff;
   --black: #000000;
   --transparent: transparent;
@@ -149,41 +143,49 @@
 }
 
 .dark {
-  --background: #17171c;
-  --foreground: #ffffff;
+  /* Navy background */
+  --background: #081A33;
+  /* Soft White body text */
+  --foreground: #F8FBFF;
 
-  --card: #212121;
-  --card-foreground: #ffffff;
+  /* Midnight Blue card surface */
+  --card: #06101F;
+  --card-foreground: #F8FBFF;
 
-  --popover: #212121;
-  --popover-foreground: #ffffff;
+  --popover: #06101F;
+  --popover-foreground: #F8FBFF;
 
-  --primary: #ffffff;
-  --primary-foreground: #17171c;
+  /* Primary — Soft White on Dark */
+  --primary: #F8FBFF;
+  --primary-foreground: #081A33;
 
-  --secondary: #2c2c35;
-  --secondary-foreground: #ffffff;
+  /* Secondary — Royal Blue */
+  --secondary: #17458F;
+  --secondary-foreground: #F8FBFF;
 
-  --muted: #2c2c35;
-  --muted-foreground: #75758a;
+  /* Muted — Navy container highlights */
+  --muted: #0D223F;
+  --muted-foreground: #8FA6C2;
 
-  --accent: #ff7759;
-  --accent-foreground: #ffffff;
+  /* Accent — Aqua Blue in Dark mode */
+  --accent: #4FC3F7;
+  --accent-foreground: #081A33;
 
-  --destructive: #b30000;
+  --destructive: #f44336;
 
-  --border: #2c2c35;
-  --input: #2c2c35;
-  --ring: #4c6ee6;
+  /* Borders — Deep Navy highlight */
+  --border: #132D4E;
+  --input: #132D4E;
+  --ring: #4FC3F7;
 
-  --sidebar: #212121;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #17171c;
-  --sidebar-accent: #2c2c35;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2c2c35;
-  --sidebar-ring: #4c6ee6;
+  --sidebar: #06101F;
+  --sidebar-foreground: #F8FBFF;
+  --sidebar-primary: #F8FBFF;
+  --sidebar-primary-foreground: #06101F;
+  --sidebar-accent: #0D223F;
+  --sidebar-accent-foreground: #4FC3F7;
+  --sidebar-border: #132D4E;
+  --sidebar-ring: #4FC3F7;
 }
 
 /* ============================================
@@ -443,6 +445,65 @@
   }
 }
 
+/* Ocean shimmer wave skeleton keyframes */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Wave crest drift animation */
+@keyframes waveDrift {
+  0% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-25%) translateZ(0) scaleY(0.85);
+  }
+  100% {
+    transform: translateX(-50%) translateZ(0) scaleY(1);
+  }
+}
+
+/* Floating water bubbles */
+@keyframes bubbleRise {
+  0% {
+    transform: translateY(100vh) scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-20vh) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.shimmer-wave {
+  background: linear-gradient(
+    90deg, 
+    rgba(30, 136, 229, 0.06) 25%, 
+    rgba(79, 195, 247, 0.18) 37%, 
+    rgba(30, 136, 229, 0.06) 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.2s infinite linear;
+}
+
+.dark .shimmer-wave {
+  background: linear-gradient(
+    90deg, 
+    rgba(30, 136, 229, 0.04) 25%, 
+    rgba(79, 195, 247, 0.12) 37%, 
+    rgba(30, 136, 229, 0.04) 63%
+  );
+  background-size: 200% 100%;
+}
+
 .animate-float          { animation: float 6s ease-in-out infinite; }
 .animate-float-delayed  { animation: float 6s ease-in-out infinite; animation-delay: 2s; }
 .animate-float-reverse  { animation: floatReverse 7s ease-in-out infinite; animation-delay: 1s; }
@@ -450,6 +511,8 @@
 .animate-orbit-pulse    { animation: orbitPulse 3s ease-in-out infinite; }
 .animate-satellite-pop  { animation: satellitePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: 0.3s; }
 .animate-aurora         { animation: aurora 60s linear infinite; }
+.animate-wave-drift     { animation: waveDrift 20s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite; }
+.animate-bubble-rise    { animation: bubbleRise 15s linear infinite; }
 
 /* ============================================
    SECTION SPACING

@@ -8,6 +8,9 @@ import { getEventsAction } from "@/app/actions/eventActions"
 import { getBookedTicketsAction } from "@/app/actions/paymentActions"
 import { OrganizerDashboard } from "@/components/dashboard/OrganizerDashboard"
 
+import { Skeleton } from "@/components/ui/skeleton"
+import { FormSkeleton } from "@/components/skeletons/FormSkeleton"
+
 export default function CreateEventPage() {
   const { user, isSignedIn, isLoaded, signOut } = useAuthSession()
   const router = useRouter()
@@ -42,6 +45,7 @@ export default function CreateEventPage() {
           } else {
             const savedEvents = localStorage.getItem("rotasphere_events")
             finalEvents = savedEvents ? JSON.parse(savedEvents) : mockEvents
+            setEvents(finalEvents)
           }
         }
       } catch (err) {
@@ -83,9 +87,34 @@ export default function CreateEventPage() {
   // Loading state or unauthorized state
   if (!isLoaded || !user || (user.role !== "organizer" && user.role !== "admin")) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4" />
-        <p className="text-muted-foreground text-sm font-medium">Securing session...</p>
+      <div className="min-h-screen flex bg-background">
+        {/* Left Sidebar Skeleton */}
+        <div className="hidden lg:flex flex-col w-64 border-r border-violet-500/10 p-6 space-y-6 shrink-0">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+          <div className="space-y-3 pt-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <Skeleton key={i} className="h-9 w-full rounded-full" />
+            ))}
+          </div>
+        </div>
+
+        {/* Main Panel Content Skeleton */}
+        <div className="flex-1 flex flex-col p-6 lg:p-8 space-y-8 overflow-y-auto">
+          {/* Header row */}
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <Skeleton className="h-10 w-10 rounded-full" />
+          </div>
+
+          {/* Form Wizard wrapper */}
+          <FormSkeleton />
+        </div>
       </div>
     )
   }

@@ -534,7 +534,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
             <div className="mb-6 shrink-0 relative flex justify-between items-center w-full px-4 md:px-8">
               <div className="absolute left-10 right-10 top-[18px] h-0.5 bg-[#d9d9dd] dark:bg-white/10 z-0 rounded-full">
                 <div 
-                  className="h-full bg-gradient-to-r from-coral to-[#ff8c73] transition-all duration-300 rounded-full"
+                  className="h-full bg-gradient-to-r from-[#17458F] to-[#4FC3F7] transition-all duration-300 rounded-full"
                   style={{ width: `${progressPercentage}%` }}
                 />
               </div>
@@ -557,10 +557,10 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                     <div className={cn(
                       "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-sm",
                       isCompleted 
-                        ? "bg-gradient-to-r from-coral to-[#ff8c73] border-transparent text-white shadow-md scale-102"
+                        ? "bg-gradient-to-br from-[#17458F] to-[#4FC3F7] border-transparent text-white shadow-md scale-102"
                         : isActive
-                        ? "bg-white dark:bg-[#1f1f27] border-coral text-coral shadow-lg ring-4 ring-coral/10 font-bold scale-110"
-                        : "bg-white dark:bg-[#1a1a22] border-border dark:border-white/10 text-muted-foreground group-hover:border-muted-foreground/35 group-hover:text-foreground"
+                        ? "bg-white dark:bg-[#1f1f27] border-[#1E88E5] text-[#1E88E5] shadow-lg ring-4 ring-[#1E88E5]/20 font-bold scale-110"
+                        : "bg-white dark:bg-[#1a1a22] border-border dark:border-white/10 text-muted-foreground group-hover:border-[#1E88E5]/40 group-hover:text-[#1E88E5]"
                     )}>
                       {isCompleted ? (
                         <Check className="h-4 w-4 stroke-[3px]" />
@@ -570,7 +570,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                     </div>
                     <span className={cn(
                       "text-[9px] font-extrabold uppercase tracking-widest transition-colors duration-200 hidden md:block",
-                      isActive ? "text-coral" : isCompleted ? "text-foreground/80" : "text-muted-foreground"
+                      isActive ? "text-[#1E88E5]" : isCompleted ? "text-foreground/80" : "text-muted-foreground"
                     )}>
                       {step.label}
                     </span>
@@ -1545,7 +1545,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                       <Button
                         type="button"
                         onClick={handleNext}
-                        className="rounded-full bg-gradient-to-r from-coral to-[#ff8c73] hover:brightness-105 text-white shadow-[0_4px_14px_rgba(255,119,89,0.25)] border-0 flex items-center gap-1.5 py-5 px-6 text-xs font-extrabold tracking-wide transition-all"
+                        className="rounded-full bg-gradient-to-r from-[#17458F] to-[#1E88E5] hover:from-[#0A2342] hover:to-[#17458F] text-white shadow-[0_4px_14px_rgba(30,136,229,0.35)] border-0 flex items-center gap-1.5 py-5 px-6 text-xs font-extrabold tracking-wide transition-all"
                       >
                         Next Step
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -1554,7 +1554,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                       <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="rounded-full bg-gradient-to-r from-coral to-[#ff8c73] hover:brightness-105 text-white shadow-[0_4px_14px_rgba(255,119,89,0.25)] border-0 flex items-center gap-1.5 py-5 px-7 text-xs font-extrabold tracking-wide transition-all disabled:opacity-50"
+                        className="rounded-full bg-gradient-to-r from-[#17458F] to-[#1E88E5] hover:from-[#0A2342] hover:to-[#17458F] text-white shadow-[0_4px_14px_rgba(30,136,229,0.35)] border-0 flex items-center gap-1.5 py-5 px-7 text-xs font-extrabold tracking-wide transition-all disabled:opacity-50"
                       >
                         {isSubmitting ? (
                           "Publishing..."

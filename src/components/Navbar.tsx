@@ -73,16 +73,16 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
         <Link href="/" className="flex items-center gap-2 group">
           {/* Near-Black circle logo */}
           <div
-            className="h-9 w-9 rounded-full flex items-center justify-center font-black text-sm transition-transform group-hover:scale-105"
-            style={{ background: "#17171c", color: "#ffffff" }}
+            className="h-9 w-9 rounded-full flex items-center justify-center font-black text-sm transition-transform group-hover:scale-105 shrink-0"
+            style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
           >
             R
           </div>
           <span
             className="font-bold text-xl tracking-tight"
-            style={{ color: "#17171c", letterSpacing: "-0.03em" }}
+            style={{ color: "var(--foreground)", letterSpacing: "-0.03em" }}
           >
-            Rota<span style={{ color: "#ff7759" }}>Sphere</span>
+            Rota<span style={{ color: "var(--accent)" }}>Sphere</span>
           </span>
         </Link>
 
@@ -93,7 +93,7 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
               key={link.label}
               href={link.href}
               className="text-sm font-medium transition-colors hover:opacity-60"
-              style={{ color: "#212121", letterSpacing: "-0.01em" }}
+              style={{ color: "var(--foreground)", letterSpacing: "-0.01em" }}
             >
               {link.label}
             </Link>
@@ -107,12 +107,12 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="h-9 w-9 rounded-full flex items-center justify-center transition-colors cursor-pointer"
-              style={{ border: "1px solid #d9d9dd", background: "#ffffff" }}
+              style={{ border: "1px solid var(--border)", background: "var(--card)" }}
               aria-label="Toggle theme"
             >
               {theme === "dark"
-                ? <Sun className="h-4 w-4" style={{ color: "#ff7759" }} />
-                : <Moon className="h-4 w-4" style={{ color: "#17171c" }} />
+                ? <Sun className="h-4 w-4" style={{ color: "var(--accent)" }} />
+                : <Moon className="h-4 w-4" style={{ color: "var(--foreground)" }} />
               }
             </button>
           )}
@@ -122,11 +122,11 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
             onClick={handleCreateEventClick}
             className="flex items-center gap-1.5 text-sm font-medium transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
             style={{
-              background: "#17171c",
-              color: "#ffffff",
+              background: "var(--primary)",
+              color: "var(--primary-foreground)",
               borderRadius: "32px",
               padding: "8px 20px",
-              border: "1px solid #17171c",
+              border: "1px solid var(--primary)",
               letterSpacing: "-0.01em"
             }}
           >
@@ -142,18 +142,18 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex items-center gap-1.5 p-1 rounded-full transition-colors cursor-pointer"
-                    style={{ border: "1px solid #d9d9dd" }}
+                    style={{ border: "1px solid var(--border)" }}
                   >
                     <div
                       className="h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs overflow-hidden"
-                      style={{ background: "#17171c", color: "#ffffff" }}
+                      style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
                     >
                       {user.imageUrl
                         ? <img src={user.imageUrl} alt={user.fullName} className="h-full w-full object-cover" />
                         : <span>{userInitials}</span>
                       }
                     </div>
-                    <ChevronDown className="h-3.5 w-3.5 mr-1" style={{ color: "#75758a" }} />
+                    <ChevronDown className="h-3.5 w-3.5 mr-1" style={{ color: "var(--muted-foreground)" }} />
                   </button>
 
                   {/* Dropdown */}
@@ -161,49 +161,49 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                     <div
                       className="absolute right-0 mt-2 w-56 p-2 animate-in fade-in slide-in-from-top-3 duration-200"
                       style={{
-                        background: "#ffffff",
+                        background: "var(--card)",
                         borderRadius: "16px",
-                        border: "1px solid #d9d9dd",
+                        border: "1px solid var(--border)",
                         boxShadow: "rgba(0,0,0,0.02) 0px 12px 32px"
                       }}
                     >
                       <div className="px-3 py-2.5">
-                        <div className="font-medium text-sm truncate" style={{ color: "#212121", letterSpacing: "-0.01em" }}>
+                        <div className="font-medium text-sm truncate" style={{ color: "var(--foreground)", letterSpacing: "-0.01em" }}>
                           {user.fullName}
                         </div>
-                        <div className="text-xs font-weight-450 truncate" style={{ color: "#75758a" }}>
+                        <div className="text-xs font-weight-450 truncate" style={{ color: "var(--muted-foreground)" }}>
                           {user.email}
                         </div>
                         <span
                           className="inline-block text-[9px] font-bold uppercase mt-1.5"
                           style={{
-                            background: "#eeece7",
-                            color: "#ff7759",
+                            background: "var(--muted)",
+                            color: "var(--accent)",
                             padding: "2px 10px",
                             borderRadius: "999px",
                             letterSpacing: "0.06em",
-                            border: "1px solid #d9d9dd"
+                            border: "1px solid var(--border)"
                           }}
                         >
                           {role}
                         </span>
                       </div>
 
-                      <div style={{ height: "1px", background: "#d9d9dd", margin: "4px 0" }} />
+                      <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
 
                       <Link
                         href="/dashboard"
                         onClick={() => setIsDropdownOpen(false)}
                         className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl transition-colors"
-                        style={{ color: "#212121" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#eeece7"}
+                        style={{ color: "var(--foreground)" }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--muted)"}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
                       >
-                        <LayoutDashboard className="h-4 w-4" style={{ color: "#ff7759" }} />
+                        <LayoutDashboard className="h-4 w-4" style={{ color: "var(--accent)" }} />
                         Dashboard
                       </Link>
 
-                      <div style={{ height: "1px", background: "#d9d9dd", margin: "4px 0" }} />
+                      <div style={{ height: "1px", background: "var(--border)", margin: "4px 0" }} />
 
                       <button
                         onClick={async () => {
@@ -212,8 +212,8 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                           router.push("/")
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl transition-colors text-left cursor-pointer"
-                        style={{ color: "#b30000" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(179,0,0,0.06)"}
+                        style={{ color: "#d32f2f" }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(211,47,47,0.06)"}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}
                       >
                         <LogOut className="h-4 w-4" />
@@ -227,7 +227,7 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                   <Link
                     href="/sign-in"
                     className="text-sm font-medium transition-colors hover:opacity-70"
-                    style={{ color: "#212121", letterSpacing: "-0.01em" }}
+                    style={{ color: "var(--foreground)", letterSpacing: "-0.01em" }}
                   >
                     Sign In
                   </Link>
@@ -235,11 +235,11 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                     href="/sign-up"
                     className="text-sm font-medium transition-all duration-200 hover:-translate-y-0.5"
                     style={{
-                      background: "#ffffff",
-                      color: "#17171c",
+                      background: "var(--primary)",
+                      color: "var(--primary-foreground)",
                       borderRadius: "32px",
                       padding: "8px 20px",
-                      border: "1px solid #17171c",
+                      border: "1px solid var(--primary)",
                       letterSpacing: "-0.01em"
                     }}
                   >
@@ -257,12 +257,12 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="h-9 w-9 rounded-full flex items-center justify-center transition-colors cursor-pointer"
-              style={{ border: "1px solid #d9d9dd", background: "#ffffff" }}
+              style={{ border: "1px solid var(--border)", background: "var(--card)" }}
               aria-label="Toggle theme"
             >
               {theme === "dark"
-                ? <Sun className="h-4 w-4" style={{ color: "#ff7759" }} />
-                : <Moon className="h-4 w-4" style={{ color: "#17171c" }} />
+                ? <Sun className="h-4 w-4" style={{ color: "var(--accent)" }} />
+                : <Moon className="h-4 w-4" style={{ color: "var(--foreground)" }} />
               }
             </button>
           )}
@@ -272,33 +272,33 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
               render={
                 <button
                   className="h-9 w-9 rounded-full flex items-center justify-center transition-colors cursor-pointer"
-                  style={{ border: "1px solid #d9d9dd", background: "#ffffff" }}
+                  style={{ border: "1px solid var(--border)", background: "var(--card)" }}
                 >
-                  <Menu className="h-4 w-4" style={{ color: "#17171c" }} />
+                  <Menu className="h-4 w-4" style={{ color: "var(--foreground)" }} />
                 </button>
               }
             />
             <SheetContent
               side="right"
               className="w-[280px] sm:w-[320px]"
-              style={{ background: "#ffffff", border: "none", borderLeft: "1px solid #d9d9dd" }}
+              style={{ background: "var(--card)", border: "none", borderLeft: "1px solid var(--border)" }}
             >
               <SheetTitle
                 className="text-left text-lg font-medium mb-6"
-                style={{ color: "#17171c", letterSpacing: "-0.02em" }}
+                style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
               >
-                Rota<span style={{ color: "#ff7759" }}>Sphere</span>
+                Rota<span style={{ color: "var(--accent)" }}>Sphere</span>
               </SheetTitle>
 
               {/* Profile summary in mobile */}
               {mounted && isSignedIn && user && (
                 <div
                   className="flex items-center gap-3 p-3 mb-6"
-                  style={{ background: "#eeece7", borderRadius: "16px", border: "1px solid #d9d9dd" }}
+                  style={{ background: "var(--muted)", borderRadius: "16px", border: "1px solid var(--border)" }}
                 >
                   <div
                     className="h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm overflow-hidden"
-                    style={{ background: "#17171c", color: "#ffffff" }}
+                    style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
                   >
                     {user.imageUrl
                       ? <img src={user.imageUrl} alt={user.fullName} className="h-full w-full rounded-full object-cover" />
@@ -306,12 +306,12 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                     }
                   </div>
                   <div className="truncate">
-                    <span className="font-medium text-sm block truncate" style={{ color: "#212121" }}>
+                    <span className="font-medium text-sm block truncate" style={{ color: "var(--foreground)" }}>
                       {user.fullName}
                     </span>
                     <span
                       className="text-[10px] font-bold uppercase block mt-0.5"
-                      style={{ color: "#ff7759", letterSpacing: "0.06em" }}
+                      style={{ color: "var(--accent)", letterSpacing: "0.06em" }}
                     >
                       {role}
                     </span>
@@ -325,14 +325,14 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                     key={link.label}
                     href={link.href}
                     className="text-base font-medium transition-colors"
-                    style={{ color: "#212121", letterSpacing: "-0.01em" }}
+                    style={{ color: "var(--foreground)", letterSpacing: "-0.01em" }}
                   >
                     {link.label}
                   </Link>
                 ))}
               </nav>
 
-              <div style={{ height: "1px", background: "#d9d9dd", marginBottom: "20px" }} />
+              <div style={{ height: "1px", background: "var(--border)", marginBottom: "20px" }} />
 
               {mounted && (
                 <>
@@ -342,26 +342,26 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                         href="/dashboard"
                         className="flex items-center gap-2 w-full text-sm font-medium"
                         style={{
-                          background: "#eeece7",
-                          color: "#212121",
+                          background: "var(--muted)",
+                          color: "var(--foreground)",
                           borderRadius: "32px",
                           padding: "10px 20px",
-                          border: "1px solid #d9d9dd",
+                          border: "1px solid var(--border)",
                           textDecoration: "none"
                         }}
                       >
-                        <LayoutDashboard className="h-4 w-4" style={{ color: "#ff7759" }} />
+                        <LayoutDashboard className="h-4 w-4" style={{ color: "var(--accent)" }} />
                         Dashboard
                       </Link>
                       <button
                         onClick={handleCreateEventClick}
                         className="flex items-center gap-2 w-full text-sm font-medium cursor-pointer"
                         style={{
-                          background: "#17171c",
-                          color: "#ffffff",
+                          background: "var(--primary)",
+                          color: "var(--primary-foreground)",
                           borderRadius: "32px",
                           padding: "10px 20px",
-                          border: "1px solid #17171c"
+                          border: "1px solid var(--primary)"
                         }}
                       >
                         <Plus className="h-4 w-4" />
@@ -371,11 +371,11 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                         onClick={async () => { await signOut(); router.push("/") }}
                         className="flex items-center gap-2 w-full text-sm font-medium cursor-pointer"
                         style={{
-                          background: "rgba(179,0,0,0.06)",
-                          color: "#b30000",
+                          background: "rgba(211,47,47,0.06)",
+                          color: "#d32f2f",
                           borderRadius: "32px",
                           padding: "10px 20px",
-                          border: "1px solid rgba(179,0,0,0.15)"
+                          border: "1px solid rgba(211,47,47,0.15)"
                         }}
                       >
                         <LogOut className="h-4 w-4" />
@@ -388,11 +388,11 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                         onClick={handleCreateEventClick}
                         className="flex items-center justify-center gap-2 w-full text-sm font-medium cursor-pointer"
                         style={{
-                          background: "#17171c",
-                          color: "#ffffff",
+                          background: "var(--primary)",
+                          color: "var(--primary-foreground)",
                           borderRadius: "32px",
                           padding: "10px 20px",
-                          border: "1px solid #17171c"
+                          border: "1px solid var(--primary)"
                         }}
                       >
                         <Plus className="h-4 w-4" />
@@ -403,11 +403,11 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                           href="/sign-in"
                           className="flex items-center justify-center text-sm font-medium"
                           style={{
-                            background: "#ffffff",
-                            color: "#17171c",
+                            background: "var(--card)",
+                            color: "var(--foreground)",
                             borderRadius: "32px",
                             padding: "10px",
-                            border: "1px solid #d9d9dd",
+                            border: "1px solid var(--border)",
                             textDecoration: "none"
                           }}
                         >
@@ -417,11 +417,11 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                           href="/sign-up"
                           className="flex items-center justify-center text-sm font-medium"
                           style={{
-                            background: "#17171c",
-                            color: "#ffffff",
+                            background: "var(--primary)",
+                            color: "var(--primary-foreground)",
                             borderRadius: "32px",
                             padding: "10px",
-                            border: "1px solid #17171c",
+                            border: "1px solid var(--primary)",
                             textDecoration: "none"
                           }}
                         >
