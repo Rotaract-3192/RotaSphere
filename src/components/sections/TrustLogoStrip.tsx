@@ -79,7 +79,7 @@ const logos = [
 export function TrustLogoStrip() {
   return (
     <section
-      className="relative py-14 overflow-hidden"
+      className="relative py-10 sm:py-14 overflow-hidden"
       style={{ background: "#ffffff", borderTop: "1px solid #d9d9dd", borderBottom: "1px solid #d9d9dd" }}
     >
       <div className="container mx-auto px-6 md:px-12 max-w-7xl">
@@ -93,7 +93,7 @@ export function TrustLogoStrip() {
         </p>
 
         {/* Logo Row */}
-        <div className="flex flex-wrap items-center justify-center gap-12 md:gap-16">
+        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 lg:gap-16">
           {logos.map((logo, i) => (
             <div
               key={i}

@@ -74,7 +74,7 @@ export default function AboutPage() {
 
         {/* Page Header */}
         <div
-          className="relative overflow-hidden py-20"
+          className="relative overflow-hidden py-14 sm:py-20"
           style={{ background: "var(--primary)", borderBottom: "none" }}
         >
           {/* Orbital arcs */}
@@ -82,10 +82,10 @@ export default function AboutPage() {
             <circle cx="300" cy="0" r="180" stroke="var(--accent)" strokeWidth="1" fill="none" opacity="0.12" />
             <circle cx="300" cy="0" r="120" stroke="var(--accent)" strokeWidth="1" fill="none" opacity="0.08" />
           </svg>
-          <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+          <div className="container mx-auto px-4 sm:px-6 md:px-12 max-w-7xl relative z-10">
             <span className="eyebrow-accent mb-4 block">About RotaSphere</span>
             <h1
-              className="text-5xl md:text-6xl font-medium mb-4"
+              className="text-4xl sm:text-5xl md:text-6xl font-medium mb-4"
               style={{ color: "var(--primary-foreground)", letterSpacing: "-0.02em" }}
             >
               Rotaract District 3192
@@ -93,8 +93,8 @@ export default function AboutPage() {
               Event Hub
             </h1>
             <p
-              className="font-weight-450 max-w-xl"
-              style={{ color: "var(--primary-foreground)", opacity: 0.7, fontSize: "16px" }}
+              className="font-weight-450 max-w-xl text-sm sm:text-base"
+              style={{ color: "var(--primary-foreground)", opacity: 0.7 }}
             >
               This web application was custom-built for Rotaract District 3192 to facilitate showcasing events, managing registrations, and booking ticket passes for all club and district-wide initiatives.
             </p>
@@ -105,12 +105,12 @@ export default function AboutPage() {
         <Stats />
 
         {/* Features Grid */}
-        <section className="section-padding" style={{ background: "var(--soft-stone)" }}>
-          <div className="container mx-auto px-6 md:px-12 max-w-7xl">
-            <div className="text-center mb-14">
+        <section className="section-padding" style={{ background: "var(--background)" }}>
+          <div className="container mx-auto px-4 sm:px-6 md:px-12 max-w-7xl">
+            <div className="text-center mb-10 sm:mb-14">
               <span className="eyebrow-accent mb-4 block">Everything You Need</span>
               <h2
-                className="text-4xl md:text-5xl font-medium"
+                className="text-3xl sm:text-4xl md:text-5xl font-medium"
                 style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
               >
                 Platform Features
@@ -123,7 +123,7 @@ export default function AboutPage() {
                 return (
                   <div
                     key={i}
-                    className="p-8 transition-all duration-300"
+                    className="p-6 sm:p-8 transition-all duration-300"
                     style={{
                       background: "var(--card)",
                       borderRadius: "var(--radius-md)",
@@ -140,19 +140,22 @@ export default function AboutPage() {
                   >
                     <div
                       className="h-14 w-14 rounded-full flex items-center justify-center mb-5"
-                      style={{ background: "rgba(255,119,89,0.08)", border: "1px solid rgba(255,119,89,0.15)" }}
+                      style={{
+                        background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+                        border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)"
+                      }}
                     >
                       <Icon className="h-6 w-6" style={{ color: "var(--accent)" }} />
                     </div>
                     <h3
-                      className="text-xl font-medium mb-2"
+                      className="text-lg sm:text-xl font-medium mb-2"
                       style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
                     >
                       {feat.title}
                     </h3>
                     <p
-                      className="font-weight-450 leading-relaxed text-sm"
-                      style={{ color: "var(--body-muted)" }}
+                      className="font-weight-450 leading-relaxed text-xs sm:text-sm"
+                      style={{ color: "var(--muted-foreground)" }}
                     >
                       {feat.desc}
                     </p>
@@ -172,19 +175,19 @@ export default function AboutPage() {
           >
             MISSION
           </div>
-          <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+          <div className="container mx-auto px-4 sm:px-6 md:px-12 max-w-7xl relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <span className="eyebrow-accent mb-6 block">Our Mission</span>
               <h2
-                className="text-4xl md:text-5xl font-medium mb-6"
+                className="text-3xl sm:text-4xl md:text-5xl font-medium mb-6"
                 style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
               >
                 Making Every Event
                 Extraordinary
               </h2>
               <p
-                className="font-weight-450 leading-relaxed mb-10 text-lg"
-                style={{ color: "var(--body-muted)" }}
+                className="font-weight-450 leading-relaxed mb-10 text-sm sm:text-base md:text-lg"
+                style={{ color: "var(--muted-foreground)" }}
               >
                 We believe that Rotaract events have the power to connect youth, inspire community service,
                 and create lasting memories. This platform removes the friction from event registration and showcasing — so clubs across District 3192 can focus on making a real difference.

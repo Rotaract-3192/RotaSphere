@@ -62,8 +62,8 @@ const capabilities = [
 export function DarkFeatureBand() {
   return (
     <section
-      className="relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #0A2342 0%, #06101F 100%)", padding: "80px 0" }}
+      className="relative overflow-hidden py-14 sm:py-20"
+      style={{ background: "linear-gradient(135deg, #0A2342 0%, #06101F 100%)" }}
     >
       {/* Ghost watermark */}
       <div

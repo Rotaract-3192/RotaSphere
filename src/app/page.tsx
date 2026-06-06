@@ -13,7 +13,6 @@ import { getEventsAction } from "@/app/actions/eventActions"
 import { ArrowRight, Calendar, Tag, Info } from "lucide-react"
 import Link from "next/link"
 import EventsMapSection from "@/components/sections/EventsMapSection"
-import { Testimonials } from "@/components/sections/Testimonials"
 
 import { MapSkeleton } from "@/components/skeletons/MapSkeleton"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -104,10 +103,10 @@ export default function Home() {
           style={{ background: "var(--background)", borderBottom: "1px solid var(--border)" }}
         >
           <div className="container mx-auto px-6 md:px-12 max-w-7xl">
-            <div className="text-center mb-14">
+            <div className="text-center mb-10 sm:mb-14">
               <span className="eyebrow-accent mb-4 block">Explore The Platform</span>
               <h2
-                className="text-4xl md:text-5xl font-medium"
+                className="text-3xl sm:text-4xl md:text-5xl font-medium"
                 style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
               >
                 Everything in One Place
@@ -213,9 +212,6 @@ export default function Home() {
         {/* 5. Dark Feature Band */}
         <DarkFeatureBand />
 
-        {/* Testimonials (Responsive Swipeable Carousel) */}
-        <Testimonials />
-
         {/* 6. Upcoming Events Preview Strip */}
         {isLoading ? (
           <section
@@ -288,7 +284,7 @@ export default function Home() {
                     className="shrink-0 flex flex-col"
                     style={{
                       scrollSnapAlign: "start",
-                      width: "260px",
+                      width: "min(260px, 80vw)",
                       background: "var(--card)",
                       borderRadius: "16px",
                       border: "1px solid var(--border)",

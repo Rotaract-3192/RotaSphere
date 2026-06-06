@@ -64,23 +64,23 @@ export function Categories() {
         style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--accent) 4%, transparent) 0%, transparent 70%)" }}
       />
 
-      <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 md:px-12 max-w-7xl relative z-10">
 
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-14 md:mb-16 gap-4 sm:gap-6">
           <div className="max-w-xl">
             <div className="mb-4">
               <span className="eyebrow-accent">Categorized For You</span>
             </div>
             <h2
-              className="text-4xl md:text-5xl font-medium"
+              className="text-3xl sm:text-4xl md:text-5xl font-medium"
               style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
             >
               Explore Event Categories
             </h2>
             <p
-              className="font-weight-450 mt-4 leading-relaxed"
-              style={{ color: "var(--muted-foreground)", fontSize: "16px" }}
+              className="font-weight-450 mt-4 leading-relaxed text-sm sm:text-base"
+              style={{ color: "var(--muted-foreground)" }}
             >
               Find precisely what you&apos;re looking for. Specialized workshops,
               seminars, and live entertainment across every interest.

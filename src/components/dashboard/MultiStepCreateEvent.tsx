@@ -325,7 +325,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
       <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
         <div className="relative flex justify-between items-center w-full">
           {/* Progress bar line */}
-          <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-muted z-0">
+          <div className="absolute left-4 right-4 top-4 -translate-y-1/2 h-0.5 bg-muted z-0">
             <div 
               className="h-full bg-primary transition-all duration-300"
               style={{ 

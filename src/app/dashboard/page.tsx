@@ -165,7 +165,7 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex bg-background">
         {/* Left Sidebar Skeleton (hidden on mobile, visible on lg) */}
-        <div className="hidden lg:flex flex-col w-64 border-r border-violet-500/10 p-6 space-y-6">
+        <div className="hidden lg:flex flex-col w-64 border-r border-border p-6 space-y-6">
           <div className="flex items-center gap-2">
             <Skeleton className="h-8 w-8 rounded-full" />
             <Skeleton className="h-5 w-24" />

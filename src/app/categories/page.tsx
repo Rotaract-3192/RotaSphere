@@ -21,8 +21,8 @@ export default function CategoriesPage() {
       <main className="flex-grow pt-24" style={{ background: "var(--background)" }}>
         {/* Page Header */}
         <div
-          className="relative overflow-hidden py-20"
-          style={{ background: "var(--soft-stone)", borderBottom: "1px solid var(--border)" }}
+          className="relative overflow-hidden py-14 sm:py-20"
+          style={{ background: "var(--background)", borderBottom: "1px solid var(--border)" }}
         >
           <div
             className="ghost-watermark absolute inset-0 flex items-center justify-end pr-6 pointer-events-none overflow-hidden"
@@ -31,17 +31,17 @@ export default function CategoriesPage() {
           >
             EXPLORE
           </div>
-          <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+          <div className="container mx-auto px-4 sm:px-6 md:px-12 max-w-7xl relative z-10">
             <span className="eyebrow-accent mb-4 block">Categorized For You</span>
             <h1
-              className="text-5xl md:text-6xl font-medium"
+              className="text-4xl sm:text-5xl md:text-6xl font-medium"
               style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
             >
               Event Categories
             </h1>
             <p
-              className="mt-4 font-weight-450 max-w-xl"
-              style={{ color: "var(--body-muted)", fontSize: "16px" }}
+              className="mt-4 font-weight-450 max-w-xl text-sm sm:text-base"
+              style={{ color: "var(--muted-foreground)" }}
             >
               Find exactly what you&apos;re looking for — community service projects, professional seminars, fellowship events, fundraisers, and international service partnerships.
             </p>

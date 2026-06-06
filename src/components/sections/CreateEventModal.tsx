@@ -531,8 +531,8 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             
             {/* Horizontal Stepper Nodes */}
-            <div className="mb-6 shrink-0 relative flex justify-between items-center w-full px-4 md:px-8">
-              <div className="absolute left-10 right-10 top-[18px] h-0.5 bg-[#d9d9dd] dark:bg-white/10 z-0 rounded-full">
+            <div className="mb-6 shrink-0 relative flex justify-between items-center w-full px-2 md:px-8">
+              <div className="absolute left-6 right-6 top-[14px] md:left-10 md:right-10 md:top-[18px] h-0.5 bg-[#d9d9dd] dark:bg-white/10 z-0 rounded-full">
                 <div 
                   className="h-full bg-gradient-to-r from-[#17458F] to-[#4FC3F7] transition-all duration-300 rounded-full"
                   style={{ width: `${progressPercentage}%` }}
@@ -552,10 +552,10 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                         setCurrentStep(step.number)
                       }
                     }}
-                    className="relative z-10 flex flex-col items-center gap-2 group focus:outline-none"
+                    className="relative z-10 flex flex-col items-center gap-1.5 group focus:outline-none"
                   >
                     <div className={cn(
-                      "h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-sm",
+                      "h-8 w-8 md:h-10 md:w-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 shadow-sm",
                       isCompleted 
                         ? "bg-gradient-to-br from-[#17458F] to-[#4FC3F7] border-transparent text-white shadow-md scale-102"
                         : isActive
@@ -563,9 +563,9 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                         : "bg-white dark:bg-[#1a1a22] border-border dark:border-white/10 text-muted-foreground group-hover:border-[#1E88E5]/40 group-hover:text-[#1E88E5]"
                     )}>
                       {isCompleted ? (
-                        <Check className="h-4 w-4 stroke-[3px]" />
+                        <Check className="h-3.5 w-3.5 md:h-4 md:w-4 stroke-[3px]" />
                       ) : (
-                        <Icon className="h-4.5 w-4.5" />
+                        <Icon className="h-3.5 w-3.5 md:h-4.5 md:w-4.5" />
                       )}
                     </div>
                     <span className={cn(

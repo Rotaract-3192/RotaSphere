@@ -48,6 +48,9 @@
   --radius-3xl: var(--radius-3xl);
   --radius-4xl: var(--radius-4xl);
 
+  --color-coral: var(--coral);
+  --color-coral-soft: var(--coral-soft);
+
   /* Aurora animation — used by AuroraBackground component */
   --animate-aurora: aurora 60s linear infinite;
 }
@@ -201,10 +204,12 @@
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
   html {
     @apply font-sans;
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   /* Headline hierarchy — DESIGN.md tight -2% tracking */

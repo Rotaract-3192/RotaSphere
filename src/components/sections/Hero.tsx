@@ -41,7 +41,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
 
   return (
     <section
-      className="relative flex flex-col items-center justify-center pt-40 pb-32 overflow-hidden w-full min-h-[90vh]"
+      className="relative flex flex-col items-center justify-center pt-28 sm:pt-36 md:pt-40 pb-24 sm:pb-32 overflow-hidden w-full min-h-[85vh] sm:min-h-[90vh]"
       style={{ color: "#ffffff" }}
     >
       {/* ─── MeshGradient Shader Background ─── */}
@@ -139,7 +139,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
             {/* H1 Headline */}
             <motion.h1
               variants={itemVariants}
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-[68px] font-extrabold leading-[1.05] mb-6 text-white tracking-headlines"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[68px] font-extrabold leading-[1.08] mb-5 sm:mb-6 text-white tracking-headlines px-2 sm:px-0"
             >
               Connecting Communities.
               <br />
@@ -149,8 +149,8 @@ export function Hero({ onCreateEventClick }: HeroProps) {
             {/* Body copy */}
             <motion.p
               variants={itemVariants}
-              className="font-weight-450 text-base leading-[1.65] max-w-2xl mb-10 text-center opacity-90"
-              style={{ fontSize: "17px", color: "#E0ECFB" }}
+              className="font-weight-450 text-sm sm:text-base leading-[1.65] max-w-2xl mb-8 sm:mb-10 text-center opacity-90 px-4 sm:px-0"
+              style={{ color: "#E0ECFB" }}
             >
               Step into the year of leadership and collaboration. RotaSphere is the premium command center 
               built for service initiatives, professional training, conferences, and fellowships. 
@@ -200,7 +200,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
             {/* Social Proof Row */}
             <motion.div
               variants={itemVariants}
-              className="flex items-center justify-center gap-5 pt-6 w-full max-w-md mb-8"
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5 pt-5 sm:pt-6 w-full max-w-sm sm:max-w-md mb-8"
               style={{ borderTop: "1px solid rgba(79, 195, 247, 0.2)" }}
             >
               <div className="flex -space-x-3">
@@ -209,14 +209,14 @@ export function Hero({ onCreateEventClick }: HeroProps) {
                     key={i}
                     src={src}
                     alt="User"
-                    className="h-9 w-9 rounded-full object-cover border-2 border-[#0A2342]"
+                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover border-2 border-[#0A2342]"
                   />
                 ))}
               </div>
-              <div className="text-left">
-                <div className="flex items-center gap-1 mb-0.5">
+              <div className="text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-1 mb-0.5">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-sky-400 text-sky-400" />
+                    <Star key={i} className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-sky-400 text-sky-400" />
                   ))}
                   <span className="text-xs font-bold ml-1 text-white">4.9/5</span>
                 </div>

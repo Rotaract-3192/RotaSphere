@@ -85,8 +85,8 @@ export function Footer() {
 
   return (
     <footer
-      className="relative overflow-hidden"
-      style={{ background: "#17171c", paddingTop: "80px", paddingBottom: "60px" }}
+      style={{ background: "#17171c" }}
+      className="relative overflow-hidden pt-14 pb-10 sm:pt-20 sm:pb-14 md:pt-[80px] md:pb-[60px]"
     >
       {/* Ghost Watermark — white-on-dark */}
       <div
@@ -252,11 +252,11 @@ export function Footer() {
         <div style={{ height: "1px", background: "rgba(255,255,255,0.12)", marginBottom: "28px" }} />
 
         {/* Bottom row */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-3 text-center sm:text-left">
           <p className="text-xs font-weight-450" style={{ color: "rgba(255,255,255,0.4)" }}>
             © {new Date().getFullYear()} RotaSphere Inc. All rights reserved.
           </p>
-          <div className="flex gap-6">
+          <div className="flex flex-wrap justify-center sm:justify-end gap-4 sm:gap-6">
             {[
               { label: "Privacy Policy", href: "/privacy" },
               { label: "Terms of Service", href: "/terms" },

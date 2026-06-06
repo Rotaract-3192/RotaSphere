@@ -258,18 +258,18 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
   };
 
   return (
-    <section className="py-20 relative border-t border-white/5 bg-[#0f0f12]">
+    <section className="py-14 sm:py-20 relative border-t border-white/5 bg-[#0f0f12]">
       {/* Background radial effects */}
       <div className="absolute inset-0 bg-radial-grid opacity-[0.03] pointer-events-none" />
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-coral/5 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 md:px-12 max-w-7xl relative z-10">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
             <span className="eyebrow-accent mb-2 block">Location Discovery</span>
-            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
               Find Events <span className="text-coral">Near You</span>
             </h2>
             <p className="text-slate-400 mt-2 max-w-xl text-sm leading-relaxed">
@@ -277,7 +277,7 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
             </p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               onClick={handleUseMyLocation}
               className="rounded-full bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] hover:border-white/20 text-white text-xs font-bold uppercase tracking-wider py-5 px-6 flex items-center gap-2 transition-all duration-300"
@@ -468,7 +468,7 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
             {/* Map and Content split layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Main Map Column */}
-              <div className="lg:col-span-2 relative h-[450px] lg:h-[550px] w-full rounded-3xl overflow-hidden border border-white/10 bg-slate-950/80 shadow-2xl">
+              <div className="lg:col-span-2 relative h-[300px] sm:h-[400px] lg:h-[550px] w-full rounded-3xl overflow-hidden border border-white/10 bg-slate-950/80 shadow-2xl">
                 {isOlaConfigured ? (
                   <div ref={mapContainerRef} className="h-full w-full" />
                 ) : (
@@ -561,7 +561,7 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
               </div>
 
               {/* Sidebar / Nearby Trending Column */}
-              <div className="flex flex-col h-[450px] lg:h-[550px] bg-white/[0.01] border border-white/10 rounded-3xl p-5 overflow-hidden justify-between">
+              <div className="flex flex-col h-[350px] sm:h-[450px] lg:h-[550px] bg-white/[0.01] border border-white/10 rounded-3xl p-5 overflow-hidden justify-between">
                 <div className="flex items-center gap-2 pb-3 border-b border-white/5">
                   <TrendingUp className="h-4 w-4 text-coral" />
                   <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 text-left">

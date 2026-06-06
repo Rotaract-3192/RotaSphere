@@ -54,8 +54,8 @@ export default function EventsPage() {
       <main className="flex-grow pt-24" style={{ background: "var(--background)" }}>
         {/* Page Header */}
         <div
-          className="relative overflow-hidden py-20"
-          style={{ background: "var(--soft-stone)", borderBottom: "1px solid var(--border)" }}
+          className="relative overflow-hidden py-14 sm:py-20"
+          style={{ background: "var(--background)", borderBottom: "1px solid var(--border)" }}
         >
           {/* Ghost watermark */}
           <div
@@ -65,17 +65,17 @@ export default function EventsPage() {
           >
             EVENTS
           </div>
-          <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+          <div className="container mx-auto px-4 sm:px-6 md:px-12 max-w-7xl relative z-10">
             <span className="eyebrow-accent mb-4 block">Discover • Explore • Attend</span>
             <h1
-              className="text-5xl md:text-6xl font-medium"
+              className="text-4xl sm:text-5xl md:text-6xl font-medium"
               style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
             >
               All Platform Events
             </h1>
             <p
-              className="mt-4 font-weight-450 max-w-xl"
-              style={{ color: "var(--body-muted)", fontSize: "16px" }}
+              className="mt-4 font-weight-450 max-w-xl text-sm sm:text-base"
+              style={{ color: "var(--muted-foreground)" }}
             >
               Browse and book ticket passes for community service drives, professional seminars, fundraisers, and fellowships.
             </p>
@@ -83,20 +83,20 @@ export default function EventsPage() {
         </div>
 
         {isLoading ? (
-          <section className="relative py-20" style={{ background: "#eeece7" }}>
-            <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
+          <section className="relative py-14 sm:py-20" style={{ background: "var(--background)" }}>
+            <div className="container mx-auto px-4 sm:px-6 md:px-12 max-w-7xl relative z-10">
               {/* Category filter pills loader */}
-              <div className="flex flex-wrap items-center justify-center gap-2 mb-14">
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-10 sm:mb-14">
                 {Array.from({ length: 7 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="h-8 w-28 animate-pulse rounded-full bg-violet-600/10 dark:bg-violet-400/5 border border-violet-500/10 dark:border-violet-400/5"
+                    className="h-8 w-28 animate-pulse rounded-full bg-sky-500/10 dark:bg-sky-400/5 border border-sky-500/10 dark:border-sky-400/5"
                   />
                 ))}
               </div>
 
               {/* Event card grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-14">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-14">
                 {Array.from({ length: 6 }).map((_, idx) => (
                   <EventCardSkeleton key={idx} />
                 ))}
