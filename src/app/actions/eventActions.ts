@@ -225,7 +225,8 @@ export async function createEventAction(input: EventFormInput) {
       .from("events")
       .insert({
         title: input.title,
-        slug: input.slug || `evt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        // Always append a unique suffix server-side to prevent events_slug_key constraint violations
+        slug: `${(input.slug || input.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-").trim()).slice(0, 60)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
         description: input.description,
         full_description: input.fullDescription,
         banner_url: input.bannerUrl,
