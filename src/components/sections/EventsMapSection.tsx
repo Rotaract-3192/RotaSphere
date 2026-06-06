@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { EventItem } from '@/data/mockData'
 import { cn } from '@/lib/utils'
 import { isOlaMapsConfigured } from '@/lib/olaMapsService'
@@ -283,20 +285,113 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
               Use My Location
             </Button>
 
-            <Button
-              onClick={() => setShowFiltersMobile(!showFiltersMobile)}
-              className="lg:hidden rounded-full bg-white/[0.04] border border-white/10 text-white py-5 px-4"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
+            <Sheet open={showFiltersMobile} onOpenChange={setShowFiltersMobile}>
+              <SheetTrigger
+                render={
+                  <Button
+                    className="lg:hidden rounded-full bg-white/[0.04] border border-white/10 text-white h-10 w-10 flex items-center justify-center p-0"
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <SheetContent side="bottom" className="bg-[#0f0f12] border-white/10 p-6 rounded-t-3xl max-h-[85vh] overflow-y-auto text-white">
+                <SheetHeader className="mb-4 text-left">
+                  <SheetTitle className="text-white text-md font-bold uppercase tracking-widest">Filter Events</SheetTitle>
+                </SheetHeader>
+                <div className="space-y-4">
+                  {/* Search Input */}
+                  <div className="space-y-1 text-left">
+                    <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Search Keyword</Label>
+                    <div className="relative">
+                      <Input
+                        placeholder="Search by city, title..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="rounded-xl border-white/10 bg-[#16161a] pl-9 py-5 text-xs text-white placeholder-slate-400 focus-visible:ring-accent/50 w-full"
+                      />
+                      <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                    </div>
+                  </div>
+
+                  {/* Category selection */}
+                  <div className="space-y-1 text-left">
+                    <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Category</Label>
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-[#16161a] p-3 text-xs text-white focus:ring-1 focus:ring-accent outline-none h-11"
+                    >
+                      <option value="all" className="bg-[#16161a] text-white">All Categories</option>
+                      <option value="community" className="bg-[#16161a] text-white">Community Service</option>
+                      <option value="professional" className="bg-[#16161a] text-white">Professional Development</option>
+                      <option value="club" className="bg-[#16161a] text-white">Club Service</option>
+                      <option value="international" className="bg-[#16161a] text-white">International Service</option>
+                      <option value="fundraiser" className="bg-[#16161a] text-white">Fundraisers</option>
+                      <option value="pr" className="bg-[#16161a] text-white">Public Relations</option>
+                    </select>
+                  </div>
+
+                  {/* Date Range selection */}
+                  <div className="space-y-1 text-left">
+                    <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Date</Label>
+                    <select
+                      value={selectedDateRange}
+                      onChange={(e) => setSelectedDateRange(e.target.value as any)}
+                      className="w-full rounded-xl border border-white/10 bg-[#16161a] p-3 text-xs text-white focus:ring-1 focus:ring-accent outline-none h-11"
+                    >
+                      <option value="all" className="bg-[#16161a] text-white">Any Date</option>
+                      <option value="today" className="bg-[#16161a] text-white">Today</option>
+                      <option value="week" className="bg-[#16161a] text-white">This Week</option>
+                      <option value="month" className="bg-[#16161a] text-white">This Month</option>
+                    </select>
+                  </div>
+
+                  {/* Price & Location Type selection */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1 text-left">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Price</Label>
+                      <select
+                        value={selectedPriceType}
+                        onChange={(e) => setSelectedPriceType(e.target.value as any)}
+                        className="w-full rounded-xl border border-white/10 bg-[#16161a] p-3 text-xs text-white focus:ring-1 focus:ring-accent outline-none h-11"
+                      >
+                        <option value="all" className="bg-[#16161a] text-white">All Prices</option>
+                        <option value="free" className="bg-[#16161a] text-white">Free</option>
+                        <option value="paid" className="bg-[#16161a] text-white">Paid</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1 text-left">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Type</Label>
+                      <select
+                        value={selectedLocationType}
+                        onChange={(e) => setSelectedLocationType(e.target.value as any)}
+                        className="w-full rounded-xl border border-white/10 bg-[#16161a] p-3 text-xs text-white focus:ring-1 focus:ring-accent outline-none h-11"
+                      >
+                        <option value="all" className="bg-[#16161a] text-white">All Types</option>
+                        <option value="in-person" className="bg-[#16161a] text-white">In-Person</option>
+                        <option value="online" className="bg-[#16161a] text-white">Online</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <Button 
+                      onClick={() => setShowFiltersMobile(false)}
+                      className="w-full rounded-xl bg-coral hover:bg-coral/90 text-white font-bold py-4 text-xs"
+                    >
+                      Apply Filters
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
 
         {/* Filters Panel (Desktop row layout, glassmorphic styling) */}
-        <div className={cn(
-          "mb-6 p-5 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl space-y-4 transition-all duration-300",
-          showFiltersMobile ? "block" : "hidden lg:block"
-        )}>
+        <div className="hidden lg:block mb-6 p-5 rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-xl space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-left">
             {/* Search Input */}
             <div className="relative">

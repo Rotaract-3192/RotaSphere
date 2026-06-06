@@ -111,15 +111,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
     showToast("💾 Profile configurations saved!")
   }
 
-  const sidebarContent = (
+  const renderSidebar = (isMobile: boolean) => (
     <div className="flex flex-col h-full justify-between">
       {/* Brand logo */}
       <div className="space-y-6">
-        <div className="flex items-center gap-2 px-2 py-3">
-          <div className="h-8 w-8 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c]">
+        <div className={cn("flex items-center gap-2 py-3", isMobile ? "px-2" : "px-2 lg:px-2 justify-center lg:justify-start")}>
+          <div className="h-8 w-8 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c] shrink-0">
             <Sparkles className="h-4 w-4 text-[#ff7759]" />
           </div>
-          <span className="font-heading font-medium text-lg tracking-tight text-[#17171c] dark:text-white">
+          <span className={cn(
+            "font-heading font-medium text-lg tracking-tight text-[#17171c] dark:text-white truncate",
+            isMobile ? "inline-block" : "hidden lg:inline-block"
+          )}>
             RotaSphere
           </span>
         </div>
@@ -137,14 +140,20 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   setMobileOpen(false)
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
+                  "w-full flex items-center rounded-full text-sm font-medium transition-all duration-200",
+                  isMobile
+                    ? "justify-start gap-3 px-3.5 py-2.5"
+                    : "justify-center lg:justify-start gap-0 lg:gap-3 px-0 py-2.5 lg:px-3.5",
                   isActive
                     ? "bg-[#17171c] text-white dark:bg-white dark:text-[#17171c] shadow-none"
                     : "text-[#616161] dark:text-[#93939f] hover:text-[#212121] dark:hover:text-white hover:bg-[#eeece7] dark:hover:bg-[#2c2c35]"
                 )}
+                title={isMobile ? undefined : item.label}
               >
-                <Icon className="h-4 w-4" />
-                {item.label}
+                <Icon className={cn("h-4 w-4 shrink-0", !isMobile && "mx-auto lg:mx-0")} />
+                <span className={isMobile ? "inline-block" : "hidden lg:inline-block"}>
+                  {item.label}
+                </span>
               </button>
             )
           })}
@@ -153,15 +162,15 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
       {/* Logout / User Info footer inside sidebar */}
       <div className="space-y-4 pt-4 border-t border-muted/50">
-        <div className="flex items-center gap-3 px-2">
-          <div className="h-9 w-9 rounded-full bg-[#ff7759]/15 border border-[#ff7759]/30 text-[#ff7759] flex items-center justify-center font-medium text-xs overflow-hidden">
+        <div className={cn("flex items-center gap-3", isMobile ? "px-2" : "px-0 lg:px-2 justify-center lg:justify-start")}>
+          <div className="h-9 w-9 rounded-full bg-[#ff7759]/15 border border-[#ff7759]/30 text-[#ff7759] flex items-center justify-center font-medium text-xs overflow-hidden shrink-0">
             {user.imageUrl ? (
               <img src={user.imageUrl} alt={user.fullName} className="h-full w-full object-cover" />
             ) : (
               <span>{user.fullName.split(" ").map(n => n[0]).join("").toUpperCase()}</span>
             )}
           </div>
-          <div className="truncate flex-1">
+          <div className={cn("truncate flex-1", isMobile ? "block" : "hidden lg:block")}>
             <span className="block text-xs font-bold text-foreground truncate leading-snug">{user.fullName}</span>
             <span className="text-[10px] text-muted-foreground block truncate">Organizer</span>
           </div>
@@ -169,10 +178,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
         <button
           onClick={() => signOut()}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors"
+          className={cn(
+            "w-full flex items-center text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors rounded-xl py-2",
+            isMobile
+              ? "justify-start gap-3 px-3"
+              : "justify-center lg:justify-start gap-0 lg:gap-3 px-0 lg:px-3"
+          )}
+          title={isMobile ? undefined : "Sign Out"}
         >
-          <LogOut className="h-4 w-4" />
-          Sign Out
+          <LogOut className={cn("h-4 w-4 shrink-0", !isMobile && "mx-auto lg:mx-0")} />
+          <span className={isMobile ? "inline-block" : "hidden lg:inline-block"}>
+            Sign Out
+          </span>
         </button>
       </div>
     </div>
@@ -200,8 +217,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-purple-500/5 blur-[120px] pointer-events-none" />
 
       {/* Desktop Sidebar (Persistent) */}
-      <aside className="hidden md:block w-64 h-screen border-r border-border bg-card p-4 sticky top-0 shrink-0">
-        {sidebarContent}
+      <aside className="hidden md:block w-16 lg:w-64 h-screen border-r border-border bg-card p-3 lg:p-4 sticky top-0 shrink-0 transition-all duration-300">
+        {renderSidebar(false)}
       </aside>
 
       {/* Main Content Area */}
@@ -225,7 +242,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
               />
               <SheetContent side="left" className="glass-card w-[260px] p-4 flex flex-col justify-between h-full">
                 <SheetTitle className="sr-only">Organizer Menu</SheetTitle>
-                {sidebarContent}
+                {renderSidebar(true)}
               </SheetContent>
             </Sheet>
 
@@ -389,7 +406,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   {/* Recent Bookings rows */}
                   <Card className="border border-border bg-card shadow-none p-5 rounded-[16px]">
                     <h3 className="text-sm font-heading font-medium text-foreground mb-4">Recent Bookings Log</h3>
-                    <div className="overflow-x-auto text-xs">
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto text-xs">
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
@@ -419,6 +437,32 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           ))}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Mobile View */}
+                    <div className="block md:hidden space-y-3">
+                      {attendeeRegistry.slice(0, 3).map((item, idx) => (
+                        <div key={idx} className="p-4 rounded-xl border border-border bg-[#eeece7]/10 dark:bg-[#2c2c35]/10 space-y-2 text-xs">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className="font-semibold text-foreground block">{item.name}</span>
+                              <span className="text-[10px] text-muted-foreground block mt-0.5">{item.eventTitle}</span>
+                            </div>
+                            <span className={cn(
+                              "text-[9px] font-mono font-medium px-2 py-0.5 rounded-full border shrink-0",
+                              item.checkedIn
+                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                                : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400"
+                            )}>
+                              {item.checkedIn ? "Checked In" : "Pending"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/20">
+                            <span>Date Purchased</span>
+                            <span>{item.date}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </Card>
                 </>
@@ -470,7 +514,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto text-xs">
+                  {/* Desktop View */}
+                  <div className="hidden md:block overflow-x-auto text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
@@ -531,6 +576,57 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Mobile View */}
+                  <div className="block md:hidden space-y-3">
+                    {events
+                      .filter(e => e.title.toLowerCase().includes(searchQuery.toLowerCase()))
+                      .map((evt) => {
+                        const registeredPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
+                        return (
+                          <div key={evt.id} className="p-4 rounded-xl border border-border bg-[#eeece7]/10 dark:bg-[#2c2c35]/10 space-y-3 text-xs">
+                            <div className="flex items-start gap-3">
+                              <img src={evt.image} alt={evt.title} className="h-12 w-12 rounded-lg object-cover border border-border shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <span className="font-semibold text-foreground block truncate">{evt.title}</span>
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                  <MapPin className="h-3 w-3" />
+                                  {evt.location}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground block mt-0.5">{evt.date}</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1.5 pt-2 border-t border-border/20">
+                              <div className="flex justify-between text-[10px] text-muted-foreground">
+                                <span>Capacity / Seats</span>
+                                <span>{evt.attendees} / {evt.capacity} ({registeredPct}%)</span>
+                              </div>
+                              <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden flex">
+                                <div 
+                                  className="bg-[#ff7759] h-full rounded-full" 
+                                  style={{ width: `${registeredPct}%` }} 
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between items-center pt-2 border-t border-border/20">
+                              <span className="font-semibold text-foreground">{evt.price}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => handleDeleteEvent(evt.id)}
+                                className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
+                                title="Delete Event"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        )
+                      })
+                    }
+                  </div>
                 </Card>
               )}
 
@@ -544,7 +640,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     Complete list of transaction receipts and generated active passes across platform bookings.
                   </p>
 
-                  <div className="overflow-x-auto text-xs">
+                  {/* Desktop View */}
+                  <div className="hidden md:block overflow-x-auto text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
@@ -581,6 +678,34 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Mobile View */}
+                  <div className="block md:hidden space-y-3">
+                    {bookedTickets.map((evt, idx) => (
+                      <div key={idx} className="p-4 rounded-xl border border-border bg-[#eeece7]/10 dark:bg-[#2c2c35]/10 space-y-2 text-xs">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="font-mono font-bold text-foreground block">#EVT-{evt.id.toUpperCase()}-{idx}</span>
+                            <span className="font-medium text-foreground block mt-0.5">{evt.title}</span>
+                            <span className="text-[10px] text-muted-foreground block mt-0.5">{evt.date}</span>
+                          </div>
+                          <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            CONFIRMED
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center pt-2 border-t border-border/20">
+                          <span className="font-semibold text-foreground">{evt.price}</span>
+                          <button 
+                            onClick={() => showToast(`Simulating barcode scan for EVT-${evt.id}`)}
+                            className="text-[#ff7759] hover:underline font-medium text-[11px]"
+                          >
+                            Scan Ticket
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </Card>
               )}
@@ -658,8 +783,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       <p className="text-[10px] text-muted-foreground mt-0.5">Toggle check-in status directly when checking in guests at the gate.</p>
                     </div>
                   </div>
-
-                  <div className="overflow-x-auto text-xs">
+                               {/* Desktop View */}
+                  <div className="hidden md:block overflow-x-auto text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
@@ -708,6 +833,57 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Mobile View */}
+                  <div className="block md:hidden space-y-3">
+                    {attendeeRegistry.map((item) => (
+                      <div key={item.id} className="p-4 rounded-xl border border-border bg-[#eeece7]/10 dark:bg-[#2c2c35]/10 space-y-3 text-xs">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-full bg-[#ff7759]/10 text-[#ff7759] flex items-center justify-center font-semibold text-[10px] shrink-0">
+                              {item.name.charAt(0)}
+                            </div>
+                            <div>
+                              <span className="font-medium text-foreground block">{item.name}</span>
+                              <span className="text-[10px] text-muted-foreground block">{item.email}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 text-[10px] text-muted-foreground pt-2 border-t border-border/20">
+                          <div className="flex justify-between">
+                            <span>Event Registered</span>
+                            <span className="text-foreground text-right max-w-[180px] truncate">{item.eventTitle}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Date Registered</span>
+                            <span className="text-foreground">{item.date}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-border/20 flex justify-end">
+                          <button
+                            onClick={() => toggleCheckIn(item.id)}
+                            className={cn(
+                              "inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-colors w-full justify-center sm:w-auto",
+                              item.checkedIn
+                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
+                                : "bg-[#eeece7] border-border text-foreground hover:bg-[#d9d9dd]"
+                            )}
+                          >
+                            {item.checkedIn ? (
+                              <>
+                                <Check className="h-3 w-3" />
+                                Checked In
+                              </>
+                            ) : (
+                              "Check In"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </Card>
               )}

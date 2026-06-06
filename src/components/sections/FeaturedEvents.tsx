@@ -503,9 +503,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
       {mounted && (
         <Dialog open={!!bookingEvent} onOpenChange={(open) => { if (!open) setBookingEvent(null) }}>
           <DialogContent
-            className="max-w-md p-0 overflow-hidden"
+            className="w-full h-full sm:max-w-md p-0 overflow-hidden rounded-none sm:rounded-2xl top-0 left-0 translate-x-0 translate-y-0 sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]"
             style={{
-              borderRadius: "16px",
               border: "1px solid #d9d9dd",
               boxShadow: "rgba(0,0,0,0.04) 0px 24px 48px",
               background: "#ffffff"
@@ -531,7 +530,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
               </div>
             ) : (
               bookingEvent && (
-                <div className="p-7 max-h-[90vh] overflow-y-auto">
+                <div className="p-6 sm:p-7 max-h-full overflow-y-auto flex-1 flex flex-col">
                   <DialogHeader className="items-center text-center mb-5">
                     <div
                       className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
@@ -615,8 +614,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                     </div>
 
                     {/* Quantity and Special Requests */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="col-span-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="col-span-1 sm:col-span-1">
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                           Tickets *
                         </label>
@@ -637,7 +636,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                           ))}
                         </select>
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                           Special Requests
                         </label>

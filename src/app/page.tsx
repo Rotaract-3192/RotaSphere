@@ -13,6 +13,7 @@ import { getEventsAction } from "@/app/actions/eventActions"
 import { ArrowRight, Calendar, Tag, Info } from "lucide-react"
 import Link from "next/link"
 import EventsMapSection from "@/components/sections/EventsMapSection"
+import { Testimonials } from "@/components/sections/Testimonials"
 
 const pages = [
   {
@@ -204,6 +205,9 @@ export default function Home() {
 
         {/* 5. Dark Feature Band */}
         <DarkFeatureBand />
+
+        {/* Testimonials (Responsive Swipeable Carousel) */}
+        <Testimonials />
 
         {/* 6. Upcoming Events Preview Strip */}
         {events.length > 0 && (

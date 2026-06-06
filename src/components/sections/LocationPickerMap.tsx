@@ -474,7 +474,7 @@ export default function LocationPickerMap({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 text-[10px]">
+        <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
           <span className="text-muted-foreground font-bold uppercase text-[8px] tracking-wider mr-1">Manual Coords:</span>
           <Input
             value={coordsInput.lat}

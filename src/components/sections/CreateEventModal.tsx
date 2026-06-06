@@ -484,7 +484,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="bg-gradient-to-br from-white via-[#fafafb] to-[#f4f4f6] dark:from-[#1b1b22] dark:via-[#15151b] dark:to-[#101014] sm:max-w-4xl w-[92vw] h-[95vh] sm:h-[85vh] max-h-[820px] border border-black/5 dark:border-white/5 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] p-6 md:p-8 backdrop-blur-3xl overflow-hidden">
+      <DialogContent className="bg-gradient-to-br from-white via-[#fafafb] to-[#f4f4f6] dark:from-[#1b1b22] dark:via-[#15151b] dark:to-[#101014] w-full h-full sm:w-[92vw] sm:h-[85vh] max-h-none sm:max-h-[820px] sm:max-w-4xl border border-black/5 dark:border-white/5 rounded-none sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] p-4 sm:p-6 md:p-8 backdrop-blur-3xl overflow-hidden top-0 left-0 translate-x-0 translate-y-0 sm:top-[50%] sm:left-[50%] sm:translate-x-[-50%] sm:translate-y-[-50%]">
         <div className="flex flex-col h-full w-full overflow-hidden text-left min-h-0">
           {/* Header section with autosave status */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-muted/50 pb-4 mb-4">
@@ -838,7 +838,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                 )}
                               </div>
 
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                   <Label htmlFor="city" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">City *</Label>
                                   <Input
@@ -874,7 +874,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                   <Label htmlFor="state" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">State</Label>
                                   <Input

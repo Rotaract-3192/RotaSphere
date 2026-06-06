@@ -676,7 +676,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                           render={({ field }) => (
                             <FormItem className="space-y-2">
                               <FormLabel>Ticket Price Model *</FormLabel>
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {[
                                   { value: "free", label: "Free Event", desc: "No charges apply for passes", icon: Ticket },
                                   { value: "paid", label: "Paid Tickets", desc: "Require attendee payout", icon: DollarSign }
@@ -741,7 +741,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                         render={({ field }) => (
                           <FormItem className="space-y-2">
                             <FormLabel>Event Visibility *</FormLabel>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {[
                                 { value: "public", label: "Public Listing", desc: "Listed on search and event grids", icon: Unlock },
                                 { value: "private", label: "Private Invite", desc: "Only accessible via direct link", icon: Lock }
@@ -783,7 +783,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                         render={({ field }) => (
                           <FormItem className="space-y-2">
                             <FormLabel>Location Delivery Type *</FormLabel>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               {[
                                 { value: "in-person", label: "In-Person", desc: "Physical venue location", icon: MapPin },
                                 { value: "online", label: "Online Virtual", desc: "Zoom, Meet, or streaming Link", icon: Globe },
@@ -858,7 +858,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <FormField
                           control={form.control}
                           name="country"
@@ -891,7 +891,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                           control={form.control}
                           name="city"
                           render={({ field }) => (
-                            <FormItem className="col-span-2 sm:col-span-1">
+                            <FormItem className="col-span-1">
                               <FormLabel>City *</FormLabel>
                               <FormControl>
                                 <Input placeholder="San Francisco" {...field} />

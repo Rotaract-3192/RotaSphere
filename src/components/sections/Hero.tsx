@@ -77,7 +77,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
             {/* H1 Headline */}
             <motion.h1
               variants={itemVariants}
-              className="text-5xl md:text-6xl lg:text-[68px] font-medium leading-[1.03] mb-6"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-[68px] font-medium leading-[1.03] mb-6"
               style={{ letterSpacing: "-0.025em", color: "var(--foreground)" }}
             >
               Where Moments
@@ -99,11 +99,11 @@ export function Hero({ onCreateEventClick }: HeroProps) {
             {/* CTA Row */}
             <motion.div
               variants={itemVariants}
-              className="flex flex-wrap items-center justify-center gap-4 mb-12"
+              className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 mb-12 w-full max-w-sm sm:max-w-none px-4 sm:px-0"
             >
               <button
                 onClick={onCreateEventClick}
-                className="flex items-center gap-2 font-medium transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
+                className="flex items-center justify-center gap-2 font-medium w-full sm:w-auto transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
                 style={{
                   background: "#17171c",
                   color: "#ffffff",
@@ -120,7 +120,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
 
               <a
                 href="#events"
-                className="flex items-center gap-2 font-medium transition-all duration-200 hover:-translate-y-0.5"
+                className="flex items-center justify-center gap-2 font-medium w-full sm:w-auto transition-all duration-200 hover:-translate-y-0.5"
                 style={{
                   background: "transparent",
                   color: "#17171c",
