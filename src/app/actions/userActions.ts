@@ -54,8 +54,8 @@ async function getCallerProfile(userId: string) {
       const clerkUser = await client.users.getUser(userId)
       const email = clerkUser.primaryEmailAddress?.emailAddress || ""
       const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
-      const rawRole = (clerkUser.publicMetadata?.role as string) || (isSuperAdmin ? "SUPER_ADMIN" : "PENDING_USER")
-      const rawStatus = (clerkUser.publicMetadata?.status as string) || (isSuperAdmin ? "ACTIVE" : "PENDING")
+      const rawRole = (clerkUser.publicMetadata?.role as string) || (isSuperAdmin ? "SUPER_ADMIN" : "ATTENDEE")
+      const rawStatus = (clerkUser.publicMetadata?.status as string) || (isSuperAdmin ? "ACTIVE" : "ACTIVE")
       return { role: normalizeRole(rawRole), status: normalizeStatus(rawStatus), email }
     } catch (e) {
       return { role: "SUPER_ADMIN" as UserRole, status: "ACTIVE" as UserStatus, email: SUPER_ADMIN_EMAIL }
@@ -79,8 +79,8 @@ async function getCallerProfile(userId: string) {
 
       const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
       // Write lowercase to DB (check constraint requirement)
-      const roleForDb = isSuperAdmin ? "super_admin" : "pending_user"
-      const statusForDb = isSuperAdmin ? "ACTIVE" : "PENDING"
+      const roleForDb = isSuperAdmin ? "super_admin" : "attendee"
+      const statusForDb = isSuperAdmin ? "ACTIVE" : "ACTIVE"
 
       const { error: upsertError } = await supabaseAdmin
         .from("profiles")
@@ -138,8 +138,8 @@ export async function syncClerkUserAction(userData: {
 
     if (!isSupabaseAdminConfigured) {
       console.warn("[Auth] Supabase not configured — simulating user sync.")
-      const role: UserRole = isSuperAdmin ? "SUPER_ADMIN" : "PENDING_USER"
-      const status: UserStatus = isSuperAdmin ? "ACTIVE" : "PENDING"
+      const role: UserRole = isSuperAdmin ? "SUPER_ADMIN" : "ATTENDEE"
+      const status: UserStatus = isSuperAdmin ? "ACTIVE" : "ACTIVE"
       return {
         success: true,
         simulated: true,
@@ -150,8 +150,8 @@ export async function syncClerkUserAction(userData: {
 
     // Determine role and status: super admin is always active SUPER_ADMIN
     // DB uses lowercase roles; code uses uppercase
-    let roleForDb = isSuperAdmin ? "super_admin" : "pending_user"
-    let statusForDb = isSuperAdmin ? "ACTIVE" : "PENDING"
+    let roleForDb = isSuperAdmin ? "super_admin" : "attendee"
+    let statusForDb = isSuperAdmin ? "ACTIVE" : "ACTIVE"
 
     if (!isSuperAdmin) {
       // Fetch existing role and status to preserve them
@@ -523,7 +523,16 @@ export async function getAdminDashboardDataAction() {
         usersCount: 4,
         eventsCount: 4,
         ticketsCount: 120,
-        commission: 1240
+        commission: 1240,
+        salesByDay: [
+          { day: "Mon", amount: 120 },
+          { day: "Tue", amount: 240 },
+          { day: "Wed", amount: 180 },
+          { day: "Thu", amount: 450 },
+          { day: "Fri", amount: 390 },
+          { day: "Sat", amount: 600 },
+          { day: "Sun", amount: 540 }
+        ]
       }
     }
 
@@ -545,13 +554,38 @@ export async function getAdminDashboardDataAction() {
     // Fetch ticket stats & revenue
     const { data: tickets, error: ticketsError } = await supabaseAdmin
       .from("tickets")
-      .select("price_paid")
+      .select("price_paid, purchased_at")
 
     if (ticketsError) throw ticketsError
 
     const ticketsCount = tickets?.length || 0
     const totalRevenue = tickets?.reduce((sum, t) => sum + Number(t.price_paid || 0), 0) || 0
     const commission = totalRevenue * 0.10
+
+    // Compute real daily sales by day of the week
+    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    const salesSum = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 }
+    
+    ;(tickets || []).forEach((t: any) => {
+      const dateVal = t.purchased_at || t.created_at
+      if (dateVal) {
+        const d = new Date(dateVal)
+        const dayName = daysOfWeek[d.getDay()]
+        if (dayName in salesSum) {
+          salesSum[dayName as keyof typeof salesSum] += Number(t.price_paid || 0)
+        }
+      }
+    })
+
+    const salesByDay = [
+      { day: "Mon", amount: salesSum.Mon },
+      { day: "Tue", amount: salesSum.Tue },
+      { day: "Wed", amount: salesSum.Wed },
+      { day: "Thu", amount: salesSum.Thu },
+      { day: "Fri", amount: salesSum.Fri },
+      { day: "Sat", amount: salesSum.Sat },
+      { day: "Sun", amount: salesSum.Sun }
+    ]
 
     return {
       success: true,
@@ -560,14 +594,15 @@ export async function getAdminDashboardDataAction() {
         id: p.id,
         email: p.email,
         full_name: p.full_name,
-        role: p.role as UserRole,
-        status: p.status as UserStatus,
+        role: normalizeRole(p.role || "pending_user"),
+        status: normalizeStatus(p.status || "pending"),
         image_url: p.image_url || ""
       })),
       usersCount: profiles?.length || 0,
       eventsCount: eventsCount || 0,
       ticketsCount,
-      commission
+      commission,
+      salesByDay
     }
   } catch (error) {
     console.error("[Admin] getAdminDashboardDataAction error:", error)

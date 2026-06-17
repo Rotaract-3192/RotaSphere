@@ -16,8 +16,8 @@ const UserSchema = new Schema<IUser>(
     clerkId: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     fullName: { type: String, required: true },
-    role: { type: String, enum: ['SUPER_ADMIN', 'ADMIN', 'ORGANIZER', 'ATTENDEE', 'PENDING_USER'], default: 'PENDING_USER' },
-    status: { type: String, enum: ['ACTIVE', 'PENDING', 'SUSPENDED', 'REJECTED'], default: 'PENDING' },
+    role: { type: String, enum: ['SUPER_ADMIN', 'ADMIN', 'ORGANIZER', 'ATTENDEE', 'PENDING_USER'], default: 'ATTENDEE' },
+    status: { type: String, enum: ['ACTIVE', 'PENDING', 'SUSPENDED', 'REJECTED'], default: 'ACTIVE' },
     imageUrl: { type: String },
   },
   { timestamps: true }

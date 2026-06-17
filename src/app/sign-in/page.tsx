@@ -84,8 +84,12 @@ export default function SignInPage() {
         {/* RotaSphere Logo Header */}
         <div className="flex flex-col items-center mb-8 text-center">
           <Link href="/" className="flex items-center gap-2 mb-2 group">
-            <div className="h-9 w-9 rounded-full bg-[#17171c] dark:bg-white flex items-center justify-center text-white dark:text-[#17171c]">
-              <Sparkles className="h-4.5 w-4.5 text-accent" />
+            <div className="h-9 w-9 rounded-full overflow-hidden bg-white border border-border flex items-center justify-center shrink-0">
+              <img
+                src="/rotasphere-logo.png"
+                alt="RotaSphere Logo"
+                className="h-full w-full object-cover object-top scale-125 origin-top"
+              />
             </div>
             <span className="font-heading font-medium text-2xl tracking-tight text-[#17171c] dark:text-white">
               RotaSphere

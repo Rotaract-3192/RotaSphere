@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
-  Sparkles, Calendar, MapPin, DollarSign, Users, Award, 
+  Sparkles, Calendar, MapPin, DollarSign, IndianRupee, Users, Award, 
   Image as ImageIcon, ArrowLeft, ArrowRight, Check, Upload, Cloud, RefreshCw, X, Plus,
   ChevronDown, ChevronUp, Trash2, ShieldCheck, CreditCard, Landmark, Ticket, Clock, AlertCircle,
   Video, Map, Wallet
@@ -83,7 +83,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
       price: "0",
       currency: "INR",
       quantity: "100",
-      maxPerUser: "5",
+      maxPerUser: "1",
       startDate: "",
       endDate: "",
       visibility: "public"
@@ -168,7 +168,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
           price: "0",
           currency: "INR",
           quantity: "100",
-          maxPerUser: "5",
+          maxPerUser: "1",
           startDate: "",
           endDate: "",
           visibility: "public"
@@ -287,7 +287,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
       price: "1000",
       currency: "INR",
       quantity: "50",
-      maxPerUser: "2",
+      maxPerUser: "1",
       startDate: "",
       endDate: "",
       visibility: "public"
@@ -445,7 +445,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
     { number: 2, label: "Logistics", icon: MapPin },
     { number: 3, label: "Customization", icon: ImageIcon },
     { number: 4, label: "Tickets & Booking", icon: Ticket },
-    { number: 5, label: "Review & Publish", icon: DollarSign }
+    { number: 5, label: "Review & Publish", icon: IndianRupee }
   ]
 
   const progressPercentage = Math.round(((currentStep - 1) / (steps.length - 1)) * 100)
@@ -961,17 +961,42 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                         <div className="md:col-span-3 space-y-4">
                           <div className="space-y-1.5">
                             <Label htmlFor="image" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cover Image URL</Label>
-                            <div className="relative">
-                              <Input
-                                id="image"
-                                name="image"
-                                value={formData.image}
-                                onChange={handleInputChange}
-                                placeholder="https://example.com/cover.jpg"
-                                className="rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 pl-9 focus-visible:ring-accent focus-visible:ring-2 shadow-sm text-xs text-foreground"
-                              />
-                              <ImageIcon className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <Input
+                                  id="image"
+                                  name="image"
+                                  value={formData.image && !formData.image.startsWith("data:") ? formData.image : ""}
+                                  onChange={handleInputChange}
+                                  placeholder="https://example.com/cover.jpg"
+                                  className="rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 pl-9 focus-visible:ring-accent focus-visible:ring-2 shadow-sm text-xs text-foreground"
+                                />
+                                <ImageIcon className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <div className="relative">
+                                <input
+                                  id="device-file-upload"
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={handleFileChange}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => document.getElementById("device-file-upload")?.click()}
+                                  className="rounded-xl border-border dark:border-muted-foreground/15 bg-white dark:bg-background/40 py-5 px-4 h-full flex items-center gap-1.5 text-xs text-foreground hover:bg-muted font-bold cursor-pointer"
+                                >
+                                  <Upload className="h-4 w-4 text-muted-foreground" />
+                                  <span>Upload File</span>
+                                </Button>
+                              </div>
                             </div>
+                            {formData.image && formData.image.startsWith("data:") && (
+                              <p className="text-[10px] text-emerald-500 font-semibold px-1">
+                                ✓ Custom image loaded from your device
+                              </p>
+                            )}
                           </div>
 
                           <div className="space-y-1.5">
@@ -1137,7 +1162,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                         />
                                       </div>
 
-                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                         <div className="space-y-1">
                                           <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Price *</Label>
                                           <Input 
@@ -1153,7 +1178,7 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                             INR (₹)
                                           </div>
                                         </div>
-                                        <div className="space-y-1">
+                                        <div className="space-y-1 col-span-2 sm:col-span-1">
                                           <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Quantity *</Label>
                                           <Input 
                                             type="number"
@@ -1162,47 +1187,24 @@ export function CreateEventModal({ isOpen, onClose, onEventCreated }: CreateEven
                                             className="rounded-lg h-8 text-xs border-muted-foreground/15"
                                           />
                                         </div>
-                                        <div className="space-y-1">
-                                          <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Max / User</Label>
-                                          <Input 
-                                            type="number"
-                                            value={t.maxPerUser}
-                                            onChange={(e) => updateTicketField(t.id, "maxPerUser", e.target.value)}
-                                            className="rounded-lg h-8 text-xs border-muted-foreground/15"
-                                          />
-                                        </div>
                                       </div>
 
-                                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                        <div className="space-y-1 sm:col-span-2">
-                                          <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sales Start & End Date</Label>
-                                          <div className="flex gap-2 items-center">
-                                            <Input 
-                                              type="date"
-                                              value={t.startDate}
-                                              onChange={(e) => updateTicketField(t.id, "startDate", e.target.value)}
-                                              className="rounded-lg h-8 text-xs border-muted-foreground/15"
-                                            />
-                                            <span className="text-[10px] text-muted-foreground font-semibold">to</span>
-                                            <Input 
-                                              type="date"
-                                              value={t.endDate}
-                                              onChange={(e) => updateTicketField(t.id, "endDate", e.target.value)}
-                                              className="rounded-lg h-8 text-xs border-muted-foreground/15"
-                                            />
-                                          </div>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Visibility</Label>
-                                          <select 
-                                            value={t.visibility}
-                                            onChange={(e) => updateTicketField(t.id, "visibility", e.target.value as any)}
-                                            className="h-8 w-full rounded-lg border border-muted bg-background px-2 py-1 text-xs outline-none text-foreground"
-                                          >
-                                            <option value="public">Public</option>
-                                            <option value="hidden">Hidden</option>
-                                            <option value="invite-only">Invite Only</option>
-                                          </select>
+                                      <div className="space-y-1">
+                                        <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sales Start & End Date</Label>
+                                        <div className="flex gap-2 items-center">
+                                          <Input 
+                                            type="date"
+                                            value={t.startDate}
+                                            onChange={(e) => updateTicketField(t.id, "startDate", e.target.value)}
+                                            className="rounded-lg h-8 text-xs border-muted-foreground/15 w-full"
+                                          />
+                                          <span className="text-[10px] text-muted-foreground font-semibold shrink-0">to</span>
+                                          <Input 
+                                            type="date"
+                                            value={t.endDate}
+                                            onChange={(e) => updateTicketField(t.id, "endDate", e.target.value)}
+                                            className="rounded-lg h-8 text-xs border-muted-foreground/15 w-full"
+                                          />
                                         </div>
                                       </div>
                                     </div>

@@ -63,11 +63,11 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
 
         const finalRole = (syncResult.success && syncResult.role)
           ? syncResult.role
-          : ((clerkUser.publicMetadata?.role as UserRole) || 'PENDING_USER')
+          : ((clerkUser.publicMetadata?.role as UserRole) || 'ATTENDEE')
 
         const finalStatus = (syncResult.success && syncResult.status)
           ? syncResult.status
-          : ((clerkUser.publicMetadata?.status as UserStatus) || 'PENDING')
+          : ((clerkUser.publicMetadata?.status as UserStatus) || 'ACTIVE')
 
         setSyncedUser({
           id: clerkUser.id,
@@ -177,8 +177,8 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       id: `mock-usr-${Date.now()}`,
       email: email,
       fullName: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
-      role: isSuperAdmin ? 'SUPER_ADMIN' : (role || 'PENDING_USER'),
-      status: isSuperAdmin ? 'ACTIVE' : 'PENDING',
+      role: isSuperAdmin ? 'SUPER_ADMIN' : (role || 'ATTENDEE'),
+      status: isSuperAdmin ? 'ACTIVE' : 'ACTIVE',
       imageUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${email}`
     }
 
@@ -198,8 +198,8 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       id: `mock-usr-${Date.now()}`,
       email: email,
       fullName: fullName,
-      role: isSuperAdmin ? 'SUPER_ADMIN' : 'PENDING_USER',
-      status: isSuperAdmin ? 'ACTIVE' : 'PENDING',
+      role: isSuperAdmin ? 'SUPER_ADMIN' : (role || 'ATTENDEE'),
+      status: isSuperAdmin ? 'ACTIVE' : 'ACTIVE',
       imageUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${fullName}`
     }
 
@@ -236,8 +236,8 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       id: `mock-usr-google`,
       email,
       fullName: "Alex Rivera",
-      role: isSuperAdmin ? 'SUPER_ADMIN' : 'PENDING_USER',
-      status: isSuperAdmin ? 'ACTIVE' : 'PENDING',
+      role: isSuperAdmin ? 'SUPER_ADMIN' : (role || 'ATTENDEE'),
+      status: isSuperAdmin ? 'ACTIVE' : 'ACTIVE',
       imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
     }
     localStorage.setItem("rotasphere_mock_user", JSON.stringify(newUser))

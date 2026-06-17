@@ -12,6 +12,7 @@ import { EventItem } from '@/data/mockData'
 import { cn } from '@/lib/utils'
 import { isOlaMapsConfigured } from '@/lib/olaMapsService'
 import { MapSkeleton } from '@/components/skeletons/MapSkeleton'
+import Link from 'next/link'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 interface EventsMapSectionProps {
@@ -106,7 +107,7 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
       const matchesDate = isDateWithinRange(evt.date, selectedDateRange);
 
       // 4. Price Type
-      const isFree = evt.price.toLowerCase().includes('free') || evt.price === '$0.00' || evt.price === '0';
+      const isFree = evt.price.toLowerCase().includes('free') || evt.price === '₹0.00' || evt.price === '$0.00' || evt.price === '0';
       const matchesPrice = selectedPriceType === 'all' ||
         (selectedPriceType === 'free' && isFree) ||
         (selectedPriceType === 'paid' && !isFree);
@@ -548,12 +549,12 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                       
                       <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
                         <span className="text-[10px] font-extrabold text-white">{selectedEvent.price}</span>
-                        <a
-                          href={`/events/${selectedEvent.id}`}
+                        <Link
+                          href={`/events?eventId=${selectedEvent.id}`}
                           className="text-[9px] font-bold text-coral hover:text-coral-soft flex items-center gap-1 transition-all uppercase tracking-wider"
                         >
                           Details <ArrowRight className="h-3 w-3" />
-                        </a>
+                        </Link>
                       </div>
                     </div>
                   </div>

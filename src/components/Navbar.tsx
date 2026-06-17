@@ -71,12 +71,13 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          {/* Near-Black circle logo */}
-          <div
-            className="h-9 w-9 rounded-full flex items-center justify-center font-black text-sm transition-transform group-hover:scale-105 shrink-0"
-            style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
-          >
-            R
+          {/* Circular logo using emblem */}
+          <div className="h-9 w-9 rounded-full overflow-hidden bg-white border border-border flex items-center justify-center transition-transform group-hover:scale-105 shrink-0">
+            <img
+              src="/rotasphere-logo.png"
+              alt="RotaSphere Logo"
+              className="h-full w-full object-cover object-top scale-125 origin-top"
+            />
           </div>
           <span
             className="font-bold text-xl tracking-tight"
@@ -284,9 +285,16 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
               style={{ background: "var(--card)", border: "none", borderLeft: "1px solid var(--border)" }}
             >
               <SheetTitle
-                className="text-left text-lg font-medium mb-6"
+                className="text-left text-lg font-medium mb-6 flex items-center gap-2"
                 style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
               >
+                <div className="h-7 w-7 rounded-full overflow-hidden bg-white border border-border flex items-center justify-center shrink-0">
+                  <img
+                    src="/rotasphere-logo.png"
+                    alt="RotaSphere Logo"
+                    className="h-full w-full object-cover object-top scale-125 origin-top"
+                  />
+                </div>
                 Rota<span style={{ color: "var(--accent)" }}>Sphere</span>
               </SheetTitle>
 

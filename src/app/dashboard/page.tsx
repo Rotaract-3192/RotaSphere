@@ -30,9 +30,10 @@ import { DashboardCardSkeleton } from "@/components/skeletons/DashboardCardSkele
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton"
 import { AnalyticsSkeleton } from "@/components/skeletons/AnalyticsSkeleton"
 import { 
-  Calendar, MapPin, Users, DollarSign, Ticket, 
+  Calendar, MapPin, Users, DollarSign, IndianRupee, Ticket, 
   Plus, ShieldCheck, UserCheck, Trash2, AlertCircle,
-  BarChart3, ClipboardList, Info, Check, Lock, Shield
+  BarChart3, ClipboardList, Info, Check, Lock, Shield,
+  TrendingUp
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -49,6 +50,7 @@ export default function DashboardPage() {
   const [sysUsersCount, setSysUsersCount] = React.useState(124)
   const [sysTicketSales, setSysTicketSales] = React.useState(1240)
   const [sysCommission, setSysCommission] = React.useState(124840)
+  const [sysSalesByDay, setSysSalesByDay] = React.useState<{ day: string; amount: number }[]>([])
   const [adminUsers, setAdminUsers] = React.useState<{ id: string; email: string; full_name: string; role: UserRole; status: UserStatus; image_url?: string }[]>([])
   const [auditLogs, setAuditLogs] = React.useState<any[]>([])
   const [activeTab, setActiveTab] = React.useState<'users' | 'events' | 'audit' | 'analytics'>('analytics')
@@ -154,6 +156,7 @@ export default function DashboardPage() {
         setSysUsersCount(res.usersCount ?? 0)
         setSysTicketSales(res.ticketsCount ?? 0)
         setSysCommission(res.commission ?? 0)
+        setSysSalesByDay(res.salesByDay || [])
       }
     } catch (err) {
       console.error("Failed to load admin dashboard data:", err)
@@ -500,7 +503,7 @@ export default function DashboardPage() {
                       { label: "Active District Users", val: sysUsersCount, icon: UserCheck, color: "text-accent bg-accent/10 border-accent/15" },
                       { label: "Active Events Listed", val: events.length, icon: Calendar, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/15" },
                       { label: "District Ticket Sales", val: sysTicketSales, icon: Ticket, color: "text-[#1E88E5] bg-[#1E88E5]/10 border-[#1E88E5]/15" },
-                      { label: "District Commission (10%)", val: typeof sysCommission === "number" ? `₹${sysCommission.toLocaleString()}` : sysCommission, icon: DollarSign, color: "text-amber-500 bg-amber-500/10 border-amber-500/15" }
+                      { label: "District Commission (10%)", val: typeof sysCommission === "number" ? `₹${sysCommission.toLocaleString()}` : sysCommission, icon: IndianRupee, color: "text-amber-500 bg-amber-500/10 border-amber-500/15" }
                     ].map((s, i) => {
                       const Icon = s.icon
                       return (
@@ -523,9 +526,22 @@ export default function DashboardPage() {
                       <div>
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="text-sm font-heading font-medium text-foreground">Sales Revenue Graph</h3>
-                          <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                            +12.4% vs last week
-                          </span>
+                          {(() => {
+                            const hasSales = (sysSalesByDay || []).some(b => b.amount > 0);
+                            if (hasSales) {
+                              return (
+                                <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                  <TrendingUp className="h-3.5 w-3.5" />
+                                  Active Sales
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
+                                No Sales Yet
+                              </span>
+                            );
+                          })()}
                         </div>
                         <p className="text-[11px] text-muted-foreground mb-6">
                           Daily ticket purchase metrics across all listed events for the past 7 days.
@@ -533,20 +549,33 @@ export default function DashboardPage() {
                       </div>
 
                       <div className="h-44 flex items-end justify-between gap-2 px-2 border-b border-border pb-2">
-                        {[
-                          { day: "Mon", val: "h-[30%]" },
-                          { day: "Tue", val: "h-[50%]" },
-                          { day: "Wed", val: "h-[45%]" },
-                          { day: "Thu", val: "h-[75%]" },
-                          { day: "Fri", val: "h-[65%]" },
-                          { day: "Sat", val: "h-[90%]" },
-                          { day: "Sun", val: "h-[85%]" }
-                        ].map((bar, idx) => (
-                          <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                            <div className={`w-full bg-accent rounded-t-sm transition-all duration-500 hover:opacity-85 ${bar.val}`} />
-                            <span className="text-[9px] text-muted-foreground font-semibold">{bar.day}</span>
-                          </div>
-                        ))}
+                        {(() => {
+                          const maxAmount = Math.max(...(sysSalesByDay || []).map(b => b.amount), 0);
+                          const defaultBars = [
+                            { day: "Mon", amount: 0 },
+                            { day: "Tue", amount: 0 },
+                            { day: "Wed", amount: 0 },
+                            { day: "Thu", amount: 0 },
+                            { day: "Fri", amount: 0 },
+                            { day: "Sat", amount: 0 },
+                            { day: "Sun", amount: 0 }
+                          ];
+                          const barsToRender = (sysSalesByDay && sysSalesByDay.length === 7) ? sysSalesByDay : defaultBars;
+
+                          return barsToRender.map((bar, idx) => {
+                            const heightPct = maxAmount > 0 ? Math.round((bar.amount / maxAmount) * 100) : 0;
+                            return (
+                              <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                                <div 
+                                  className="w-full bg-accent rounded-t-sm transition-all duration-500 hover:opacity-85" 
+                                  style={{ height: `${heightPct}%` }}
+                                  title={`₹${bar.amount.toLocaleString()}`}
+                                />
+                                <span className="text-[9px] text-muted-foreground font-semibold">{bar.day}</span>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
 
@@ -906,7 +935,7 @@ export default function DashboardPage() {
                 {[
                   { label: "Booked Events", val: bookedTickets.length, icon: Ticket, desc: "Active ticket reservations" },
                   { label: "Completed Events", val: 0, icon: Calendar, desc: "Past events attended" },
-                  { label: "Gross Contribution", val: `₹${totalSpent.toLocaleString()}`, icon: DollarSign, desc: "Spent on registered tickets" }
+                  { label: "Gross Contribution", val: `₹${totalSpent.toLocaleString()}`, icon: IndianRupee, desc: "Spent on registered tickets" }
                 ].map((s, i) => {
                   const Icon = s.icon
                   return (

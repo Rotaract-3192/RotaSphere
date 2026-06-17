@@ -4,7 +4,7 @@ import * as React from "react"
 import { useTheme } from "next-themes"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
-  Calendar, MapPin, Users, DollarSign, Award, Ticket, 
+  Calendar, MapPin, Users, DollarSign, IndianRupee, Award, Ticket, 
   BarChart3, Plus, UserCheck, Trash2, 
   TrendingUp, LayoutDashboard, Settings, Menu, Bell, Search, 
   Sparkles, LogOut, Moon, Sun, ClipboardList, Info, Check
@@ -128,11 +128,14 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
   const renderSidebar = (isMobile: boolean) => (
     <div className="flex flex-col h-full justify-between">
-      {/* Brand logo */}
       <div className="space-y-6">
         <div className={cn("flex items-center gap-2 py-3", isMobile ? "px-2" : "px-2 lg:px-2 justify-center lg:justify-start")}>
-          <div className="h-8 w-8 rounded-full bg-primary dark:bg-primary-foreground flex items-center justify-center text-primary-foreground dark:text-primary shrink-0">
-            <Sparkles className="h-4 w-4 text-accent" />
+          <div className="h-8 w-8 rounded-full overflow-hidden bg-white border border-border flex items-center justify-center shrink-0">
+            <img
+              src="/rotasphere-logo.png"
+              alt="RotaSphere Logo"
+              className="h-full w-full object-cover object-top scale-125 origin-top"
+            />
           </div>
           <span className={cn(
             "font-heading font-medium text-lg tracking-tight text-foreground truncate",
@@ -324,7 +327,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     {[
                       { label: "Total Events", value: totalEvents, desc: "Created active lists", icon: Calendar, color: "text-accent bg-accent/10" },
                       { label: "Tickets Sold", value: totalTicketsSold, desc: "Attendee signups", icon: Ticket, color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400" },
-                      { label: "Revenue Earned", value: `$${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, desc: "Stripe payout value", icon: DollarSign, color: "text-amber-600 bg-amber-500/10 dark:text-amber-400" },
+                      { label: "Revenue Earned", value: `₹${totalRevenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`, desc: "Stripe payout value", icon: IndianRupee, color: "text-amber-600 bg-amber-500/10 dark:text-amber-400" },
                       { label: "Active Attendees", value: activeAttendees, desc: "Checked-in guest counts", icon: UserCheck, color: "text-secondary bg-secondary/10" }
                     ].map((card, i) => {
                       const Icon = card.icon
@@ -837,7 +840,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     <div className="text-xs space-y-1.5">
                       <h4 className="font-heading font-medium text-foreground">Analytics Data Resolution</h4>
                       <p className="text-muted-foreground">
-                        Data updates every 15 minutes. To sync instant ticket transactions, click the refresh button on top header. Stripe commission deductions of 2.9% + $0.30 apply.
+                        Data updates every 15 minutes. To sync instant ticket transactions, click the refresh button on top header. Stripe commission deductions of 2.9% + ₹25 apply.
                       </p>
                     </div>
                   </Card>

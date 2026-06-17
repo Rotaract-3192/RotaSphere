@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Heart, Briefcase, Users, Globe, DollarSign, Sparkles, ChevronRight } from "lucide-react"
+import { Heart, Briefcase, Users, Globe, IndianRupee, Sparkles, ChevronRight } from "lucide-react"
 import { mockCategories, EventItem } from "@/data/mockData"
 import { getEventsAction } from "@/app/actions/eventActions"
 
@@ -35,7 +35,7 @@ export function Categories() {
   }, [])
 
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    Heart, Briefcase, Users, Globe, DollarSign, Sparkles
+    Heart, Briefcase, Users, Globe, IndianRupee, Sparkles
   }
 
   return (

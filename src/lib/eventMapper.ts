@@ -1,7 +1,7 @@
 // Convert Supabase database row to frontend-compatible EventItem format
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mapRowToEventItem(row: any): any {
-  const priceStr = row.type === "free" ? "Free" : `$${parseFloat(String(row.price || 0)).toFixed(2)}`
+  const priceStr = row.type === "free" ? "Free" : `₹${parseFloat(String(row.price || 0)).toFixed(2)}`
   
   const startD = new Date(row.start_date)
   const endD = new Date(row.end_date)

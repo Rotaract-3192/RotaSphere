@@ -27,6 +27,23 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
     setMounted(true)
   }, [])
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search)
+      const eventId = searchParams.get("eventId")
+      if (eventId) {
+        const found = events.find(e => e.id === eventId)
+        if (found) {
+          // Open booking modal
+          setBookingEvent(found)
+          // Clean search params from URL so it doesn't reopen on refresh
+          const newUrl = window.location.pathname
+          window.history.replaceState({ ...window.history.state }, "", newUrl)
+        }
+      }
+    }
+  }, [events])
+
   // Registration Form State
   const [formData, setFormData] = React.useState({
     fullName: "",
@@ -65,16 +82,12 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
   const handleBookTicket = (event: EventItem) => {
     if (!isSignedIn) { router.push("/sign-in"); return }
-    if (role !== "ATTENDEE") {
-      alert(`Only Attendees can book tickets. Your current role is "${role || 'unknown'}".`)
-      return
-    }
     setBookingEvent(event)
   }
 
   // Parse price string to number for details display
   const getPriceDetails = () => {
-    if (!bookingEvent) return { isFree: true, unitPrice: 0, totalPrice: 0, currencySymbol: "$" }
+    if (!bookingEvent) return { isFree: true, unitPrice: 0, totalPrice: 0, currencySymbol: "₹" }
     const priceStr = bookingEvent.price || "0"
     const isFree = priceStr.toLowerCase().includes("free") ||
       bookingEvent.type === "free" ||
@@ -82,7 +95,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
     const unitPrice = isFree ? 0 : parseFloat(priceStr.replace(/[^0-9.]/g, ""))
     const totalPrice = unitPrice * formData.ticketCount
-    const currencySymbol = priceStr.startsWith("$") ? "$" : priceStr.startsWith("₹") ? "₹" : "INR "
+    const currencySymbol = priceStr.startsWith("$") || priceStr.startsWith("₹") ? "₹" : "₹"
     return { isFree, unitPrice, totalPrice, currencySymbol }
   }
 

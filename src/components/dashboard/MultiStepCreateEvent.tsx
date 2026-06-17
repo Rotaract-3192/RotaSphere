@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { 
   MapPin, Users, DollarSign, Ticket, 
   Plus, ArrowLeft, ArrowRight, Check, Upload, Globe, 
-  Lock, Unlock, Sparkles, Mail, Phone
+  Lock, Unlock, Sparkles, Mail, Phone, IndianRupee
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -102,7 +102,7 @@ const createEventSchema = z.object({
   }
 
   // Validate price if paid
-  if (data.type === "paid" && (!data.price || data.price.trim() === "" || data.price === "$0" || data.price === "$0.00")) {
+  if (data.type === "paid" && (!data.price || data.price.trim() === "" || data.price === "$0" || data.price === "$0.00" || data.price === "₹0" || data.price === "₹0.00")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Price is required for paid events",
@@ -680,7 +680,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {[
                                   { value: "free", label: "Free Event", desc: "No charges apply for passes", icon: Ticket },
-                                  { value: "paid", label: "Paid Tickets", desc: "Require attendee payout", icon: DollarSign }
+                                  { value: "paid", label: "Paid Tickets", desc: "Require attendee payout", icon: IndianRupee }
                                 ].map((option) => {
                                   const Icon = option.icon
                                   const isSelected = field.value === option.value
@@ -720,10 +720,10 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                             name="price"
                             render={({ field }) => (
                               <FormItem className="animate-fade-in flex flex-col justify-end">
-                                <FormLabel>Ticket Price ($ USD) *</FormLabel>
+                                <FormLabel>Ticket Price (₹ INR) *</FormLabel>
                                 <FormControl>
                                   <div className="relative">
-                                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                    <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                                     <Input placeholder="99.00" className="pl-7" {...field} />
                                   </div>
                                 </FormControl>

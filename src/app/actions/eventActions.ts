@@ -80,8 +80,8 @@ async function getCallerProfile(userId: string) {
       const clerkUser = await client.users.getUser(userId)
       const email = clerkUser.primaryEmailAddress?.emailAddress || ""
       const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
-      const rawRole = (clerkUser.publicMetadata?.role as string) || (isSuperAdmin ? "SUPER_ADMIN" : "PENDING_USER")
-      const rawStatus = (clerkUser.publicMetadata?.status as string) || (isSuperAdmin ? "ACTIVE" : "PENDING")
+      const rawRole = (clerkUser.publicMetadata?.role as string) || (isSuperAdmin ? "SUPER_ADMIN" : "ATTENDEE")
+      const rawStatus = (clerkUser.publicMetadata?.status as string) || (isSuperAdmin ? "ACTIVE" : "ACTIVE")
       // Normalize to uppercase for consistent RBAC checks
       return { role: normalizeRole(rawRole), status: normalizeStatus(rawStatus), email }
     } catch (e) {
@@ -106,8 +106,8 @@ async function getCallerProfile(userId: string) {
 
       const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
       // DB stores lowercase roles, code uses uppercase
-      const roleForDb = isSuperAdmin ? "super_admin" : "pending_user"
-      const statusForDb = isSuperAdmin ? "ACTIVE" : "PENDING"
+      const roleForDb = isSuperAdmin ? "super_admin" : "attendee"
+      const statusForDb = isSuperAdmin ? "ACTIVE" : "ACTIVE"
 
       const { error: upsertError } = await supabaseAdmin
         .from("profiles")
@@ -198,7 +198,7 @@ export async function createEventAction(input: EventFormInput) {
       longitude: input.longitude,
       googleMapsUrl: input.googleMapsUrl,
       locationType: input.locationType,
-      status: "DRAFT",
+      status: "PUBLISHED",
       reviewNotes: ""
     }
 
@@ -256,7 +256,7 @@ export async function createEventAction(input: EventFormInput) {
         organizer: organizerName,
         organizer_id: userId,
         attendees_count: 0,
-        status: "DRAFT",
+        status: "PUBLISHED",
         review_notes: null
       })
       .select()
@@ -426,7 +426,7 @@ export async function getEventsAction() {
           city: "Bangalore",
           organizer: "Sarah Jenkins",
           organizer_id: "usr_4",
-          status: "PENDING_APPROVAL",
+          status: "PUBLISHED",
           latitude: 12.9716,
           longitude: 77.5946,
           category: "Professional Development",
@@ -448,7 +448,7 @@ export async function getEventsAction() {
           locationType: "online" as const,
           organizer: "Sophia Martinez",
           organizer_id: "usr_1",
-          status: "DRAFT",
+          status: "PUBLISHED",
           category: "Arts & Culture",
           review_notes: "Please add a detailed outline of the artwork materials."
         }
@@ -600,7 +600,7 @@ export async function getHeroFeaturedEventAction() {
           organizer: "RotaSphere Pro",
           ticketsSold: 1240,
           capacity: 1500,
-          revenue: "$370,760",
+          revenue: "₹370,760",
           recentRegistrations: [
             { name: "Sophia Martinez", type: "VIP Ticket", time: "2m ago" },
             { name: "David Chen", type: "Regular", time: "12m ago" },
@@ -643,7 +643,7 @@ export async function getHeroFeaturedEventAction() {
 
     const price = parseFloat(String(event.price || 0))
     const totalRev = price * (event.attendees_count || 0)
-    const currencySymbol = String(event.price).startsWith("₹") ? "₹" : "$"
+    const currencySymbol = "₹"
     const formattedRevenue = event.type === "free" ? "Free" : `${currencySymbol}${totalRev.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 
     const mappedRegistrations = (attendees || []).map(att => {
@@ -683,7 +683,7 @@ export async function getHeroFeaturedEventAction() {
         organizer: "RotaSphere Pro",
         ticketsSold: 1240,
         capacity: 1500,
-        revenue: "$370,760",
+        revenue: "₹370,760",
         recentRegistrations: [
           { name: "Sophia Martinez", type: "VIP Ticket", time: "2m ago" },
           { name: "David Chen", type: "Regular", time: "12m ago" },
