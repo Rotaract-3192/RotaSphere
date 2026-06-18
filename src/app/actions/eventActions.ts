@@ -174,6 +174,11 @@ export async function createEventAction(input: EventFormInput) {
 
     const startD = new Date(input.startDate)
     const endD = new Date(input.endDate)
+    
+    if (!isNaN(startD.getTime()) && !isNaN(endD.getTime()) && endD <= startD) {
+      return { success: false, error: "Event end date/time must be after the start date/time." }
+    }
+
     const dateStr = startD.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     const timeStr = `${startD.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} - ${endD.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} ${input.timezone}`
     const locStr = input.locationType === "online" ? "Virtual Online Link" : `${input.venueName}, ${input.city}`
@@ -597,7 +602,7 @@ export async function getHeroFeaturedEventAction() {
         simulated: true,
         event: {
           title: "NextGen Tech Summit",
-          organizer: "RotaSphere Pro",
+          organizer: "RotaSphere",
           ticketsSold: 1240,
           capacity: 1500,
           revenue: "₹370,760",
@@ -680,7 +685,7 @@ export async function getHeroFeaturedEventAction() {
       simulated: true,
       event: {
         title: "NextGen Tech Summit",
-        organizer: "RotaSphere Pro",
+        organizer: "RotaSphere",
         ticketsSold: 1240,
         capacity: 1500,
         revenue: "₹370,760",

@@ -197,34 +197,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
               </a>
             </motion.div>
 
-            {/* Social Proof Row */}
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5 pt-5 sm:pt-6 w-full max-w-sm sm:max-w-md mb-8"
-              style={{ borderTop: "1px solid rgba(79, 195, 247, 0.2)" }}
-            >
-              <div className="flex -space-x-3">
-                {avatars.map((src, i) => (
-                  <img
-                    key={i}
-                    src={src}
-                    alt="User"
-                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-full object-cover border-2 border-[#0A2342]"
-                  />
-                ))}
-              </div>
-              <div className="text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-1 mb-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-sky-400 text-sky-400" />
-                  ))}
-                  <span className="text-xs font-bold ml-1 text-white">4.9/5</span>
-                </div>
-                <p className="text-xs font-weight-450 opacity-80" style={{ color: "#E0ECFB" }}>
-                  Empowering 100+ Rotaract clubs in our District
-                </p>
-              </div>
-            </motion.div>
+
           </motion.div>
         </div>
       </div>

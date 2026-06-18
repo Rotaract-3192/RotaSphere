@@ -1,21 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Send } from "lucide-react"
 import Link from "next/link"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 export function Footer() {
-  // Trigger Next.js SSR cache rebuild
-  const [email, setEmail] = React.useState("")
-  const [subscribed, setSubscribed] = React.useState(false)
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email || !email.includes("@")) return
-    setSubscribed(true)
-    setEmail("")
-    setTimeout(() => setSubscribed(false), 4000)
-  }
+  const [isContactOpen, setIsContactOpen] = React.useState(false)
+  const [copied, setCopied] = React.useState(false)
 
   const footerLinks = [
     {
@@ -27,20 +18,9 @@ export function Footer() {
       ],
     },
     {
-      title: "Resources",
-      links: [
-        { label: "Community", href: "#" },
-        { label: "Guides & Tutorials", href: "#" },
-        { label: "Documentation", href: "#" },
-        { label: "API Reference", href: "#" },
-      ],
-    },
-    {
       title: "Company",
       links: [
         { label: "About Us", href: "/about" },
-        { label: "Careers", href: "#" },
-        { label: "Press Kit", href: "#" },
         { label: "Contact", href: "#" },
       ],
     },
@@ -49,7 +29,7 @@ export function Footer() {
   const socialIcons = [
     {
       label: "Instagram",
-      href: "https://www.instagram.com/rotaract3192/",
+      href: "https://www.instagram.com/rotaract3192?igsh=cmpqcDNucHV6bGg1",
       icon: (
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
@@ -59,17 +39,8 @@ export function Footer() {
       )
     },
     {
-      label: "X / Twitter",
-      href: "#",
-      icon: (
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-        </svg>
-      )
-    },
-    {
       label: "LinkedIn",
-      href: "#",
+      href: "https://www.linkedin.com/company/rotaract-district-3192/",
       icon: (
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
@@ -80,7 +51,7 @@ export function Footer() {
     },
     {
       label: "Facebook",
-      href: "#",
+      href: "https://www.facebook.com/profile.php?id=100093197273171",
       icon: (
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
@@ -89,7 +60,7 @@ export function Footer() {
     },
     {
       label: "YouTube",
-      href: "#",
+      href: "https://youtube.com/@rotaract3192?si=xRFFuiilPHMKbgi3",
       icon: (
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" />
@@ -137,7 +108,7 @@ export function Footer() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-14">
 
           {/* Brand column */}
           <div className="lg:col-span-2">
@@ -203,67 +174,37 @@ export function Footer() {
                 {group.title}
               </h3>
               <ul className="space-y-3">
-                {group.links.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="font-weight-450 transition-colors text-sm"
-                      style={{ color: "rgba(255,255,255,0.65)", textDecoration: "none" }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#FFFFFF"}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"}
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
+                {group.links.map((link) => {
+                  const isContact = link.label === "Contact"
+                  return (
+                    <li key={link.label}>
+                      {isContact ? (
+                        <button
+                          onClick={() => setIsContactOpen(true)}
+                          className="font-weight-450 transition-colors text-sm text-left bg-transparent border-0 p-0 cursor-pointer outline-none block"
+                          style={{ color: "rgba(255,255,255,0.65)", textDecoration: "none" }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#FFFFFF"}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"}
+                        >
+                          {link.label}
+                        </button>
+                      ) : (
+                        <a
+                          href={link.href}
+                          className="font-weight-450 transition-colors text-sm"
+                          style={{ color: "rgba(255,255,255,0.65)", textDecoration: "none" }}
+                          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#FFFFFF"}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"}
+                        >
+                          {link.label}
+                        </a>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           ))}
-
-          {/* Newsletter */}
-          <div className="md:col-span-2 lg:col-span-1">
-            <h3
-              className="text-xs font-bold uppercase mb-5"
-              style={{ color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}
-            >
-              Newsletter
-            </h3>
-            <p
-              className="font-weight-450 mb-4 text-sm leading-relaxed"
-              style={{ color: "rgba(255,255,255,0.6)" }}
-            >
-              Stay updated with product releases and local event guides.
-            </p>
-            <form onSubmit={handleSubscribe} className="flex gap-2">
-              <input
-                type="email"
-                placeholder="you@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="flex-1 text-sm font-weight-450 h-10 px-4 outline-none transition-colors"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  borderRadius: "999px",
-                  color: "#FFFFFF",
-                  minWidth: 0
-                }}
-              />
-              <button
-                type="submit"
-                className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 hover:opacity-90 cursor-pointer"
-                style={{ background: "var(--accent)", color: "#FFFFFF", border: "none" }}
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
-            {subscribed && (
-              <p className="text-xs mt-2 font-medium" style={{ color: "var(--accent)" }}>
-                ✓ You&apos;re subscribed! Welcome aboard.
-              </p>
-            )}
-          </div>
 
         </div>
 
@@ -296,6 +237,37 @@ export function Footer() {
         </div>
 
       </div>
+
+      {/* Contact Dialog */}
+      <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
+        <DialogContent className="max-w-md bg-[#17171c] border border-white/10 text-white rounded-2xl p-6 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-medium tracking-tight text-white mb-1">
+              Contact Technical Support
+            </DialogTitle>
+            <DialogDescription className="text-white/60 text-xs sm:text-sm">
+              Have questions or feedback about the RotaSphere platform? Get in touch with our tech team.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-5">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10">
+              <span className="text-sm font-semibold select-all text-sky-400 break-all pr-2">
+                tech.rotaract3192@gmail.com
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText("tech.rotaract3192@gmail.com")
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 2000)
+                }}
+                className="text-xs font-bold py-2 px-4 rounded-full bg-white/10 hover:bg-white/20 transition-all cursor-pointer select-none shrink-0"
+              >
+                {copied ? "✓ Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </footer>
   )
 }

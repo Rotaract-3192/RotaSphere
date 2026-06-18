@@ -60,7 +60,7 @@ export function ContactSection() {
             {/* Contact detail chips */}
             <div className="space-y-4">
               {[
-                { icon: Mail, label: "Email us", value: "hello@rotasphere.io" },
+                { icon: Mail, label: "Email us", value: "exuberantdrr@gmail.com / rotaract3192@gmail.com" },
                 { icon: MessageSquare, label: "Live chat", value: "Available Mon–Fri, 9am–6pm IST" },
                 { icon: Building2, label: "Club onboarding", value: "Free for all Rotaract clubs" }
               ].map((item, i) => (
