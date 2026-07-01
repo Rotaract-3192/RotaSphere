@@ -1,9 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Keep Mongoose and Node-only packages out of the Edge Runtime bundle.
-  // Without this, Vercel can accidentally tree-shake them into middleware.
+  output: "standalone",
+
+  reactStrictMode: true,
+
+  compress: true,
+
   serverExternalPackages: ["mongoose"],
+
   images: {
     remotePatterns: [
       {
@@ -17,9 +22,9 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
-      }
-    ]
-  }
+      },
+    ],
+  },
 };
 
 export default nextConfig;
