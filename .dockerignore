@@ -1,0 +1,26 @@
+.git
+.github
+.next
+node_modules
+
+.vscode
+.idea
+
+.planning
+.stitch
+.tmp
+
+*.log
+*.md
+
+LICENSE
+SKILL.md
+task.md
+website-changes.md
+Water Animation.json
+image.png
+
+.env*
+
+coverage
+*.tsbuildinfo

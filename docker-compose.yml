@@ -1,0 +1,25 @@
+services:
+  rotasphere:
+    image: rotaract/rotasphere:latest
+    container_name: rotasphere
+
+    build:
+      context: .
+
+    restart: unless-stopped
+
+    expose:
+      - "3000"
+
+    env_file:
+      - .env.local
+
+    networks:
+      - default
+      - rotaract
+
+networks:
+  default:
+
+  rotaract:
+    external: true
