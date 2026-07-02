@@ -383,91 +383,13 @@ export async function getEventsAction() {
 
     if (userId) {
       const caller = await getCallerProfile(userId)
-      if (caller) callerRole = caller.role
+      if (caller) {
+        callerRole = caller.role
+      }
     }
 
     if (!isSupabaseAdminConfigured) {
-      // Return filtered mock events
-      const mockEvents = [
-        {
-          id: "evt-mock-1",
-          title: "Beach Cleanup Campaign",
-          description: "Help clean up our local beach!",
-          fullDescription: "Join us for a morning of environmental service followed by beach volleyball and lunch.",
-          bannerUrl: "https://images.unsplash.com/photo-1618477388954-7852f32655ec?w=800&auto=format&fit=crop&q=80",
-          thumbnailUrl: "https://images.unsplash.com/photo-1618477388954-7852f32655ec?w=800&auto=format&fit=crop&q=80",
-          startDate: new Date(Date.now() + 86400000).toISOString(),
-          endDate: new Date(Date.now() + 96400000).toISOString(),
-          timezone: "IST",
-          type: "free" as const,
-          price: 0,
-          visibility: "public" as const,
-          locationType: "in-person" as const,
-          venueName: "Besant Nagar Beach",
-          city: "Chennai",
-          organizer: "Rotaract Club of Chennai",
-          organizer_id: "usr_1",
-          status: "PUBLISHED",
-          latitude: 13.0012,
-          longitude: 80.2707,
-          category: "Community Service",
-          review_notes: ""
-        },
-        {
-          id: "evt-mock-2",
-          title: "District Leadership Seminar",
-          description: "Annual leadership training.",
-          fullDescription: "Empowering young leaders with essential communication, coordination, and team management skills.",
-          bannerUrl: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80",
-          thumbnailUrl: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80",
-          startDate: new Date(Date.now() + 86400000 * 3).toISOString(),
-          endDate: new Date(Date.now() + 86400000 * 3 + 18000 * 1000).toISOString(),
-          timezone: "IST",
-          type: "paid" as const,
-          price: 150,
-          visibility: "public" as const,
-          locationType: "in-person" as const,
-          venueName: "District Hall",
-          city: "Bangalore",
-          organizer: "Sarah Jenkins",
-          organizer_id: "usr_4",
-          status: "PUBLISHED",
-          latitude: 12.9716,
-          longitude: 77.5946,
-          category: "Professional Development",
-          review_notes: ""
-        },
-        {
-          id: "evt-mock-3",
-          title: "Ocean Wave Art Workshop",
-          description: "Paint beautiful ocean landscapes.",
-          fullDescription: "An art workshop celebrating the beauty of the ocean with resin and acrylic paints.",
-          bannerUrl: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80",
-          thumbnailUrl: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&auto=format&fit=crop&q=80",
-          startDate: new Date(Date.now() + 86400000 * 5).toISOString(),
-          endDate: new Date(Date.now() + 86400000 * 5 + 10000 * 1000).toISOString(),
-          timezone: "IST",
-          type: "free" as const,
-          price: 0,
-          visibility: "public" as const,
-          locationType: "online" as const,
-          organizer: "Sophia Martinez",
-          organizer_id: "usr_1",
-          status: "PUBLISHED",
-          category: "Arts & Culture",
-          review_notes: "Please add a detailed outline of the artwork materials."
-        }
-      ]
-
-      const filtered = mockEvents.filter(evt => {
-        if (!userId) return evt.status === "PUBLISHED"
-        if (callerRole === "SUPER_ADMIN" || callerRole === "ADMIN") return true
-        if (callerRole === "ORGANIZER") return evt.status === "PUBLISHED" || evt.organizer_id === userId
-        return evt.status === "PUBLISHED"
-      })
-
-      const mapped = filtered.map(mapRowToEventItem)
-      return { success: true, events: mapped, simulated: true }
+      return { success: true, events: [], simulated: true }
     }
 
     // Build Supabase Query
@@ -719,5 +641,117 @@ export async function resolveGoogleMapsUrlAction(url: string) {
   } catch (err) {
     console.error("Error resolving Google Maps URL:", err)
     return { success: false, error: err instanceof Error ? err.message : "Failed to resolve URL" }
+  }
+}
+
+export async function getOrganizerAttendeesAction() {
+  try {
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    if (!isSupabaseAdminConfigured) {
+      return { success: true, attendees: [], simulated: true }
+    }
+
+    // Fetch all events by this organizer
+    const { data: events, error: eventsError } = await supabaseAdmin
+      .from("events")
+      .select("id, title")
+      .eq("organizer_id", userId)
+
+    if (eventsError) throw eventsError
+    if (!events || events.length === 0) {
+      return { success: true, attendees: [] }
+    }
+
+    const eventIds = events.map(e => e.id)
+    const eventTitlesMap = events.reduce((acc: any, e: any) => {
+      acc[e.id] = e.title
+      return acc
+    }, {})
+
+    // Fetch all attendees for these events
+    const { data: attendees, error: attendeesError } = await supabaseAdmin
+      .from("attendees")
+      .select("id, email, full_name, event_id, registered_at, ticket_id")
+      .in("event_id", eventIds)
+      .order("registered_at", { ascending: false })
+
+    if (attendeesError) throw attendeesError
+
+    const mapped = (attendees || []).map(att => ({
+      id: att.id,
+      name: att.full_name,
+      email: att.email,
+      eventTitle: eventTitlesMap[att.event_id] || "Unknown Event",
+      date: new Date(att.registered_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      checkedIn: true
+    }))
+
+    return { success: true, attendees: mapped, simulated: false }
+  } catch (error) {
+    console.error("Error in getOrganizerAttendeesAction:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Failed to fetch attendees" }
+  }
+}
+
+export async function getOrganizerStatsAction() {
+  try {
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    if (!isSupabaseAdminConfigured) {
+      return { success: true, simulated: true, salesByDay: [] }
+    }
+
+    // Fetch all event IDs for this organizer
+    const { data: events, error: eventsError } = await supabaseAdmin
+      .from("events")
+      .select("id")
+      .eq("organizer_id", userId)
+
+    if (eventsError) throw eventsError
+    if (!events || events.length === 0) {
+      return { success: true, salesByDay: [] }
+    }
+
+    const eventIds = events.map(e => e.id)
+
+    // Fetch tickets purchased for these events
+    const { data: tickets, error: ticketsError } = await supabaseAdmin
+      .from("tickets")
+      .select("price_paid, purchased_at, created_at")
+      .in("event_id", eventIds)
+
+    if (ticketsError) throw ticketsError
+
+    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    const salesSum = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 }
+
+    ;(tickets || []).forEach((t: any) => {
+      const dateVal = t.purchased_at || t.created_at
+      if (dateVal) {
+        const d = new Date(dateVal)
+        const dayName = daysOfWeek[d.getDay()]
+        if (dayName in salesSum) {
+          salesSum[dayName as keyof typeof salesSum] += Number(t.price_paid || 0)
+        }
+      }
+    })
+
+    const salesByDay = [
+      { day: "Mon", amount: salesSum.Mon },
+      { day: "Tue", amount: salesSum.Tue },
+      { day: "Wed", amount: salesSum.Wed },
+      { day: "Thu", amount: salesSum.Thu },
+      { day: "Fri", amount: salesSum.Fri },
+      { day: "Sat", amount: salesSum.Sat },
+      { day: "Sun", amount: salesSum.Sun }
+    ]
+
+    return { success: true, salesByDay, simulated: false }
+  } catch (err) {
+    console.error(err)
+    return { success: false, error: "Failed to fetch stats" }
   }
 }

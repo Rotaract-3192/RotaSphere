@@ -25,6 +25,7 @@ import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
 import { CreateEventModal } from "@/components/sections/CreateEventModal"
 import { OrganizerDashboard } from "@/components/dashboard/OrganizerDashboard"
+import { EditProfileModal } from "@/components/dashboard/EditProfileModal"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DashboardCardSkeleton } from "@/components/skeletons/DashboardCardSkeleton"
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton"
@@ -37,6 +38,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 export default function DashboardPage() {
   const { user, isSignedIn, isLoaded, signOut } = useAuthSession()
@@ -45,6 +47,9 @@ export default function DashboardPage() {
   const [events, setEvents] = React.useState<EventItem[]>([])
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
   const [bookedTickets, setBookedTickets] = React.useState<EventItem[]>([])
+  const [isProfileEditOpen, setIsProfileEditOpen] = React.useState(false)
+  const [isOnboardingMode, setIsOnboardingMode] = React.useState(false)
+  const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null)
   
   // Admin stats & users
   const [sysUsersCount, setSysUsersCount] = React.useState(124)
@@ -94,6 +99,8 @@ export default function DashboardPage() {
 
   // Fetch initial event and booking data
   React.useEffect(() => {
+    if (!isLoaded) return
+
     async function loadData() {
       let finalEvents: EventItem[] = []
       let finalBookings: EventItem[] = []
@@ -103,10 +110,18 @@ export default function DashboardPage() {
         const res = await getEventsAction()
         if (res.success) {
           if (!res.simulated) {
-            finalEvents = res.events as EventItem[]
+            let loadedEvents = res.events as EventItem[]
+            if (user?.role === "ORGANIZER") {
+              loadedEvents = loadedEvents.filter(e => e.organizerId === user.id)
+            }
+            finalEvents = loadedEvents
           } else {
             const savedEvents = localStorage.getItem("rotasphere_events")
-            finalEvents = savedEvents ? JSON.parse(savedEvents) : mockEvents
+            let loadedEvents = savedEvents ? JSON.parse(savedEvents) : mockEvents
+            if (user?.role === "ORGANIZER") {
+              loadedEvents = loadedEvents.filter((e: any) => e.organizerId === user?.id)
+            }
+            finalEvents = loadedEvents
           }
         }
       } catch (err) {
@@ -144,7 +159,7 @@ export default function DashboardPage() {
     if (typeof window !== "undefined") {
       loadData()
     }
-  }, [])
+  }, [isLoaded, user])
 
   // Load admin dashboard statistics and users
   const loadAdminData = React.useCallback(async () => {
@@ -186,6 +201,7 @@ export default function DashboardPage() {
       loadAuditLogs()
     }
   }, [user, isLoaded, activeTab])
+
 
   // Administrative handlers
   const handleApproveUser = async (clerkId: string, role: UserRole) => {
@@ -266,7 +282,6 @@ export default function DashboardPage() {
   }
 
   const handleDeleteEvent = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this event?")) return
     const res = await deleteEventAction(id)
     if (res.success) {
       const updated = events.filter(e => e.id !== id)
@@ -430,6 +445,16 @@ export default function DashboardPage() {
                   New Event
                 </Button>
               )}
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsOnboardingMode(false)
+                  setIsProfileEditOpen(true)
+                }}
+                className="rounded-full border-border bg-transparent hover:bg-muted text-foreground"
+              >
+                Edit Profile
+              </Button>
               <Button 
                 variant="outline" 
                 onClick={() => signOut()}
@@ -780,7 +805,7 @@ export default function DashboardPage() {
                                   <div>
                                     <span className="font-semibold text-foreground block text-sm">{evt.title}</span>
                                     <span className="text-[10px] text-muted-foreground">Organizer: {evt.organizer} | Category: {evt.category}</span>
-                                    <span className="text-[10px] text-muted-foreground block mt-0.5">Time: {evt.date} at {evt.location}</span>
+                                    <span className="text-[10px] text-muted-foreground block mt-0.5">Time: <span className="font-mono">{evt.date}</span> at {evt.location}</span>
                                   </div>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -853,7 +878,7 @@ export default function DashboardPage() {
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
-                                  onClick={() => handleDeleteEvent(evt.id)}
+                                  onClick={() => setDeleteTargetId(evt.id)}
                                   className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -991,7 +1016,7 @@ export default function DashboardPage() {
                               <h4 className="font-medium text-foreground text-sm leading-snug line-clamp-1">{evt.title}</h4>
                               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
-                                <span>{evt.date}</span>
+                                <span className="font-mono">{evt.date}</span>
                               </div>
                               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                                 <MapPin className="h-3 w-3" />
@@ -1049,6 +1074,57 @@ export default function DashboardPage() {
         onClose={() => setIsCreateOpen(false)}
         onEventCreated={handleEventCreated}
       />
+
+      <EditProfileModal
+        isOpen={isProfileEditOpen}
+        onClose={() => setIsProfileEditOpen(false)}
+        isOnboarding={isOnboardingMode}
+      />
+
+      {/* Delete Warning Modal */}
+      <Dialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}>
+        <DialogContent
+          className="w-[90%] sm:max-w-md p-6 rounded-2xl"
+          style={{
+            border: "1px solid var(--border)",
+            background: "var(--card)",
+            color: "var(--foreground)"
+          }}
+        >
+          <DialogHeader className="items-center text-center">
+            <div className="h-12 w-12 rounded-full flex items-center justify-center bg-red-500/10 text-red-500 mb-3">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <DialogTitle className="text-xl font-heading font-bold" style={{ letterSpacing: "-0.02em" }}>
+              Delete Event Listing?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-2">
+              Are you sure you want to delete this event? This action cannot be undone. All ticket configurations and registrations associated with this event will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTargetId(null)}
+              className="flex-1 rounded-full border border-border"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (deleteTargetId) {
+                  await handleDeleteEvent(deleteTargetId)
+                  setDeleteTargetId(null)
+                }
+              }}
+              className="flex-1 rounded-full bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

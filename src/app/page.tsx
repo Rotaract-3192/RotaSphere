@@ -68,7 +68,7 @@ export default function Home() {
             setEvents(res.events as EventItem[])
           } else {
             const saved = localStorage.getItem("rotasphere_events")
-            const currentEvents = saved ? JSON.parse(saved) : mockEvents
+            const currentEvents = saved ? JSON.parse(saved) : []
             setEvents(currentEvents.filter((e: any) => e.status === "PUBLISHED" || !e.status))
           }
         }
@@ -309,7 +309,7 @@ export default function Home() {
                       >
                         {evt.title}
                       </h3>
-                      <p className="text-xs font-weight-450 mb-4" style={{ color: "var(--muted-foreground)" }}>
+                      <p className="text-xs font-weight-450 mb-4 font-mono" style={{ color: "var(--muted-foreground)" }}>
                         {evt.date}
                       </p>
                       <Link

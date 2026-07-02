@@ -94,17 +94,28 @@ export function Footer() {
 
       <div className="container mx-auto px-6 md:px-12 max-w-7xl relative z-10">
 
-        {/* Large Conversational H2 — per DESIGN.md footer spec */}
+        {/* Large Conversational H2 — animated gradient */}
         <div className="max-w-3xl mb-16">
-          <h2
-            className="font-medium leading-tight"
+          <span
+            className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] mb-5 px-3 py-1.5 rounded-full"
             style={{
-              fontSize: "clamp(28px, 5vw, 52px)",
-              color: "#FFFFFF",
-              letterSpacing: "-0.02em"
+              background: "rgba(79,195,247,0.08)",
+              border: "1px solid rgba(79,195,247,0.18)",
+              color: "#4FC3F7"
             }}
           >
-            We're always here when you need to host the extraordinary.
+            <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
+            Always Here For You
+          </span>
+          <h2
+            className="font-extrabold leading-tight"
+            style={{
+              fontSize: "clamp(28px, 5vw, 54px)",
+              letterSpacing: "-0.04em"
+            }}
+          >
+            <span style={{ color: "#FFFFFF" }}>We&apos;re always here when you need to </span>
+            <span className="gradient-text-animated">host the extraordinary.</span>
           </h2>
         </div>
 
@@ -135,7 +146,7 @@ export function Footer() {
               Made for Rotaract District 3192 to facilitate showcasing club events, managing registrations, and booking passes with ease.
             </p>
 
-            {/* Social Icons — circular on ink */}
+            {/* Social Icons — circular on ink with glow hover */}
             <div className="flex gap-3">
               {socialIcons.map((social, i) => (
                 <a
@@ -143,18 +154,27 @@ export function Footer() {
                   href={social.href}
                   target={social.href !== "#" ? "_blank" : undefined}
                   rel={social.href !== "#" ? "noopener noreferrer" : undefined}
-                  className="h-9 w-9 rounded-full flex items-center justify-center transition-all duration-200"
+                  className="h-10 w-10 rounded-full flex items-center justify-center"
                   style={{
                     border: "1px solid rgba(255,255,255,0.12)",
-                    color: "rgba(255,255,255,0.6)"
+                    color: "rgba(255,255,255,0.55)",
+                    transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)"
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)"
-                    ;(e.currentTarget as HTMLElement).style.color = "var(--accent)"
+                    const el = e.currentTarget as HTMLElement
+                    el.style.borderColor = "#4FC3F7"
+                    el.style.color = "#4FC3F7"
+                    el.style.transform = "translateY(-3px)"
+                    el.style.boxShadow = "0 8px 24px -4px rgba(79,195,247,0.3)"
+                    el.style.background = "rgba(79,195,247,0.08)"
                   }}
                   onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"
-                    ;(e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.6)"
+                    const el = e.currentTarget as HTMLElement
+                    el.style.borderColor = "rgba(255,255,255,0.12)"
+                    el.style.color = "rgba(255,255,255,0.55)"
+                    el.style.transform = "translateY(0)"
+                    el.style.boxShadow = "none"
+                    el.style.background = "transparent"
                   }}
                   aria-label={social.label}
                 >
@@ -164,12 +184,12 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Link Columns — uppercase muted column headers per DESIGN.md */}
+          {/* Link Columns */}
           {footerLinks.map((group) => (
             <div key={group.title}>
               <h3
-                className="text-xs font-bold uppercase mb-5"
-                style={{ color: "rgba(255,255,255,0.4)", letterSpacing: "0.06em" }}
+                className="text-[10px] font-extrabold uppercase mb-5"
+                style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em" }}
               >
                 {group.title}
               </h3>
@@ -181,20 +201,20 @@ export function Footer() {
                       {isContact ? (
                         <button
                           onClick={() => setIsContactOpen(true)}
-                          className="font-weight-450 transition-colors text-sm text-left bg-transparent border-0 p-0 cursor-pointer outline-none block"
-                          style={{ color: "rgba(255,255,255,0.65)", textDecoration: "none" }}
+                          className="link-underline-anim text-sm font-medium text-left bg-transparent border-0 p-0 cursor-pointer outline-none block"
+                          style={{ color: "rgba(255,255,255,0.55)", transition: "color 0.2s" }}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#FFFFFF"}
-                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)"}
                         >
                           {link.label}
                         </button>
                       ) : (
                         <a
                           href={link.href}
-                          className="font-weight-450 transition-colors text-sm"
-                          style={{ color: "rgba(255,255,255,0.65)", textDecoration: "none" }}
+                          className="link-underline-anim text-sm font-medium"
+                          style={{ color: "rgba(255,255,255,0.55)", textDecoration: "none", transition: "color 0.2s" }}
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#FFFFFF"}
-                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"}
+                          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)"}
                         >
                           {link.label}
                         </a>

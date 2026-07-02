@@ -22,6 +22,7 @@ export interface EventItem {
   longitude?: number;
   googleMapsUrl?: string;
   locationType?: 'in-person' | 'online' | 'hybrid';
+  organizerId?: string;
 }
 
 export interface CategoryItem {

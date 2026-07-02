@@ -14,6 +14,8 @@ export interface UserSession {
   role: UserRole;
   status: UserStatus;
   imageUrl?: string;
+  bio?: string;
+  homeClub?: string;
 }
 
 interface AuthContextType {
@@ -25,6 +27,7 @@ interface AuthContextType {
   signUp: (email: string, fullName: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   loginWithGoogle: (role: UserRole) => Promise<void>;
+  updateProfile: (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; role?: UserRole }) => Promise<{ success: boolean; error?: string }>;
   isClerkActive: boolean;
 }
 
@@ -69,13 +72,23 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
           ? syncResult.status
           : ((clerkUser.publicMetadata?.status as UserStatus) || 'ACTIVE')
 
+        const finalBio = (syncResult.success && syncResult.bio)
+          ? syncResult.bio
+          : ((clerkUser.publicMetadata?.bio as string) || '')
+
+        const finalHomeClub = (syncResult.success && syncResult.homeClub)
+          ? syncResult.homeClub
+          : ((clerkUser.publicMetadata?.homeClub as string) || '')
+
         setSyncedUser({
           id: clerkUser.id,
           email,
           fullName,
           role: finalRole as UserRole,
           status: finalStatus as UserStatus,
-          imageUrl
+          imageUrl,
+          bio: finalBio,
+          homeClub: finalHomeClub
         })
       } else {
         setSyncedUser(null)
@@ -108,6 +121,25 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
     console.log("Social login with Clerk. Use Clerk UI instead. Role:", role)
   }
 
+  const updateProfile = async (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; role?: UserRole }) => {
+    const { updateUserProfileAction } = await import("@/app/actions/userActions")
+    const res = await updateUserProfileAction(data)
+    if (res.success && res.user) {
+      setSyncedUser(prev => prev ? {
+        ...prev,
+        fullName: res.user.fullName,
+        email: res.user.email,
+        imageUrl: res.user.imageUrl || prev.imageUrl,
+        role: res.user.role as UserRole,
+        status: res.user.status as UserStatus,
+        bio: res.user.bio,
+        homeClub: res.user.homeClub
+      } : null)
+      return { success: true }
+    }
+    return { success: false, error: res.error }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -119,6 +151,7 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
         signUp,
         signOut,
         loginWithGoogle,
+        updateProfile,
         isClerkActive: true
       }}
     >
@@ -179,7 +212,9 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       fullName: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
       role: isSuperAdmin ? 'SUPER_ADMIN' : (role || 'ATTENDEE'),
       status: isSuperAdmin ? 'ACTIVE' : 'ACTIVE',
-      imageUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${email}`
+      imageUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${email}`,
+      bio: "",
+      homeClub: ""
     }
 
     localStorage.setItem("rotasphere_mock_user", JSON.stringify(resolvedUser))
@@ -200,7 +235,9 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       fullName: fullName,
       role: isSuperAdmin ? 'SUPER_ADMIN' : (role || 'ATTENDEE'),
       status: isSuperAdmin ? 'ACTIVE' : 'ACTIVE',
-      imageUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${fullName}`
+      imageUrl: `https://api.dicebear.com/7.x/adventurer/svg?seed=${fullName}`,
+      bio: "",
+      homeClub: ""
     }
 
     // Save to local registry so sign-in can retrieve it
@@ -238,11 +275,60 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       fullName: "Alex Rivera",
       role: isSuperAdmin ? 'SUPER_ADMIN' : (role || 'ATTENDEE'),
       status: isSuperAdmin ? 'ACTIVE' : 'ACTIVE',
-      imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+      imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+      bio: "",
+      homeClub: ""
     }
     localStorage.setItem("rotasphere_mock_user", JSON.stringify(newUser))
     setUser(newUser)
     setIsLoaded(true)
+  }
+
+  const updateProfile = async (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; role?: UserRole }) => {
+    setIsLoaded(false)
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    if (!user) {
+      setIsLoaded(true)
+      return { success: false, error: "Not logged in" }
+    }
+
+    const roleToSet = data.role || user.role
+    
+    let newStatus = user.status
+    if (roleToSet === "ORGANIZER" && user.role === "ATTENDEE") {
+      newStatus = "PENDING"
+    }
+
+    const updatedUser: UserSession = {
+      ...user,
+      fullName: data.fullName,
+      email: data.email,
+      imageUrl: data.imageUrl || user.imageUrl,
+      role: roleToSet,
+      status: newStatus,
+      bio: data.bio || "",
+      homeClub: data.homeClub || ""
+    }
+
+    localStorage.setItem("rotasphere_mock_user", JSON.stringify(updatedUser))
+    setUser(updatedUser)
+
+    // Update in local registry
+    const registeredUsers = localStorage.getItem("rotasphere_mock_registry")
+    if (registeredUsers) {
+      let registry: UserSession[] = JSON.parse(registeredUsers)
+      const idx = registry.findIndex(u => u.id === user.id)
+      if (idx !== -1) {
+        registry[idx] = updatedUser
+      } else {
+        registry.push(updatedUser)
+      }
+      localStorage.setItem("rotasphere_mock_registry", JSON.stringify(registry))
+    }
+
+    setIsLoaded(true)
+    return { success: true }
   }
 
   return (
@@ -256,6 +342,7 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
         signUp,
         signOut,
         loginWithGoogle,
+        updateProfile,
         isClerkActive: false
       }}
     >

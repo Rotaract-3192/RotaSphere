@@ -414,7 +414,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
                     {/* Price chip — docked top-left outside circle */}
                     <div
-                      className="absolute -top-1 -left-1 font-bold text-[10px]"
+                      className="absolute -top-1 -left-1 font-bold text-[10px] font-mono"
                       style={{
                         background: "var(--primary)",
                         color: "var(--primary-foreground)",
@@ -453,7 +453,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   {/* Meta */}
                   <div className="flex items-center justify-center gap-3 mb-5">
                     <span
-                      className="flex items-center gap-1 text-xs font-weight-450"
+                      className="flex items-center gap-1 text-xs font-weight-450 font-mono"
                       style={{ color: "var(--muted-foreground)" }}
                     >
                       <Calendar className="h-3.5 w-3.5" />
@@ -471,7 +471,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
                   {/* Capacity Bar */}
                   <div className="w-full max-w-[220px] mb-5">
-                    <div className="flex justify-between text-[10px] font-bold mb-1.5">
+                    <div className="flex justify-between text-[10px] font-bold mb-1.5 font-mono">
                       <span style={{ color: "var(--muted-foreground)" }}>Registered</span>
                       <span style={{ color: "var(--foreground)" }}>{evt.attendees} / {evt.capacity}</span>
                     </div>

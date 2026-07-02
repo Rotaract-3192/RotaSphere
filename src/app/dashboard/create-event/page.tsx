@@ -32,6 +32,8 @@ export default function CreateEventPage() {
 
   // Load events and bookings from database
   React.useEffect(() => {
+    if (!isLoaded) return
+
     async function loadData() {
       let finalEvents: EventItem[] = []
       let finalBookings: EventItem[] = []
@@ -41,11 +43,18 @@ export default function CreateEventPage() {
         const res = await getEventsAction()
         if (res.success) {
           if (!res.simulated) {
-            finalEvents = res.events as EventItem[]
+            let loadedEvents = res.events as EventItem[]
+            if (user?.role === "ORGANIZER") {
+              loadedEvents = loadedEvents.filter(e => e.organizerId === user.id)
+            }
+            finalEvents = loadedEvents
           } else {
             const savedEvents = localStorage.getItem("rotasphere_events")
-            finalEvents = savedEvents ? JSON.parse(savedEvents) : mockEvents
-            setEvents(finalEvents)
+            let loadedEvents = savedEvents ? JSON.parse(savedEvents) : []
+            if (user?.role === "ORGANIZER") {
+              loadedEvents = loadedEvents.filter((e: any) => e.organizerId === user?.id)
+            }
+            finalEvents = loadedEvents
           }
         }
       } catch (err) {
@@ -82,7 +91,7 @@ export default function CreateEventPage() {
     if (typeof window !== "undefined") {
       loadData()
     }
-  }, [])
+  }, [isLoaded, user])
 
   // Loading state or unauthorized state
   if (!isLoaded || !user || (user.role !== "ORGANIZER" && user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {

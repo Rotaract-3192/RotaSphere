@@ -26,7 +26,7 @@ export default function EventsPage() {
             setEvents(res.events as EventItem[])
           } else {
             const saved = localStorage.getItem("rotasphere_events")
-            const current = saved ? JSON.parse(saved) : mockEvents
+            const current = saved ? JSON.parse(saved) : []
             setEvents(current.filter((e: any) => e.status === "PUBLISHED" || !e.status))
           }
         }

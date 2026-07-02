@@ -7,15 +7,19 @@ import {
   Calendar, MapPin, Users, DollarSign, IndianRupee, Award, Ticket, 
   BarChart3, Plus, UserCheck, Trash2, 
   TrendingUp, LayoutDashboard, Settings, Menu, Bell, Search, 
-  Sparkles, LogOut, Moon, Sun, ClipboardList, Info, Check
+  Sparkles, LogOut, Moon, Sun, ClipboardList, Info, Check, Home
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { Card, CardContent } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { EventItem } from "@/data/mockData"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 import { MultiStepCreateEvent } from "./MultiStepCreateEvent"
 import { deleteEventAction, submitEventForApprovalAction } from "@/app/actions/eventActions"
+import { useAuthSession } from "@/context/AuthContext"
+import { EditProfileModal } from "./EditProfileModal"
 
 interface OrganizerDashboardProps {
   events: EventItem[];
@@ -39,19 +43,54 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
   // Settings form states
-  const [profileName, setProfileName] = React.useState(user.fullName)
-  const [profileEmail, setProfileEmail] = React.useState(user.email)
+  const { user: authUser, updateProfile } = useAuthSession()
+  const activeUser = authUser || user
+  
+  const [profileName, setProfileName] = React.useState(activeUser.fullName)
+  const [profileEmail, setProfileEmail] = React.useState(activeUser.email)
+  const [bio, setBio] = React.useState((activeUser as any).bio || "")
+  const [homeClub, setHomeClub] = React.useState((activeUser as any).homeClub || "")
+  const [imageUrl, setImageUrl] = React.useState((activeUser as any).imageUrl || "")
   const [orgName, setOrgName] = React.useState("Rotasphere Events Org")
   const [toastMessage, setToastMessage] = React.useState<string | null>(null)
 
-  // Mock global attendees database (local state)
-  const [attendeeRegistry, setAttendeeRegistry] = React.useState([
-    { id: "att-1", name: "Sarah Jenkins", email: "sarah@rotasphere.com", eventTitle: "NextGen Tech Summit 2026", date: "May 12, 2026", checkedIn: true },
-    { id: "att-2", name: "David Chen", email: "dchen@gmail.com", eventTitle: "Decibel Music Festival 2026", date: "May 15, 2026", checkedIn: false },
-    { id: "att-3", name: "Alex Rivera", email: "alex@rivera.com", eventTitle: "Global Food & Wine Festival", date: "May 18, 2026", checkedIn: true },
-    { id: "att-4", name: "Marcus Vance", email: "marcus@decibel.io", eventTitle: "Decibel Music Festival 2026", date: "May 19, 2026", checkedIn: false },
-    { id: "att-5", name: "Sophia Martinez", email: "sophia@tech.io", eventTitle: "NextGen Tech Summit 2026", date: "May 20, 2026", checkedIn: false }
-  ])
+  const [isProfileEditOpen, setIsProfileEditOpen] = React.useState(false)
+  const [isOnboardingMode, setIsOnboardingMode] = React.useState(false)
+  const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (authUser) {
+      setProfileName(authUser.fullName)
+      setProfileEmail(authUser.email)
+      setBio(authUser.bio || "")
+      setHomeClub(authUser.homeClub || "")
+      setImageUrl(authUser.imageUrl || "")
+    }
+  }, [authUser])
+
+
+  // Real global attendees database
+  const [attendeeRegistry, setAttendeeRegistry] = React.useState<{ id: string; name: string; email: string; eventTitle: string; date: string; checkedIn: boolean }[]>([])
+  const [salesByDay, setSalesByDay] = React.useState<{ day: string; amount: number }[]>([])
+
+  React.useEffect(() => {
+    async function loadStats() {
+      try {
+        const { getOrganizerStatsAction, getOrganizerAttendeesAction } = await import("@/app/actions/eventActions")
+        const statsRes = await getOrganizerStatsAction()
+        if (statsRes.success && statsRes.salesByDay) {
+          setSalesByDay(statsRes.salesByDay)
+        }
+        const attRes = await getOrganizerAttendeesAction()
+        if (attRes.success && attRes.attendees) {
+          setAttendeeRegistry(attRes.attendees)
+        }
+      } catch (err) {
+        console.error("Failed to load organizer metrics:", err)
+      }
+    }
+    loadStats()
+  }, [events])
 
   // Trigger Toast Notification
   const showToast = (msg: string) => {
@@ -121,15 +160,33 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
     showToast("Status updated successfully.")
   }
 
-  const handleSettingsSubmit = (e: React.FormEvent) => {
+  const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    showToast("💾 Profile configurations saved!")
+    try {
+      const res = await updateProfile({
+        fullName: profileName,
+        email: profileEmail,
+        bio: bio,
+        homeClub: homeClub,
+        imageUrl: imageUrl
+      })
+      if (res.success) {
+        showToast("💾 Profile configurations saved!")
+      } else {
+        showToast(`❌ Failed: ${res.error}`)
+      }
+    } catch (err) {
+      showToast("❌ Failed to save changes.")
+    }
   }
 
   const renderSidebar = (isMobile: boolean) => (
     <div className="flex flex-col h-full justify-between">
       <div className="space-y-6">
-        <div className={cn("flex items-center gap-2 py-3", isMobile ? "px-2" : "px-2 lg:px-2 justify-center lg:justify-start")}>
+        <Link 
+          href="/" 
+          className={cn("flex items-center gap-2 py-3 hover:opacity-85 transition-opacity", isMobile ? "px-2" : "px-2 lg:px-2 justify-center lg:justify-start")}
+        >
           <div className="h-8 w-8 rounded-full overflow-hidden bg-white border border-border flex items-center justify-center shrink-0">
             <img
               src="/rotasphere-logo.png"
@@ -143,7 +200,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
           )}>
             RotaSphere
           </span>
-        </div>
+        </Link>
 
         {/* Navigation list */}
         <nav className="space-y-1">
@@ -175,22 +232,45 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
               </button>
             )
           })}
+
+          {/* Link to Website Home */}
+          <Link
+            href="/"
+            className={cn(
+              "w-full flex items-center rounded-full text-xs font-semibold tracking-tight transition-all duration-200 mt-4 border border-dashed border-border text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-muted/50",
+              isMobile
+                ? "justify-start gap-3 px-3.5 py-2.5"
+                : "justify-center lg:justify-start gap-0 lg:gap-3 px-0 py-2.5 lg:px-3.5"
+            )}
+            title={isMobile ? undefined : "Exit to Website"}
+          >
+            <Home className={cn("h-4 w-4 shrink-0 text-accent", !isMobile && "mx-auto lg:mx-0")} />
+            <span className={isMobile ? "inline-block" : "hidden lg:inline-block"}>
+              Exit to Website
+            </span>
+          </Link>
         </nav>
       </div>
 
       {/* Logout / User Info footer inside sidebar */}
       <div className="space-y-4 pt-4 border-t border-muted/50">
-        <div className={cn("flex items-center gap-3", isMobile ? "px-2" : "px-0 lg:px-2 justify-center lg:justify-start")}>
+        <div 
+          onClick={() => {
+            setIsOnboardingMode(false)
+            setIsProfileEditOpen(true)
+          }}
+          className={cn("flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-1.5 rounded-xl transition-colors", isMobile ? "px-2" : "px-0 lg:px-2 justify-center lg:justify-start")}
+        >
           <div className="h-9 w-9 rounded-full bg-accent/15 border border-accent/30 text-accent flex items-center justify-center font-medium text-xs overflow-hidden shrink-0">
-            {user.imageUrl ? (
-              <img src={user.imageUrl} alt={user.fullName} className="h-full w-full object-cover" />
+            {activeUser.imageUrl ? (
+              <img src={activeUser.imageUrl} alt={profileName} className="h-full w-full object-cover" />
             ) : (
-              <span>{user.fullName.split(" ").map(n => n[0]).join("").toUpperCase()}</span>
+              <span>{profileName.split(" ").map(n => n[0]).join("").toUpperCase()}</span>
             )}
           </div>
-          <div className={cn("truncate flex-1", isMobile ? "block" : "hidden lg:block")}>
-            <span className="block text-xs font-bold text-foreground truncate leading-snug">{user.fullName}</span>
-            <span className="text-[10px] text-muted-foreground block truncate">Organizer</span>
+          <div className={cn("truncate flex-1 text-left", isMobile ? "block" : "hidden lg:block")}>
+            <span className="block text-xs font-bold text-foreground truncate leading-snug">{profileName}</span>
+            <span className="text-[10px] text-muted-foreground block truncate hover:text-accent font-medium">Edit Profile &rarr;</span>
           </div>
         </div>
 
@@ -357,7 +437,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <h3 className="text-sm font-heading font-medium text-foreground">Sales Revenue Graph</h3>
                           <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                             <TrendingUp className="h-3.5 w-3.5" />
-                            +12.4% vs last week
+                            Live Metrics
                           </span>
                         </div>
                         <p className="text-[11px] text-muted-foreground mb-6">
@@ -365,22 +445,35 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         </p>
                       </div>
 
-                      {/* Simulated Chart Bars */}
+                      {/* Dynamic Chart Bars */}
                       <div className="h-44 flex items-end justify-between gap-2 px-2 border-b border-border pb-2">
-                        {[
-                          { day: "Mon", val: "h-[30%]" },
-                          { day: "Tue", val: "h-[50%]" },
-                          { day: "Wed", val: "h-[45%]" },
-                          { day: "Thu", val: "h-[75%]" },
-                          { day: "Fri", val: "h-[65%]" },
-                          { day: "Sat", val: "h-[90%]" },
-                          { day: "Sun", val: "h-[85%]" }
-                        ].map((bar, idx) => (
-                          <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                            <div className={cn("w-full bg-accent rounded-t-sm transition-all duration-500 hover:opacity-85", bar.val)} />
-                            <span className="text-[9px] text-muted-foreground font-semibold">{bar.day}</span>
-                          </div>
-                        ))}
+                        {(() => {
+                          const maxAmount = Math.max(...(salesByDay || []).map(b => b.amount), 0);
+                          const defaultBars = [
+                            { day: "Mon", amount: 0 },
+                            { day: "Tue", amount: 0 },
+                            { day: "Wed", amount: 0 },
+                            { day: "Thu", amount: 0 },
+                            { day: "Fri", amount: 0 },
+                            { day: "Sat", amount: 0 },
+                            { day: "Sun", amount: 0 }
+                          ];
+                          const barsToRender = (salesByDay && salesByDay.length === 7) ? salesByDay : defaultBars;
+
+                          return barsToRender.map((bar, idx) => {
+                            const heightPct = maxAmount > 0 ? Math.round((bar.amount / maxAmount) * 100) : 0;
+                            return (
+                              <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                                <div 
+                                  className="w-full bg-accent rounded-t-sm transition-all duration-500 hover:opacity-85" 
+                                  style={{ height: maxAmount > 0 ? `${heightPct}%` : '4px' }}
+                                  title={`₹${bar.amount.toLocaleString()}`}
+                                />
+                                <span className="text-[9px] text-muted-foreground font-semibold">{bar.day}</span>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                     </Card>
 
@@ -393,21 +486,39 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         </h3>
                         
                         <div className="space-y-3 mt-4 text-xs">
-                          {[
-                            { name: "Tech & Innovation", pct: 60, val: "1.2k sales" },
-                            { name: "Music Festivals", pct: 30, val: "600 sales" },
-                            { name: "Culinary & Foods", pct: 10, val: "200 sales" }
-                          ].map((item, index) => (
-                            <div key={index} className="space-y-1.5">
-                              <div className="flex justify-between font-semibold">
-                                <span className="text-foreground/80">{item.name}</span>
-                                <span className="text-muted-foreground">{item.val} ({item.pct}%)</span>
+                          {(() => {
+                            const stats: Record<string, number> = {}
+                            events.forEach(e => {
+                              const cat = e.category || "General"
+                              stats[cat] = (stats[cat] || 0) + (e.attendees || 0)
+                            })
+                            const total = Object.values(stats).reduce((sum, val) => sum + val, 0)
+                            const categoryStats = Object.entries(stats).map(([name, val]) => ({
+                              name,
+                              pct: total > 0 ? Math.round((val / total) * 100) : 0,
+                              val: `${val} ticket${val === 1 ? '' : 's'}`
+                            })).sort((a, b) => b.pct - a.pct)
+
+                            if (categoryStats.length === 0) {
+                              return (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  No categories recorded. Create and sell event tickets to populate metrics.
+                                </div>
+                              )
+                            }
+
+                            return categoryStats.map((item, index) => (
+                              <div key={index} className="space-y-1.5">
+                                <div className="flex justify-between font-semibold">
+                                  <span className="text-foreground/80">{item.name}</span>
+                                  <span className="text-muted-foreground">{item.val} ({item.pct}%)</span>
+                                </div>
+                                <div className="w-full bg-muted/50 h-1.5 rounded-full overflow-hidden">
+                                  <div className="bg-accent h-full rounded-full" style={{ width: `${item.pct}%` }} />
+                                </div>
                               </div>
-                              <div className="w-full bg-muted/50 h-1.5 rounded-full overflow-hidden">
-                                <div className="bg-accent h-full rounded-full" style={{ width: `${item.pct}%` }} />
-                              </div>
-                            </div>
-                          ))}
+                            ))
+                          })()}
                         </div>
                       </div>
 
@@ -424,64 +535,73 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   {/* Recent Bookings rows */}
                   <Card className="border border-border bg-card shadow-none p-5 rounded-[16px]">
                     <h3 className="text-sm font-heading font-medium text-foreground mb-4">Recent Bookings Log</h3>
-                    {/* Desktop View */}
-                    <div className="hidden md:block overflow-x-auto text-xs">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
-                            <th className="pb-2">Guest Name</th>
-                            <th className="pb-2">Registered Event</th>
-                            <th className="pb-2">Date Purchased</th>
-                            <th className="pb-2 text-right">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/40">
+                    
+                    {attendeeRegistry.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-xs">
+                        No registrations or ticket purchases recorded yet.
+                      </div>
+                    ) : (
+                      <>
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto text-xs">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
+                                <th className="pb-2">Guest Name</th>
+                                <th className="pb-2">Registered Event</th>
+                                <th className="pb-2">Date Purchased</th>
+                                <th className="pb-2 text-right">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/40">
+                              {attendeeRegistry.slice(0, 3).map((item, idx) => (
+                                <tr key={idx} className="hover:bg-muted/30 dark:hover:bg-muted/10">
+                                  <td className="py-2.5 font-medium text-foreground">{item.name}</td>
+                                  <td className="py-2.5 text-muted-foreground">{item.eventTitle}</td>
+                                  <td className="py-2.5 text-muted-foreground">{item.date}</td>
+                                  <td className="py-2.5 text-right">
+                                    <span className={cn(
+                                      "inline-block text-[9px] font-mono font-medium px-2.5 py-0.5 rounded-full border",
+                                      item.checkedIn
+                                        ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                                        : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400"
+                                    )}>
+                                      {item.checkedIn ? "Checked In" : "Pending"}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile View */}
+                        <div className="block md:hidden space-y-3">
                           {attendeeRegistry.slice(0, 3).map((item, idx) => (
-                            <tr key={idx} className="hover:bg-muted/30 dark:hover:bg-muted/10">
-                              <td className="py-2.5 font-medium text-foreground">{item.name}</td>
-                              <td className="py-2.5 text-muted-foreground">{item.eventTitle}</td>
-                              <td className="py-2.5 text-muted-foreground">{item.date}</td>
-                              <td className="py-2.5 text-right">
+                            <div key={idx} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-2 text-xs">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <span className="font-semibold text-foreground block">{item.name}</span>
+                                  <span className="text-[10px] text-muted-foreground block mt-0.5">{item.eventTitle}</span>
+                                </div>
                                 <span className={cn(
-                                  "inline-block text-[9px] font-mono font-medium px-2.5 py-0.5 rounded-full border",
+                                  "text-[9px] font-mono font-medium px-2 py-0.5 rounded-full border shrink-0",
                                   item.checkedIn
                                     ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
                                     : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400"
                                 )}>
                                   {item.checkedIn ? "Checked In" : "Pending"}
                                 </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Mobile View */}
-                    <div className="block md:hidden space-y-3">
-                      {attendeeRegistry.slice(0, 3).map((item, idx) => (
-                        <div key={idx} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-2 text-xs">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <span className="font-semibold text-foreground block">{item.name}</span>
-                              <span className="text-[10px] text-muted-foreground block mt-0.5">{item.eventTitle}</span>
+                              </div>
+                              <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/20">
+                                <span>Date Purchased</span>
+                                <span>{item.date}</span>
+                              </div>
                             </div>
-                            <span className={cn(
-                              "text-[9px] font-mono font-medium px-2 py-0.5 rounded-full border shrink-0",
-                              item.checkedIn
-                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
-                                : "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400"
-                            )}>
-                              {item.checkedIn ? "Checked In" : "Pending"}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/20">
-                            <span>Date Purchased</span>
-                            <span>{item.date}</span>
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </>
+                    )}
                   </Card>
                 </>
               )}
@@ -568,7 +688,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-3 text-muted-foreground">{evt.date}</td>
+                                <td className="py-3 text-muted-foreground font-mono">{evt.date}</td>
                                 <td className="py-3">
                                   <span className={cn(
                                     "inline-block text-[9px] font-mono font-medium px-2.5 py-0.5 rounded-full border",
@@ -608,7 +728,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                     <Button 
                                       variant="ghost" 
                                       size="icon" 
-                                      onClick={() => handleDeleteEvent(evt.id)}
+                                      onClick={() => setDeleteTargetId(evt.id)}
                                       className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
                                       title="Delete Event"
                                     >
@@ -652,7 +772,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                   <MapPin className="h-3 w-3" />
                                   {evt.location}
                                 </span>
-                                <span className="text-[10px] text-muted-foreground block mt-0.5">{evt.date}</span>
+                                <span className="text-[10px] text-muted-foreground block mt-0.5 font-mono">{evt.date}</span>
                                 {evt.reviewNotes && (status === 'DRAFT' || status === 'REJECTED') && (
                                   <span className="text-[10px] text-amber-500 font-medium block mt-2 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg">
                                     Feedback: "{evt.reviewNotes}"
@@ -689,7 +809,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
-                                  onClick={() => handleDeleteEvent(evt.id)}
+                                  onClick={() => setDeleteTargetId(evt.id)}
                                   className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
                                   title="Delete Event"
                                 >
@@ -858,37 +978,97 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       <p className="text-[10px] text-muted-foreground mt-0.5">Toggle check-in status directly when checking in guests at the gate.</p>
                     </div>
                   </div>
-                               {/* Desktop View */}
-                  <div className="hidden md:block overflow-x-auto text-xs">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
-                          <th className="pb-3">Guest</th>
-                          <th className="pb-3">Email Address</th>
-                          <th className="pb-3">Event Registered</th>
-                          <th className="pb-3">Date Registered</th>
-                          <th className="pb-3 text-right">Gate Check-In</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/40">
+                  
+                  {attendeeRegistry.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground text-xs">
+                      No attendees have registered for your events yet.
+                    </div>
+                  ) : (
+                    <>
+                      {/* Desktop View */}
+                      <div className="hidden md:block overflow-x-auto text-xs">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
+                              <th className="pb-3">Guest</th>
+                              <th className="pb-3">Email Address</th>
+                              <th className="pb-3">Event Registered</th>
+                              <th className="pb-3">Date Registered</th>
+                              <th className="pb-3 text-right">Gate Check-In</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/40">
+                            {attendeeRegistry.map((item) => (
+                              <tr key={item.id} className="hover:bg-muted/20 dark:hover:bg-muted/10">
+                                <td className="py-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px]">
+                                      {item.name.charAt(0)}
+                                    </div>
+                                    <span className="font-medium text-foreground">{item.name}</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 text-muted-foreground">{item.email}</td>
+                                <td className="py-3 text-muted-foreground">{item.eventTitle}</td>
+                                <td className="py-3 text-muted-foreground">{item.date}</td>
+                                <td className="py-3 text-right">
+                                  <button
+                                    onClick={() => toggleCheckIn(item.id)}
+                                    className={cn(
+                                      "inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold border transition-colors",
+                                      item.checkedIn
+                                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
+                                        : "bg-muted border-border text-foreground hover:bg-muted/80"
+                                    )}
+                                  >
+                                    {item.checkedIn ? (
+                                      <>
+                                        <Check className="h-3 w-3" />
+                                        Checked In
+                                      </>
+                                    ) : (
+                                      "Check In"
+                                    )}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile View */}
+                      <div className="block md:hidden space-y-3">
                         {attendeeRegistry.map((item) => (
-                          <tr key={item.id} className="hover:bg-muted/20 dark:hover:bg-muted/10">
-                            <td className="py-3">
+                          <div key={item.id} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs">
+                            <div className="flex justify-between items-start">
                               <div className="flex items-center gap-2">
-                                <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px]">
+                                <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px] shrink-0">
                                   {item.name.charAt(0)}
                                 </div>
-                                <span className="font-medium text-foreground">{item.name}</span>
+                                <div>
+                                  <span className="font-medium text-foreground block">{item.name}</span>
+                                  <span className="text-[10px] text-muted-foreground block">{item.email}</span>
+                                </div>
                               </div>
-                            </td>
-                            <td className="py-3 text-muted-foreground">{item.email}</td>
-                            <td className="py-3 text-muted-foreground">{item.eventTitle}</td>
-                            <td className="py-3 text-muted-foreground">{item.date}</td>
-                            <td className="py-3 text-right">
+                            </div>
+
+                            <div className="space-y-1 text-[10px] text-muted-foreground pt-2 border-t border-border/20">
+                              <div className="flex justify-between">
+                                <span>Event Registered</span>
+                                <span className="text-foreground text-right max-w-[180px] truncate">{item.eventTitle}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Date Registered</span>
+                                <span className="text-foreground">{item.date}</span>
+                              </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-border/20 flex justify-end">
                               <button
                                 onClick={() => toggleCheckIn(item.id)}
                                 className={cn(
-                                  "inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold border transition-colors",
+                                  "inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-colors w-full justify-center sm:w-auto",
                                   item.checkedIn
                                     ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
                                     : "bg-muted border-border text-foreground hover:bg-muted/80"
@@ -903,63 +1083,12 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                   "Check In"
                                 )}
                               </button>
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Mobile View */}
-                  <div className="block md:hidden space-y-3">
-                    {attendeeRegistry.map((item) => (
-                      <div key={item.id} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px] shrink-0">
-                              {item.name.charAt(0)}
-                            </div>
-                            <div>
-                              <span className="font-medium text-foreground block">{item.name}</span>
-                              <span className="text-[10px] text-muted-foreground block">{item.email}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1 text-[10px] text-muted-foreground pt-2 border-t border-border/20">
-                          <div className="flex justify-between">
-                            <span>Event Registered</span>
-                            <span className="text-foreground text-right max-w-[180px] truncate">{item.eventTitle}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Date Registered</span>
-                            <span className="text-foreground">{item.date}</span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-border/20 flex justify-end">
-                          <button
-                            onClick={() => toggleCheckIn(item.id)}
-                            className={cn(
-                              "inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-colors w-full justify-center sm:w-auto",
-                              item.checkedIn
-                                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
-                                : "bg-muted border-border text-foreground hover:bg-muted/80"
-                            )}
-                          >
-                            {item.checkedIn ? (
-                              <>
-                                <Check className="h-3 w-3" />
-                                Checked In
-                              </>
-                            ) : (
-                              "Check In"
-                            )}
-                          </button>
-                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </>
+                  )}
                 </Card>
               )}
 
@@ -1005,6 +1134,39 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       />
                     </div>
 
+                    <div className="space-y-1">
+                      <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Home Club Association</label>
+                      <input 
+                        type="text" 
+                        required
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-accent focus:outline-none"
+                        value={homeClub}
+                        onChange={(e) => setHomeClub(e.target.value)}
+                        placeholder="e.g. Rotaract Club of Chennai"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Biography / Bio</label>
+                      <textarea 
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-accent focus:outline-none min-h-[60px]"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Tell us about yourself..."
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Profile Picture URL</label>
+                      <input 
+                        type="text" 
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-accent focus:outline-none"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        placeholder="Paste image url..."
+                      />
+                    </div>
+
                     <div className="space-y-2 pt-2">
                       <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px] block">Security Preference</label>
                       <div className="flex gap-2">
@@ -1033,6 +1195,49 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
           </AnimatePresence>
         </main>
       </div>
+      <EditProfileModal
+        isOpen={isProfileEditOpen}
+        onClose={() => setIsProfileEditOpen(false)}
+        isOnboarding={isOnboardingMode}
+      />
+
+      {/* Delete Confirmation Warning Dialog */}
+      <Dialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}>
+        <DialogContent className="bg-gradient-to-br from-white to-[#fcfcfc] dark:from-[#1b1b22] dark:to-[#101014] w-full max-w-sm border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-2xl backdrop-blur-3xl text-left text-xs">
+          <DialogHeader className="space-y-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-destructive">
+              Caution Area
+            </span>
+            <DialogTitle className="text-lg font-bold tracking-tight text-foreground">
+              Delete Event Listing?
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs leading-relaxed">
+              This action cannot be undone. All ticket configurations and registrations associated with this event will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex flex-row justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTargetId(null)}
+              className="rounded-full px-4 h-9 font-medium"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (deleteTargetId) {
+                  await handleDeleteEvent(deleteTargetId)
+                  setDeleteTargetId(null)
+                }
+              }}
+              className="rounded-full px-4 h-9 bg-destructive text-destructive-foreground hover:opacity-90 font-medium"
+            >
+              Confirm Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
