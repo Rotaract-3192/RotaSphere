@@ -30,10 +30,11 @@ function CategoryCard({ cat, index, colorScheme, IconComponent }: {
       initial={{ opacity: 0, y: 40 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.55, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+      className="h-full flex"
     >
       <a
         href="/events"
-        className="flex items-start gap-5 p-6 group cursor-pointer relative overflow-hidden"
+        className="flex items-start gap-5 p-6 group cursor-pointer relative overflow-hidden w-full h-full"
         style={{
           background: "var(--card)",
           borderRadius: "18px",

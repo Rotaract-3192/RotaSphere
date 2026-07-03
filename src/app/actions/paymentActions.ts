@@ -125,6 +125,7 @@ export async function verifyPaymentAndBookTicketAction(input: {
   ticketCount?: number;
   fullName?: string;
   email?: string;
+  additionalAttendees?: { fullName: string; email: string }[];
 }) {
   try {
     const { userId } = await auth()
@@ -201,24 +202,36 @@ export async function verifyPaymentAndBookTicketAction(input: {
 
       if (i === 0) {
         primaryTicketId = ticket.id
+      }
 
-        // Create attendee registration
-        const { error: attendeeError } = await supabaseAdmin
-          .from("attendees")
-          .insert({
-            event_id: input.eventId,
-            clerk_id: userId,
-            email: formEmail,
-            full_name: formFullName,
-            ticket_id: ticket.id
-          })
+      const attendeeName = i === 0 
+        ? formFullName 
+        : (input.additionalAttendees?.[i - 1]?.fullName || `Attendee ${i + 1}`);
+      const attendeeEmail = i === 0 
+        ? formEmail 
+        : (input.additionalAttendees?.[i - 1]?.email || "");
 
-        if (attendeeError) {
-          // Rollback tickets
-          for (const t of createdTickets) {
-            await supabaseAdmin.from("tickets").delete().eq("id", t.id)
-          }
-          return { success: false, error: "You are already registered for this event." }
+      // Create attendee registration
+      const { error: attendeeError } = await supabaseAdmin
+        .from("attendees")
+        .insert({
+          event_id: input.eventId,
+          clerk_id: userId,
+          email: attendeeEmail,
+          full_name: attendeeName,
+          ticket_id: ticket.id
+        })
+
+      if (attendeeError) {
+        // Rollback tickets
+        for (const t of createdTickets) {
+          await supabaseAdmin.from("tickets").delete().eq("id", t.id)
+        }
+        return { 
+          success: false, 
+          error: i === 0 
+            ? "You are already registered for this event." 
+            : `Failed to register attendee ${i + 1}. They might already be registered.`
         }
       }
     }
@@ -245,7 +258,13 @@ export async function verifyPaymentAndBookTicketAction(input: {
   }
 }
 
-export async function bookFreeTicketAction(eventId: string, ticketCount: number = 1, fullName?: string, email?: string) {
+export async function bookFreeTicketAction(
+  eventId: string,
+  ticketCount: number = 1,
+  fullName?: string,
+  email?: string,
+  additionalAttendees?: { fullName: string; email: string }[]
+) {
   try {
     const { userId } = await auth()
     const clerkUser = await currentUser()
@@ -315,24 +334,36 @@ export async function bookFreeTicketAction(eventId: string, ticketCount: number 
 
       if (i === 0) {
         primaryTicketId = ticket.id
+      }
 
-        // Create attendee registration
-        const { error: attendeeError } = await supabaseAdmin
-          .from("attendees")
-          .insert({
-            event_id: eventId,
-            clerk_id: userId,
-            email: formEmail,
-            full_name: formFullName,
-            ticket_id: ticket.id
-          })
+      const attendeeName = i === 0 
+        ? formFullName 
+        : (additionalAttendees?.[i - 1]?.fullName || `Attendee ${i + 1}`);
+      const attendeeEmail = i === 0 
+        ? formEmail 
+        : (additionalAttendees?.[i - 1]?.email || "");
 
-        if (attendeeError) {
-          // Rollback tickets
-          for (const t of createdTickets) {
-            await supabaseAdmin.from("tickets").delete().eq("id", t.id)
-          }
-          return { success: false, error: "You are already registered for this event." }
+      // Create attendee registration
+      const { error: attendeeError } = await supabaseAdmin
+        .from("attendees")
+        .insert({
+          event_id: eventId,
+          clerk_id: userId,
+          email: attendeeEmail,
+          full_name: attendeeName,
+          ticket_id: ticket.id
+        })
+
+      if (attendeeError) {
+        // Rollback tickets
+        for (const t of createdTickets) {
+          await supabaseAdmin.from("tickets").delete().eq("id", t.id)
+        }
+        return { 
+          success: false, 
+          error: i === 0 
+            ? "You are already registered for this event." 
+            : `Failed to register attendee ${i + 1}. They might already be registered.`
         }
       }
     }

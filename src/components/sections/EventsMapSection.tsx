@@ -540,8 +540,21 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                           <MapPin className="h-3 w-3 text-accent" />
                           {selectedEvent.location}
                         </p>
+                        <a
+                          href={
+                            selectedEvent.latitude && selectedEvent.longitude
+                              ? `https://www.google.com/maps/dir/?api=1&destination=${selectedEvent.latitude},${selectedEvent.longitude}`
+                              : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedEvent.location)}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 mt-1 font-medium transition-colors"
+                        >
+                          <Compass className="h-3 w-3 text-sky-400 animate-pulse" />
+                          Get Directions
+                        </a>
                         {getEventDistance(selectedEvent) && (
-                          <p className="text-[8px] font-bold text-emerald-400 font-mono tracking-wide">
+                          <p className="text-[8px] font-bold text-emerald-400 font-mono tracking-wide mt-1">
                             {getEventDistance(selectedEvent)}
                           </p>
                         )}

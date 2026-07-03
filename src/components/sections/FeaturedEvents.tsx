@@ -5,7 +5,7 @@ import { Calendar, MapPin, Ticket, Check } from "lucide-react"
 import { EventItem } from "@/data/mockData"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useAuthSession } from "@/context/AuthContext"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createRazorpayOrderAction, verifyPaymentAndBookTicketAction, bookFreeTicketAction } from "@/app/actions/paymentActions"
 import { Loader2 } from "lucide-react"
 
@@ -16,6 +16,7 @@ interface FeaturedEventsProps {
 
 export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isSignedIn, role } = useAuthSession()
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all")
   const [bookingEvent, setBookingEvent] = React.useState<EventItem | null>(null)
@@ -28,21 +29,20 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   }, [])
 
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const searchParams = new URLSearchParams(window.location.search)
-      const eventId = searchParams.get("eventId")
-      if (eventId) {
-        const found = events.find(e => e.id === eventId)
-        if (found) {
-          // Open booking modal
-          setBookingEvent(found)
-          // Clean search params from URL so it doesn't reopen on refresh
+    const eventId = searchParams.get("eventId")
+    if (eventId) {
+      const found = events.find(e => e.id === eventId)
+      if (found) {
+        // Open booking modal
+        setBookingEvent(found)
+        // Clean search params from URL so it doesn't reopen on refresh
+        if (typeof window !== "undefined") {
           const newUrl = window.location.pathname
           window.history.replaceState({ ...window.history.state }, "", newUrl)
         }
       }
     }
-  }, [events])
+  }, [events, searchParams])
 
   // Registration Form State
   const [formData, setFormData] = React.useState({
@@ -52,6 +52,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
     ticketCount: 1,
     specialRequests: ""
   })
+
+  const [attendees, setAttendees] = React.useState<{ fullName: string; email: string }[]>([])
 
   // Prefill user details when modal opens
   React.useEffect(() => {
@@ -63,8 +65,29 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         ticketCount: 1,
         specialRequests: ""
       })
+      setAttendees([])
     }
   }, [bookingEvent, user])
+
+  // Sync attendees array length to match ticketCount minus primary booker
+  React.useEffect(() => {
+    const targetLength = formData.ticketCount - 1
+    if (targetLength > 0) {
+      setAttendees(prev => {
+        const next = [...prev]
+        if (next.length < targetLength) {
+          while (next.length < targetLength) {
+            next.push({ fullName: "", email: "" })
+          }
+        } else if (next.length > targetLength) {
+          next.splice(targetLength)
+        }
+        return next
+      })
+    } else {
+      setAttendees([])
+    }
+  }, [formData.ticketCount])
 
   const categories = [
     { label: "All Events", value: "all" },
@@ -117,7 +140,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           bookingEvent.id,
           formData.ticketCount,
           formData.fullName,
-          formData.email
+          formData.email,
+          attendees
         )
         if (res.success) {
           // Save registration details to local storage
@@ -125,12 +149,16 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           const savedDetails = localStorage.getItem("rotasphere_ticket_details")
           const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
 
-          ticketCodes.forEach(code => {
+          ticketCodes.forEach((code, index) => {
+            const isPrimary = index === 0
+            const attendeeName = isPrimary ? formData.fullName : (attendees[index - 1]?.fullName || "")
+            const attendeeEmail = isPrimary ? formData.email : (attendees[index - 1]?.email || "")
+
             detailsMap[code] = {
               phone: formData.phone,
               specialRequests: formData.specialRequests,
-              fullName: formData.fullName,
-              email: formData.email,
+              fullName: attendeeName,
+              email: attendeeEmail,
               ticketCount: formData.ticketCount,
               bookedAt: new Date().toISOString()
             }
@@ -174,7 +202,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           isSimulated: true,
           ticketCount: formData.ticketCount,
           fullName: formData.fullName,
-          email: formData.email
+          email: formData.email,
+          additionalAttendees: attendees
         })
         if (verifyRes.success) {
           // Save registration details to local storage
@@ -182,12 +211,16 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           const savedDetails = localStorage.getItem("rotasphere_ticket_details")
           const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
 
-          ticketCodes.forEach(code => {
+          ticketCodes.forEach((code, index) => {
+            const isPrimary = index === 0
+            const attendeeName = isPrimary ? formData.fullName : (attendees[index - 1]?.fullName || "")
+            const attendeeEmail = isPrimary ? formData.email : (attendees[index - 1]?.email || "")
+
             detailsMap[code] = {
               phone: formData.phone,
               specialRequests: formData.specialRequests,
-              fullName: formData.fullName,
-              email: formData.email,
+              fullName: attendeeName,
+              email: attendeeEmail,
               ticketCount: formData.ticketCount,
               bookedAt: new Date().toISOString()
             }
@@ -231,7 +264,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
             isSimulated: false,
             ticketCount: formData.ticketCount,
             fullName: formData.fullName,
-            email: formData.email
+            email: formData.email,
+            additionalAttendees: attendees
           })
           if (verifyRes.success) {
             // Save registration details to local storage
@@ -239,12 +273,16 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
             const savedDetails = localStorage.getItem("rotasphere_ticket_details")
             const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
 
-            ticketCodes.forEach(code => {
+            ticketCodes.forEach((code, index) => {
+              const isPrimary = index === 0
+              const attendeeName = isPrimary ? formData.fullName : (attendees[index - 1]?.fullName || "")
+              const attendeeEmail = isPrimary ? formData.email : (attendees[index - 1]?.email || "")
+
               detailsMap[code] = {
                 phone: formData.phone,
                 specialRequests: formData.specialRequests,
-                fullName: formData.fullName,
-                email: formData.email,
+                fullName: attendeeName,
+                email: attendeeEmail,
                 ticketCount: formData.ticketCount,
                 bookedAt: new Date().toISOString()
               }
@@ -665,6 +703,65 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                         />
                       </div>
                     </div>
+
+                    {/* Dynamic Guest Attendee details */}
+                    {attendees.length > 0 && (
+                      <div className="space-y-3 pt-3 border-t border-dashed border-[#d9d9dd]">
+                        {attendees.map((att, idx) => (
+                          <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-[#f8f9fa] space-y-3">
+                            <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                              Guest Attendee {idx + 2}
+                            </span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                  Full Name *
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={att.fullName}
+                                  onChange={(e) => {
+                                    const updated = [...attendees]
+                                    updated[idx] = { ...updated[idx], fullName: e.target.value }
+                                    setAttendees(updated)
+                                  }}
+                                  className="w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:border-[#17458f] transition-all"
+                                  style={{
+                                    background: "#ffffff",
+                                    borderColor: "#d9d9dd",
+                                    color: "#212121"
+                                  }}
+                                  placeholder={`Guest ${idx + 2} Full Name`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                  Email Address *
+                                </label>
+                                <input
+                                  type="email"
+                                  required
+                                  value={att.email}
+                                  onChange={(e) => {
+                                    const updated = [...attendees]
+                                    updated[idx] = { ...updated[idx], email: e.target.value }
+                                    setAttendees(updated)
+                                  }}
+                                  className="w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:border-[#17458f] transition-all"
+                                  style={{
+                                    background: "#ffffff",
+                                    borderColor: "#d9d9dd",
+                                    color: "#212121"
+                                  }}
+                                  placeholder="guest@example.com"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Event Details Card & Price Calculation */}
                     <div

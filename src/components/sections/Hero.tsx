@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import dynamic from "next/dynamic"
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
-import { ArrowRight, Users, Calendar, Zap, Globe, Star, Ticket } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ArrowRight, Users, Calendar, Zap, Globe, Star, Ticket, MapPin, Clipboard, Megaphone, Heart, HelpCircle, Check, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 
 // Dynamically import shaders to avoid SSR issues with WebGL
@@ -25,7 +25,6 @@ const tickerItems = [
   { icon: <Star className="h-3.5 w-3.5" />, text: "99.9% Uptime" },
 ]
 
-// Duplicate for seamless loop
 const allTickerItems = [...tickerItems, ...tickerItems]
 
 const words = [
@@ -40,10 +39,6 @@ const words = [
 ]
 
 export function Hero({ onCreateEventClick }: HeroProps) {
-  const { scrollY } = useScroll()
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0])
-  const heroScale = useTransform(scrollY, [0, 400], [1, 0.95])
-
   const [wordIdx, setWordIdx] = React.useState(0)
 
   React.useEffect(() => {
@@ -83,7 +78,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
   return (
     <motion.section
       className="relative flex flex-col items-center justify-center pt-28 sm:pt-36 md:pt-40 pb-0 overflow-hidden w-full min-h-[95vh]"
-      style={{ color: "#ffffff", opacity: heroOpacity, scale: heroScale }}
+      style={{ color: "#ffffff" }}
     >
       {/* ─── Background Theme Gradient Fallback ─── */}
       <div
@@ -149,7 +144,7 @@ export function Hero({ onCreateEventClick }: HeroProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           
           {/* Left Column (Content) */}
-          <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left w-full">
+          <div className="lg:col-span-6 flex flex-col items-center lg:items-start text-center lg:text-left w-full">
             <motion.div
               variants={containerVariants}
               initial="hidden"
@@ -285,23 +280,23 @@ export function Hero({ onCreateEventClick }: HeroProps) {
             </motion.div>
           </div>
 
-          {/* Right Column (Direct Seamless Integration of User-Provided Illustration) */}
-          <div className="lg:col-span-5 flex justify-center w-full mt-10 lg:mt-0 relative">
+          {/* Right Column (Direct Seamless Integration of Provided Illustration) */}
+          <div className="lg:col-span-6 flex justify-center w-full mt-10 lg:mt-0 relative min-h-[400px] lg:min-h-[580px]">
             {/* Subtle Blue Glow Behind Illustration */}
             <div 
-              className="absolute inset-0 bg-blue-500/5 rounded-full blur-[80px] pointer-events-none scale-90" 
-              style={{ background: "radial-gradient(circle, rgba(29,115,255,0.15) 0%, transparent 70%)" }}
+              className="absolute inset-0 bg-blue-500/5 rounded-full blur-[110px] pointer-events-none scale-90" 
+              style={{ background: "radial-gradient(circle, rgba(29,115,255,0.18) 0%, transparent 70%)" }}
             />
             
             <motion.div
-              animate={{ y: [0, -8, 0] }}
+              animate={{ y: [0, -10, 0] }}
               transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-              className="w-full relative z-10"
+              className="w-full relative z-10 flex items-center justify-center"
             >
               <img
-                src="/hero-illustration.png"
-                alt="RotaSphere Event Planning"
-                className="w-full h-auto object-contain pointer-events-none"
+                src="/hero-removebg-preview.png"
+                alt="RotaSphere Event Planning Illustration"
+                className="w-full h-auto object-contain pointer-events-none select-none max-w-[540px] lg:max-w-none max-h-[580px] lg:max-h-[650px]"
                 style={{
                   filter: "drop-shadow(0 15px 35px rgba(29, 115, 255, 0.25))",
                 }}

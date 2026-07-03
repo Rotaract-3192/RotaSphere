@@ -4,6 +4,7 @@ import * as React from "react"
 import type { Metadata } from "next"
 import { Navbar } from "@/components/Navbar"
 import { FeaturedEvents } from "@/components/sections/FeaturedEvents"
+import { EventCalendar } from "@/components/sections/EventCalendar"
 import { Footer } from "@/components/Footer"
 import { CreateEventModal } from "@/components/sections/CreateEventModal"
 import { mockEvents, EventItem } from "@/data/mockData"
@@ -104,7 +105,12 @@ export default function EventsPage() {
             </div>
           </section>
         ) : (
-          <FeaturedEvents events={events} onEventBooked={handleEventBooked} />
+          <>
+            <EventCalendar events={events} />
+            <React.Suspense fallback={<div className="py-10 text-center text-slate-400 text-xs font-mono">Initializing ticketing system...</div>}>
+              <FeaturedEvents events={events} onEventBooked={handleEventBooked} />
+            </React.Suspense>
+          </>
         )}
       </main>
 

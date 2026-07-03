@@ -23,6 +23,8 @@ export interface EventItem {
   googleMapsUrl?: string;
   locationType?: 'in-person' | 'online' | 'hybrid';
   organizerId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface CategoryItem {

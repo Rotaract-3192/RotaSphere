@@ -3,8 +3,6 @@
 import * as React from "react"
 import { Navbar } from "@/components/Navbar"
 import { Hero } from "@/components/sections/Hero"
-import { Categories } from "@/components/sections/Categories"
-import { DarkFeatureBand } from "@/components/sections/DarkFeatureBand"
 import { Footer } from "@/components/Footer"
 import { CreateEventModal } from "@/components/sections/CreateEventModal"
 import { mockEvents, EventItem } from "@/data/mockData"
@@ -203,11 +201,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 4. Rotaract Event Categories */}
-        <Categories />
 
-        {/* 5. Dark Feature Band */}
-        <DarkFeatureBand />
 
         {/* 6. Upcoming Events Preview Strip */}
         {isLoading ? (
