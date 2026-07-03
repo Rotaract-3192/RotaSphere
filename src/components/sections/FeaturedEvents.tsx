@@ -29,6 +29,11 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const [screenshotError, setScreenshotError] = React.useState<string | null>(null)
   const [copiedUpi, setCopiedUpi] = React.useState(false)
 
+  const remainingCapacity = bookingEvent
+    ? Math.max(0, (parseInt(bookingEvent.capacity) || 0) - (bookingEvent.attendees || 0))
+    : 0
+  const maxSelectable = Math.max(1, Math.min(10, remainingCapacity))
+
   React.useEffect(() => {
     setMounted(true)
   }, [])
@@ -158,6 +163,11 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const confirmBooking = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!bookingEvent) return
+
+    if (formData.ticketCount > remainingCapacity) {
+      alert(`Only ${remainingCapacity} tickets are remaining for this event. You cannot book ${formData.ticketCount} tickets.`)
+      return
+    }
 
     if (!formData.fullName.trim() || !formData.email.trim() || !formData.phone.trim()) {
       alert("Please fill in all required fields.")
@@ -397,6 +407,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-14">
             {filteredEvents.map((evt, index) => {
               const attendeesPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
+              const isSoldOut = evt.attendees >= parseInt(evt.capacity || "0")
               return (
                 <div
                   key={evt.id}
@@ -448,9 +459,14 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
                     {/* Satellite CTA — docked bottom-right */}
                     <button
-                      onClick={() => handleBookTicket(evt)}
-                      className="satellite-cta absolute bottom-1 right-1 animate-satellite-pop cursor-pointer bg-white text-slate-900 border-sky-400 hover:bg-[#1E88E5] hover:text-white"
-                      title="Get Ticket"
+                      onClick={() => !isSoldOut && handleBookTicket(evt)}
+                      disabled={isSoldOut}
+                      className={`satellite-cta absolute bottom-1 right-1 animate-satellite-pop cursor-pointer ${
+                        isSoldOut 
+                          ? "bg-slate-300 text-slate-500 border-slate-300 cursor-not-allowed" 
+                          : "bg-white text-slate-900 border-sky-400 hover:bg-[#1E88E5] hover:text-white"
+                      }`}
+                      title={isSoldOut ? "Sold Out" : "Get Ticket"}
                     >
                       <Ticket className="h-5 w-5" />
                     </button>
@@ -510,8 +526,13 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
                   {/* Near-Black CTA Button */}
                   <button
-                    onClick={() => handleBookTicket(evt)}
-                    className="text-sm font-bold transition-all duration-300 hover:-translate-y-0.5 shadow-md hover:shadow-sky-500/20 cursor-pointer bg-gradient-to-r from-[#17458F] to-[#1E88E5] text-white"
+                    onClick={() => !isSoldOut && handleBookTicket(evt)}
+                    disabled={isSoldOut}
+                    className={`text-sm font-bold transition-all duration-300 ${
+                      isSoldOut 
+                        ? "bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-500 cursor-not-allowed" 
+                        : "hover:-translate-y-0.5 shadow-md hover:shadow-sky-500/20 cursor-pointer bg-gradient-to-r from-[#17458F] to-[#1E88E5] text-white"
+                    }`}
                     style={{
                       borderRadius: "32px",
                       padding: "10px 26px",
@@ -519,7 +540,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                       letterSpacing: "-0.02em"
                     }}
                   >
-                    Get Ticket Pass
+                    {isSoldOut ? "Sold Out" : "Get Ticket Pass"}
                   </button>
                 </div>
               )
@@ -675,7 +696,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                                 color: "#212121"
                               }}
                             >
-                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                              {Array.from({ length: maxSelectable }, (_, i) => i + 1).map((num) => (
                                 <option key={num} value={num}>
                                   {num}
                                 </option>

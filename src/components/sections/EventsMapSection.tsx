@@ -171,14 +171,66 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
           if (evt.category === 'community') markerColor = '#0A2342'; // Deep Ocean Blue
           if (evt.category === 'club') markerColor = '#1E88E5'; // Bright Ocean Blue
           
-          // Create custom marker DOM element
+          // Inject wave animation keyframes once into the document
+          if (!document.getElementById('map-wave-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'map-wave-keyframes';
+            style.textContent = `
+              @keyframes mapWaveRipple {
+                0%   { transform: scale(1);   opacity: 0.7; }
+                100% { transform: scale(3.2); opacity: 0; }
+              }
+              @keyframes mapWaveRipple2 {
+                0%   { transform: scale(1);   opacity: 0.5; }
+                100% { transform: scale(2.4); opacity: 0; }
+              }
+              @keyframes mapCoreFloat {
+                0%, 100% { transform: translateY(0px); }
+                50%       { transform: translateY(-3px); }
+              }
+              .map-wave-marker { position: relative; width: 44px; height: 44px; }
+              .map-wave-ripple {
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(17, 38, 97, 0.35);
+                animation: mapWaveRipple 2s ease-out infinite;
+              }
+              .map-wave-ripple2 {
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(17, 38, 97, 0.25);
+                animation: mapWaveRipple2 2s ease-out infinite 0.6s;
+              }
+              .map-wave-core {
+                position: absolute;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: mapCoreFloat 3s ease-in-out infinite;
+              }
+            `;
+            document.head.appendChild(style);
+          }
+
+          // Create custom marker DOM element — animated wave beacon
           const el = document.createElement('div');
           el.style.cursor = 'pointer';
+          const coreColor = markerColor;
           el.innerHTML = `
-            <div style="filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.4));">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${markerColor}" stroke="#ffffff" stroke-width="1.5" />
-              </svg>
+            <div class="map-wave-marker" style="width:44px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;">
+              <!-- Ripple ring 1 -->
+              <div class="map-wave-ripple" style="width:22px;height:22px;top:11px;left:11px;"></div>
+              <!-- Ripple ring 2 -->
+              <div class="map-wave-ripple2" style="width:22px;height:22px;top:11px;left:11px;"></div>
+              <!-- Core dot with wave SVG icon -->
+              <div class="map-wave-core" style="width:26px;height:26px;top:9px;left:9px;background:${coreColor};border:2.5px solid #ffffff;box-shadow:0 2px 10px rgba(17,38,97,0.5);">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Wave icon (Lucide-style wavy line) -->
+                  <path d="M2 12 C4 8, 6 8, 8 12 C10 16, 12 16, 14 12 C16 8, 18 8, 20 12 C21.5 14.5, 22 15, 22 15"
+                    stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+              </div>
             </div>
           `;
 
@@ -188,8 +240,8 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
             mapInstanceRef.current?.panTo([lng, lat]);
           });
 
-          // Create Maplibre Marker
-          const marker = new maplibregl.Marker(el)
+          // Create Maplibre Marker — must pass element via options object
+          const marker = new maplibregl.Marker({ element: el })
             .setLngLat([lng, lat])
             .addTo(mapInstanceRef.current);
 

@@ -72,7 +72,7 @@ export function Footer() {
 
   return (
     <footer
-      style={{ background: "#17171c" }}
+      style={{ background: "#17458F" }}
       className="relative overflow-hidden pt-14 pb-10 sm:pt-20 sm:pb-14 md:pt-[80px] md:pb-[60px]"
     >
       {/* Ghost Watermark — white-on-dark */}
@@ -99,12 +99,12 @@ export function Footer() {
           <span
             className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.12em] mb-5 px-3 py-1.5 rounded-full"
             style={{
-              background: "rgba(79,195,247,0.08)",
-              border: "1px solid rgba(79,195,247,0.18)",
-              color: "#4FC3F7"
+              background: "rgba(247,168,27,0.12)",
+              border: "1px solid rgba(247,168,27,0.25)",
+              color: "#F7A81B"
             }}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
             Always Here For You
           </span>
           <h2
@@ -156,22 +156,22 @@ export function Footer() {
                   rel={social.href !== "#" ? "noopener noreferrer" : undefined}
                   className="h-10 w-10 rounded-full flex items-center justify-center"
                   style={{
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    color: "rgba(255,255,255,0.55)",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    color: "rgba(255,255,255,0.65)",
                     transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)"
                   }}
                   onMouseEnter={e => {
                     const el = e.currentTarget as HTMLElement
-                    el.style.borderColor = "#4FC3F7"
-                    el.style.color = "#4FC3F7"
+                    el.style.borderColor = "#F7A81B"
+                    el.style.color = "#F7A81B"
                     el.style.transform = "translateY(-3px)"
-                    el.style.boxShadow = "0 8px 24px -4px rgba(79,195,247,0.3)"
-                    el.style.background = "rgba(79,195,247,0.08)"
+                    el.style.boxShadow = "0 8px 24px -4px rgba(247,168,27,0.35)"
+                    el.style.background = "rgba(247,168,27,0.10)"
                   }}
                   onMouseLeave={e => {
                     const el = e.currentTarget as HTMLElement
-                    el.style.borderColor = "rgba(255,255,255,0.12)"
-                    el.style.color = "rgba(255,255,255,0.55)"
+                    el.style.borderColor = "rgba(255,255,255,0.18)"
+                    el.style.color = "rgba(255,255,255,0.65)"
                     el.style.transform = "translateY(0)"
                     el.style.boxShadow = "none"
                     el.style.background = "transparent"
@@ -260,7 +260,7 @@ export function Footer() {
 
       {/* Contact Dialog */}
       <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
-        <DialogContent className="max-w-md bg-[#17171c] border border-white/10 text-white rounded-2xl p-6 shadow-2xl">
+        <DialogContent className="max-w-md bg-[#07132A] border border-white/10 text-white rounded-2xl p-6 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-medium tracking-tight text-white mb-1">
               Contact Technical Support

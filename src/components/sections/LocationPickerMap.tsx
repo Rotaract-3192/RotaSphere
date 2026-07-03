@@ -298,10 +298,35 @@ export default function LocationPickerMap({
       // Add zoom navigation control
       mapInstanceRef.current.addControl(new maplibregl.NavigationControl(), 'top-right');
 
+      // Create custom marker DOM element for location picker
+      const el = document.createElement('div');
+      el.style.cursor = 'pointer';
+      el.innerHTML = `
+        <div style="filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.45));">
+          <svg width="34" height="40" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7.5 14.5 L12 25 L16.5 14.5 Z" fill="#1E88E5" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" />
+            <circle cx="12" cy="10" r="7.5" fill="#1E88E5" stroke="#1E88E5" stroke-width="2" />
+            <circle cx="12" cy="10" r="8.5" stroke="#1E88E5" stroke-width="1.5" stroke-dasharray="1.2 1" fill="none" />
+            <circle cx="12" cy="10" r="7.5" stroke="#ffffff" stroke-width="1.0" fill="none" />
+            <circle cx="12" cy="10" r="4.5" stroke="#ffffff" stroke-width="1.0" fill="none" />
+            <g stroke="#ffffff" stroke-width="1.0">
+              <line x1="12" y1="10" x2="12" y2="2.5" />
+              <line x1="12" y1="10" x2="18.5" y2="13.75" />
+              <line x1="12" y1="10" x2="18.5" y2="6.25" />
+              <line x1="12" y1="10" x2="5.5" y2="13.75" />
+              <line x1="12" y1="10" x2="5.5" y2="6.25" />
+              <line x1="12" y1="10" x2="12" y2="17.5" />
+            </g>
+            <circle cx="12" cy="10" r="2" fill="#ffffff" />
+            <circle cx="12" cy="10" r="0.8" fill="#1E88E5" />
+          </svg>
+        </div>
+      `;
+
       // Initialize Pin Marker
       markerRef.current = new maplibregl.Marker({
-        draggable: true,
-        color: '#1E88E5'
+        element: el,
+        draggable: true
       })
         .setLngLat([defaultLng, defaultLat])
         .addTo(mapInstanceRef.current);

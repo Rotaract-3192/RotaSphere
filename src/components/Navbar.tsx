@@ -101,24 +101,17 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
           style={{
             borderRadius: "999px",
             background: isScrolled
-              ? "rgba(255,255,255,0.92)"
-              : "rgba(255,255,255,0.88)",
+              ? "rgba(7,19,42,0.97)"
+              : "rgba(7,19,42,0.90)",
             backdropFilter: "blur(24px)",
             WebkitBackdropFilter: "blur(24px)",
-            border: `1px solid ${isScrolled ? "rgba(30,136,229,0.18)" : "rgba(23,23,28,0.08)"}`,
+            border: `1px solid ${isScrolled ? "rgba(247,168,27,0.25)" : "rgba(28,58,110,0.6)"}`,
             boxShadow: isScrolled
-              ? "0 8px 32px -4px rgba(30,136,229,0.15), 0 2px 8px rgba(0,0,0,0.05)"
-              : "0 4px 20px rgba(0,0,0,0.04)",
+              ? "0 8px 32px -4px rgba(0,0,0,0.4), 0 0 0 1px rgba(247,168,27,0.08)"
+              : "0 4px 20px rgba(0,0,0,0.25)",
             transition: "all 0.5s cubic-bezier(0.4,0,0.2,1)"
           }}
         >
-          {/* Dark mode pill styles */}
-          <style>{`
-            .dark .nav-pill-inner {
-              background: rgba(8,26,51,0.92) !important;
-              border-color: rgba(30,136,229,0.18) !important;
-            }
-          `}</style>
 
           {/* ── Logo ── */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
@@ -150,20 +143,20 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                   href={link.href}
                   className="relative px-4 py-2 rounded-full text-sm font-bold transition-all duration-200 group"
                   style={{
-                    color: active ? "var(--accent)" : "var(--foreground)",
-                    background: active ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+                    color: active ? "#F7A81B" : "rgba(240,246,255,0.85)",
+                    background: active ? "rgba(247,168,27,0.10)" : "transparent",
                     letterSpacing: "-0.02em"
                   }}
                   onMouseEnter={e => {
                     if (!active) {
-                      (e.currentTarget as HTMLElement).style.background = "color-mix(in srgb, var(--accent) 6%, transparent)"
-                      ;(e.currentTarget as HTMLElement).style.color = "var(--accent)"
+                      (e.currentTarget as HTMLElement).style.background = "rgba(247,168,27,0.07)"
+                      ;(e.currentTarget as HTMLElement).style.color = "#F7A81B"
                     }
                   }}
                   onMouseLeave={e => {
                     if (!active) {
                       (e.currentTarget as HTMLElement).style.background = "transparent"
-                      ;(e.currentTarget as HTMLElement).style.color = "var(--foreground)"
+                      ;(e.currentTarget as HTMLElement).style.color = "rgba(240,246,255,0.85)"
                     }
                   }}
                 >
@@ -183,33 +176,6 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
           {/* ── Desktop Actions ── */}
           <div className="hidden md:flex items-center gap-2">
 
-            {/* Theme Toggle */}
-            {mounted && (
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="h-9 w-9 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110"
-                style={{
-                  border: "1px solid var(--border)",
-                  background: "var(--card)",
-                }}
-                aria-label="Toggle theme"
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={theme}
-                    initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
-                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                    exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {theme === "dark"
-                      ? <Sun className="h-3.5 w-3.5" style={{ color: "#FBBF24" }} />
-                      : <Moon className="h-3.5 w-3.5" style={{ color: "var(--foreground)" }} />
-                    }
-                  </motion.div>
-                </AnimatePresence>
-              </button>
-            )}
 
             {/* Create Event — gradient pill */}
             <button

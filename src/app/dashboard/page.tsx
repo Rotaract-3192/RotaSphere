@@ -34,7 +34,7 @@ import {
   Calendar, MapPin, Users, DollarSign, IndianRupee, Ticket, 
   Plus, ShieldCheck, UserCheck, Trash2, AlertCircle,
   BarChart3, ClipboardList, Info, Check, Lock, Shield,
-  TrendingUp
+  TrendingUp, LayoutDashboard
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -45,6 +45,7 @@ export default function DashboardPage() {
   const router = useRouter()
 
   const [events, setEvents] = React.useState<EventItem[]>([])
+  const [isOrganizerMode, setIsOrganizerMode] = React.useState(false)
   const [isCreateOpen, setIsCreateOpen] = React.useState(false)
   const [bookedTickets, setBookedTickets] = React.useState<EventItem[]>([])
   const [isProfileEditOpen, setIsProfileEditOpen] = React.useState(false)
@@ -380,9 +381,10 @@ export default function DashboardPage() {
   }
 
   const userRole = (user.role || "ATTENDEE").toUpperCase()
+  const isPlatformAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN"
 
-  // ROUTE TO ORGANIZER VIEW
-  if (userRole === "ORGANIZER") {
+  // ROUTE TO ORGANIZER VIEW (Also for Admin/Super Admin in Organizer view mode)
+  if (userRole === "ORGANIZER" || (isPlatformAdmin && isOrganizerMode)) {
     return (
       <OrganizerDashboard
         events={events}
@@ -390,12 +392,12 @@ export default function DashboardPage() {
         bookedTickets={bookedTickets}
         user={user}
         signOut={signOut}
+        onSwitchToAdminClick={isPlatformAdmin ? () => setIsOrganizerMode(false) : undefined}
       />
     )
   }
 
   const userInitials = user.fullName ? user.fullName.split(" ").map(n => n[0]).join("").toUpperCase() : "U"
-  const isPlatformAdmin = userRole === "ADMIN" || userRole === "SUPER_ADMIN"
 
   return (
     <>
@@ -437,13 +439,22 @@ export default function DashboardPage() {
 
             <div className="flex flex-wrap items-center gap-3">
               {isPlatformAdmin && (
-                <Button 
-                  onClick={() => setIsCreateOpen(true)}
-                  className="rounded-full bg-accent hover:opacity-90 text-white font-semibold shadow-none border border-accent/20"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Event
-                </Button>
+                <>
+                  <Button 
+                    onClick={() => setIsOrganizerMode(true)}
+                    className="rounded-full bg-primary/10 hover:bg-primary/20 text-primary dark:text-white font-semibold shadow-none border border-primary/20"
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Organizer View
+                  </Button>
+                  <Button 
+                    onClick={() => setIsCreateOpen(true)}
+                    className="rounded-full bg-accent hover:opacity-90 text-white font-semibold shadow-none border border-accent/20"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Event
+                  </Button>
+                </>
               )}
               <Button 
                 variant="outline" 
@@ -523,12 +534,11 @@ export default function DashboardPage() {
               {/* 1.1 District Analytics Tab */}
               {activeTab === 'analytics' && (
                 <div className="space-y-8 animate-fade-in">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
                       { label: "Active District Users", val: sysUsersCount, icon: UserCheck, color: "text-accent bg-accent/10 border-accent/15" },
                       { label: "Active Events Listed", val: events.length, icon: Calendar, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/15" },
                       { label: "District Ticket Sales", val: sysTicketSales, icon: Ticket, color: "text-[#1E88E5] bg-[#1E88E5]/10 border-[#1E88E5]/15" },
-                      { label: "District Commission (10%)", val: typeof sysCommission === "number" ? `₹${sysCommission.toLocaleString()}` : sysCommission, icon: IndianRupee, color: "text-amber-500 bg-amber-500/10 border-amber-500/15" }
                     ].map((s, i) => {
                       const Icon = s.icon
                       return (
@@ -536,7 +546,6 @@ export default function DashboardPage() {
                           <div>
                             <span className="text-muted-foreground text-xs font-semibold uppercase tracking-wider block">{s.label}</span>
                             <span className="text-2xl font-heading font-medium tracking-tight text-foreground mt-1.5 block">{s.val}</span>
-                            <span className="text-[10px] text-emerald-400 font-medium block mt-1">Stripe Verified</span>
                           </div>
                           <div className={`h-11 w-11 rounded-xl flex items-center justify-center border ${s.color}`}>
                             <Icon className="h-5 w-5" />
@@ -604,31 +613,6 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="border border-border bg-card shadow-none p-5 flex flex-col justify-between rounded-[16px]">
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-heading font-medium text-foreground flex items-center gap-2">
-                          <Shield className="h-4.5 w-4.5 text-accent" />
-                          Platform Security Status
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          All systems active. Clerk authentication is guarding credentials, and RBAC controls restrict resource manipulations securely.
-                        </p>
-                        <div className="border-t border-border pt-4 mt-2 space-y-2 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Super Admins:</span>
-                            <span className="font-semibold text-foreground">1</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Admins:</span>
-                            <span className="font-semibold text-foreground">{adminUsers.filter(u => u.role === "ADMIN").length}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Organizers:</span>
-                            <span className="font-semibold text-foreground">{adminUsers.filter(u => u.role === "ORGANIZER").length}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}

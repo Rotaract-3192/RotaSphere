@@ -8,7 +8,7 @@ import {
   BarChart3, Plus, UserCheck, Trash2, Edit,
   TrendingUp, LayoutDashboard, Settings, Menu, Bell, Search, 
   Sparkles, LogOut, Moon, Sun, ClipboardList, Info, Check, Home,
-  QrCode
+  QrCode, Shield
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -33,11 +33,12 @@ interface OrganizerDashboardProps {
   };
   signOut: () => Promise<void>;
   initialView?: ViewType;
+  onSwitchToAdminClick?: () => void;
 }
 
 type ViewType = 'dashboard' | 'create-event' | 'manage-events' | 'tickets' | 'analytics' | 'attendees' | 'settings';
 
-export function OrganizerDashboard({ events, setEvents, bookedTickets, user, signOut, initialView }: OrganizerDashboardProps) {
+export function OrganizerDashboard({ events, setEvents, bookedTickets, user, signOut, initialView, onSwitchToAdminClick }: OrganizerDashboardProps) {
   const { theme, setTheme } = useTheme()
   const [activeView, setActiveView] = React.useState<ViewType>(initialView || 'dashboard')
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -347,6 +348,24 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
           </div>
         </div>
 
+        {onSwitchToAdminClick && (
+          <button
+            onClick={onSwitchToAdminClick}
+            className={cn(
+              "w-full flex items-center text-xs font-semibold text-accent hover:bg-accent/10 transition-colors rounded-xl py-2",
+              isMobile
+                ? "justify-start gap-3 px-3"
+                : "justify-center lg:justify-start gap-0 lg:gap-3 px-0 lg:px-3"
+            )}
+            title={isMobile ? undefined : "Switch to Admin Console"}
+          >
+            <Shield className={cn("h-4 w-4 shrink-0", !isMobile && "mx-auto lg:mx-0")} />
+            <span className={isMobile ? "inline-block" : "hidden lg:inline-block"}>
+              Admin Console
+            </span>
+          </button>
+        )}
+
         <button
           onClick={() => signOut()}
           className={cn(
@@ -434,21 +453,6 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-
-            {/* Theme Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="rounded-xl border border-muted hover:bg-muted/50 h-9 w-9"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? (
-                <Sun className="h-4 w-4 text-amber-500" />
-              ) : (
-                <Moon className="h-4 w-4 text-accent" />
-              )}
-            </Button>
 
             {/* Notifications icon */}
             <button className="h-9 w-9 rounded-xl border border-muted hover:bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground relative transition-colors">
@@ -1133,64 +1137,104 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
               {/* ==========================================
                  5. ANALYTICS VIEW
                  ========================================== */}
-              {activeView === 'analytics' && (
-                <div className="space-y-6">
-                  {/* Detailed Performance Charts */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
-                      <h3 className="text-sm font-heading font-medium text-foreground mb-4">Event Check-In Rates</h3>
-                      <div className="space-y-4 text-xs mt-4">
-                        {[
-                          { title: "NextGen Tech Summit 2026", total: 1240, check: 980, pct: 79 },
-                          { title: "Decibel Music Festival 2026", total: 4200, check: 3100, pct: 73 },
-                          { title: "SaaS Growth & Startup Expo", total: 642, check: 580, pct: 90 }
-                        ].map((evt, idx) => (
-                          <div key={idx} className="space-y-1.5">
-                            <div className="flex justify-between font-semibold">
-                              <span className="text-foreground/80 truncate max-w-[200px]">{evt.title}</span>
-                              <span className="text-muted-foreground">{evt.check}/{evt.total} checked ({evt.pct}%)</span>
-                            </div>
-                            <div className="w-full bg-muted/50 h-1.5 rounded-full overflow-hidden">
-                              <div className="bg-accent h-full rounded-full" style={{ width: `${evt.pct}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
+              {activeView === 'analytics' && (() => {
+                // Real check-in data derived from live events + attendee registry
+                const checkInData = events.map(evt => {
+                  const total = evt.attendees || 0
+                  const checked = attendeeRegistry.filter(a => a.eventTitle === evt.title && a.checkedIn).length
+                  const pct = total > 0 ? Math.round((checked / total) * 100) : 0
+                  return { title: evt.title, total, check: checked, pct }
+                }).filter(e => e.total > 0)
 
-                    <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
-                      <h3 className="text-sm font-heading font-medium text-foreground mb-4">Monthly Platform Growth</h3>
-                      <div className="space-y-4 text-xs mt-4">
-                        {[
-                          { month: "January", total: 15, growth: "+12%" },
-                          { month: "February", total: 18, growth: "+20%" },
-                          { month: "March", total: 22, growth: "+22%" },
-                          { month: "April", total: 29, growth: "+31%" }
-                        ].map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center py-2 border-b border-border">
-                            <span className="font-medium text-foreground/80">{item.month}</span>
-                            <div className="flex items-center gap-4">
-                              <span className="text-muted-foreground">{item.total} lists</span>
-                              <span className="font-medium text-emerald-600 dark:text-emerald-400">{item.growth}</span>
-                            </div>
+                // Real monthly ticket sales from salesByDay
+                const monthlySales = (() => {
+                  const grouped: Record<string, number> = {}
+                  salesByDay.forEach(d => {
+                    const date = new Date(d.day)
+                    if (isNaN(date.getTime())) return
+                    const key = date.toLocaleString('default', { month: 'long', year: 'numeric' })
+                    grouped[key] = (grouped[key] || 0) + d.amount
+                  })
+                  return Object.entries(grouped).map(([month, amount]) => ({ month, amount }))
+                })()
+
+                return (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Event Check-In Rates — real data */}
+                      <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
+                        <h3 className="text-sm font-heading font-medium text-foreground mb-4">Event Check-In Rates</h3>
+                        {checkInData.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                            <UserCheck className="h-8 w-8 text-muted-foreground/40" />
+                            <p className="text-xs text-muted-foreground">No check-in data yet. Check-ins are recorded when attendees are marked present in the Attendees tab.</p>
                           </div>
-                        ))}
+                        ) : (
+                          <div className="space-y-4 text-xs mt-4">
+                            {checkInData.map((evt, idx) => (
+                              <div key={idx} className="space-y-1.5">
+                                <div className="flex justify-between font-semibold">
+                                  <span className="text-foreground/80 truncate max-w-[180px]" title={evt.title}>{evt.title}</span>
+                                  <span className="text-muted-foreground shrink-0 ml-2">{evt.check}/{evt.total} ({evt.pct}%)</span>
+                                </div>
+                                <div className="w-full bg-muted/50 h-1.5 rounded-full overflow-hidden">
+                                  <div className="bg-accent h-full rounded-full transition-all duration-500" style={{ width: `${evt.pct}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+
+                      {/* Monthly Revenue — real data from salesByDay */}
+                      <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
+                        <h3 className="text-sm font-heading font-medium text-foreground mb-4">Monthly Ticket Revenue</h3>
+                        {monthlySales.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 text-center gap-2">
+                            <TrendingUp className="h-8 w-8 text-muted-foreground/40" />
+                            <p className="text-xs text-muted-foreground">No revenue data yet. Sales will appear here once tickets are purchased for your events.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1 text-xs mt-4">
+                            {monthlySales.map((item, idx) => (
+                              <div key={idx} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                                <span className="font-medium text-foreground/80">{item.month}</span>
+                                <span className="font-semibold text-accent">₹{item.amount.toLocaleString('en-IN')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+                    </div>
+
+                    {/* Summary stats row */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                      {[
+                        { label: 'Total Events', value: totalEvents },
+                        { label: 'Total Tickets Sold', value: totalTicketsSold },
+                        { label: 'Checked-In Attendees', value: activeAttendees },
+                        { label: 'Total Revenue', value: `₹${totalRevenue.toLocaleString('en-IN')}` },
+                      ].map((stat, i) => (
+                        <Card key={i} className="border border-border bg-card p-4 shadow-none rounded-[14px] text-center">
+                          <p className="text-muted-foreground mb-1">{stat.label}</p>
+                          <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                        </Card>
+                      ))}
+                    </div>
+
+                    {/* Footer note */}
+                    <Card className="border border-border bg-muted/40 dark:bg-muted/10 p-5 flex items-start gap-4 rounded-[16px] shadow-none">
+                      <Info className="h-5 w-5 text-accent shrink-0 mt-0.5" />
+                      <div className="text-xs space-y-1.5">
+                        <h4 className="font-heading font-medium text-foreground">Analytics Data</h4>
+                        <p className="text-muted-foreground">
+                          All figures are pulled live from your account. Check-in rates update when you mark attendees in the Attendees tab. Revenue reflects approved UPI ticket purchases only.
+                        </p>
                       </div>
                     </Card>
                   </div>
-
-                  {/* General summary alerts */}
-                  <Card className="border border-border bg-muted/40 dark:bg-muted/10 p-5 flex items-start gap-4 rounded-[16px] shadow-none">
-                    <Info className="h-5 w-5 text-accent shrink-0 mt-0.5" />
-                    <div className="text-xs space-y-1.5">
-                      <h4 className="font-heading font-medium text-foreground">Analytics Data Resolution</h4>
-                      <p className="text-muted-foreground">
-                        Data updates every 15 minutes. To sync instant ticket transactions, click the refresh button on top header. Stripe commission deductions of 2.9% + ₹25 apply.
-                      </p>
-                    </div>
-                  </Card>
-                </div>
-              )}
+                )
+              })()}
 
               {/* ==========================================
                  6. ATTENDEES VIEW
@@ -1441,7 +1485,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
             </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter className="flex flex-row justify-end gap-2 mt-4">
+          <DialogFooter className="-mx-6 -mb-6 rounded-b-2xl flex flex-row justify-end gap-2 mt-4">
             <Button
               variant="outline"
               onClick={() => setDeleteTargetId(null)}
@@ -1489,7 +1533,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
             </div>
           )}
 
-          <DialogFooter className="flex flex-row justify-end gap-2 mt-4">
+          <DialogFooter className="-mx-6 -mb-6 rounded-b-2xl flex flex-row justify-end gap-2 mt-4">
             <Button
               variant="outline"
               onClick={() => { setPreviewScreenshotUrl(null); setPreviewTicketId(null) }}

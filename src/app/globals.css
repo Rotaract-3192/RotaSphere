@@ -61,45 +61,47 @@
    ============================================ */
 
 :root {
-  /* Soft White Canvas background */
-  --background: #F8FBFF;
-  /* Deep Ocean Blue default body text */
-  --foreground: #0A2342;
+  /* ── Rotaract District 3192 Brand System ── */
 
-  /* Card and dialog surfaces */
-  --card: #ffffff;
-  --card-foreground: #0A2342;
+  /* Deep Navy canvas */
+  --background: #07132A;
+  /* Soft white body text */
+  --foreground: #F0F6FF;
 
-  --popover: #ffffff;
-  --popover-foreground: #0A2342;
+  /* Midnight Blue card surface */
+  --card: #0C1E3D;
+  --card-foreground: #F0F6FF;
 
-  /* Primary — Deep Ocean Blue */
-  --primary: #0A2342;
-  --primary-foreground: #F8FBFF;
+  --popover: #0C1E3D;
+  --popover-foreground: #F0F6FF;
 
-  /* Secondary — Royal Blue */
-  --secondary: #17458F;
+  /* Primary — Rotary Blue */
+  --primary: #17458F;
+  --primary-foreground: #ffffff;
+
+  /* Secondary — Secondary Blue */
+  --secondary: #005DAA;
   --secondary-foreground: #ffffff;
 
-  /* Muted — Soft Blue-Gray elements */
-  --muted: #E8F0FA;
-  --muted-foreground: #5C7694;
+  /* Muted — Dark navy tint */
+  --muted: #0D2040;
+  --muted-foreground: #8FA8C8;
 
-  /* Accent — Bright Ocean Blue */
-  --accent: #1E88E5;
-  --accent-foreground: #ffffff;
+  /* Accent — Rotary GOLD (key brand change) */
+  --accent: #F7A81B;
+  --accent-foreground: #07132A;
 
-  /* Destructive — Stark error red */
-  --destructive: #d32f2f;
+  /* Destructive — Error Red */
+  --destructive: #EF4444;
 
-  /* Borders — Soft Blue-Gray borders */
-  --border: #D1E1F0;
-  --input: #D1E1F0;
+  /* Borders — Deep blue borders */
+  --border: #1C3A6E;
+  --input: #1C3A6E;
 
-  /* Ring — Accent Blue focus ring */
-  --ring: #1E88E5;
+  /* Ring — Gold focus ring */
+  --ring: #F7A81B;
 
-  /* Cohere Corner Radii scale */
+  /* Radius scale */
   --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 16px;
@@ -107,34 +109,39 @@
   --radius-xl: 30px;
   --radius: 16px;
 
-  /* Font mappings — Space Grotesk (headings) + Inter (body) via next/font/google */
+  /* Font mappings */
   --font-sans: var(--font-sans, 'Inter', system-ui, sans-serif);
   --font-heading: var(--font-heading, 'Space Grotesk', system-ui, sans-serif);
   --font-mono: ui-monospace, 'Fira Code', monospace;
 
-  /* Sidebar */
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0A2342;
-  --sidebar-primary: #0A2342;
-  --sidebar-primary-foreground: #F8FBFF;
-  --sidebar-accent: #E8F0FA;
-  --sidebar-accent-foreground: #17458F;
-  --sidebar-border: #D1E1F0;
-  --sidebar-ring: #1E88E5;
+  /* Sidebar — white surface for dashboard */
+  --sidebar: #0C1E3D;
+  --sidebar-foreground: #F0F6FF;
+  --sidebar-primary: #17458F;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0D2040;
+  --sidebar-accent-foreground: #F7A81B;
+  --sidebar-border: #1C3A6E;
+  --sidebar-ring: #F7A81B;
 
-  /* Theme direct colors */
-  --ocean-deep: #0A2342;
+  /* Rotaract brand tokens */
+  --rotary-blue: #17458F;
+  --rotary-secondary: #005DAA;
+  --rotary-gold: #F7A81B;
+  --rotary-navy: #07132A;
+  --rotary-midnight: #0C1E3D;
+
+  /* Backward compatibility aliases */
+  --ocean-deep: #07132A;
   --ocean-royal: #17458F;
-  --ocean-bright: #1E88E5;
-  --ocean-aqua: #4FC3F7;
-  --ocean-soft-white: #F8FBFF;
-
-  /* Backward compatibility alias for coral styles in tailwind */
-  --coral: #1E88E5;
-  --coral-soft: #4FC3F7;
+  --ocean-bright: #005DAA;
+  --ocean-aqua: #F7A81B;
+  --ocean-soft-white: #F0F6FF;
+  --coral: #F7A81B;
+  --coral-soft: #FBBF24;
   --form-focus: #17458F;
 
-  /* Aurora gradient color tokens (replaces addVariablesForColors plugin) */
+  /* Aurora gradient color tokens */
   --white: #ffffff;
   --black: #000000;
   --transparent: transparent;
@@ -146,49 +153,34 @@
 }
 
 .dark {
-  /* Navy background */
-  --background: #081A33;
-  /* Soft White body text */
-  --foreground: #F8FBFF;
-
-  /* Midnight Blue card surface */
-  --card: #06101F;
-  --card-foreground: #F8FBFF;
-
-  --popover: #06101F;
-  --popover-foreground: #F8FBFF;
-
-  /* Primary — Soft White on Dark */
-  --primary: #F8FBFF;
-  --primary-foreground: #081A33;
-
-  /* Secondary — Royal Blue */
-  --secondary: #17458F;
-  --secondary-foreground: #F8FBFF;
-
-  /* Muted — Navy container highlights */
-  --muted: #0D223F;
-  --muted-foreground: #8FA6C2;
-
-  /* Accent — Aqua Blue in Dark mode */
-  --accent: #4FC3F7;
-  --accent-foreground: #081A33;
-
-  --destructive: #f44336;
-
-  /* Borders — Deep Navy highlight */
-  --border: #132D4E;
-  --input: #132D4E;
-  --ring: #4FC3F7;
-
-  --sidebar: #06101F;
-  --sidebar-foreground: #F8FBFF;
-  --sidebar-primary: #F8FBFF;
-  --sidebar-primary-foreground: #06101F;
-  --sidebar-accent: #0D223F;
-  --sidebar-accent-foreground: #4FC3F7;
-  --sidebar-border: #132D4E;
-  --sidebar-ring: #4FC3F7;
+  /* ── Rotaract District 3192 — Dark Theme ── */
+  /* All values mirror :root since site is dark-only */
+  --background: #07132A;
+  --foreground: #F0F6FF;
+  --card: #0C1E3D;
+  --card-foreground: #F0F6FF;
+  --popover: #0C1E3D;
+  --popover-foreground: #F0F6FF;
+  --primary: #17458F;
+  --primary-foreground: #ffffff;
+  --secondary: #005DAA;
+  --secondary-foreground: #ffffff;
+  --muted: #0D2040;
+  --muted-foreground: #8FA8C8;
+  --accent: #F7A81B;
+  --accent-foreground: #07132A;
+  --destructive: #EF4444;
+  --border: #1C3A6E;
+  --input: #1C3A6E;
+  --ring: #F7A81B;
+  --sidebar: #0C1E3D;
+  --sidebar-foreground: #F0F6FF;
+  --sidebar-primary: #17458F;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0D2040;
+  --sidebar-accent-foreground: #F7A81B;
+  --sidebar-border: #1C3A6E;
+  --sidebar-ring: #F7A81B;
 }
 
 /* ============================================
@@ -551,9 +543,9 @@
 .shimmer-wave {
   background: linear-gradient(
     90deg, 
-    rgba(30, 136, 229, 0.06) 25%, 
-    rgba(79, 195, 247, 0.18) 37%, 
-    rgba(30, 136, 229, 0.06) 63%
+    rgba(23, 69, 143, 0.06) 25%, 
+    rgba(247, 168, 27, 0.18) 37%, 
+    rgba(23, 69, 143, 0.06) 63%
   );
   background-size: 200% 100%;
   animation: shimmer 2.2s infinite linear;
@@ -562,9 +554,9 @@
 .dark .shimmer-wave {
   background: linear-gradient(
     90deg, 
-    rgba(30, 136, 229, 0.04) 25%, 
-    rgba(79, 195, 247, 0.12) 37%, 
-    rgba(30, 136, 229, 0.04) 63%
+    rgba(23, 69, 143, 0.04) 25%, 
+    rgba(247, 168, 27, 0.12) 37%, 
+    rgba(23, 69, 143, 0.04) 63%
   );
   background-size: 200% 100%;
 }
@@ -599,9 +591,9 @@
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
 
-/* Ink footer surface */
+/* Rotary Blue footer surface */
 .bg-ink-footer {
-  background-color: #17171c;
+  background-color: #17458F;
 }
 
 /* Stagger Card Utilities for Desktop Grid */
@@ -655,13 +647,13 @@
   to   { transform: rotate(-360deg); }
 }
 
-/* Pulsing glow ring */
+/* Pulsing glow ring — Gold */
 @keyframes glowPulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+    box-shadow: 0 0 0 0 rgba(247, 168, 27, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 12px color-mix(in srgb, var(--accent) 0%, transparent);
+    box-shadow: 0 0 0 12px rgba(247, 168, 27, 0);
   }
 }
 
@@ -743,7 +735,7 @@
 
 /* Shimmer text effect */
 .text-shimmer {
-  background: linear-gradient(90deg, var(--accent) 0%, #ffffff 40%, var(--accent) 60%, #4FC3F7 100%);
+  background: linear-gradient(90deg, var(--accent) 0%, #ffffff 40%, var(--accent) 60%, #FBBF24 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -751,9 +743,9 @@
   animation: textShimmer 3s linear infinite;
 }
 
-/* Animated gradient text (accent sweep) */
+/* Animated gradient text (gold sweep) */
 .gradient-text-animated {
-  background: linear-gradient(90deg, var(--accent), #4FC3F7, var(--accent));
+  background: linear-gradient(90deg, #F7A81B, #FBBF24, #F7A81B);
   background-size: 200%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -763,18 +755,18 @@
 
 /* Glass card with glow edge */
 .glass-card-premium {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(12, 30, 61, 0.72);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(247, 168, 27, 0.15);
   border-radius: 16px;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .glass-card-premium:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: rgba(12, 30, 61, 0.85);
+  border-color: rgba(247, 168, 27, 0.4);
   transform: translateY(-4px);
-  box-shadow: 0 20px 60px -10px rgba(30, 136, 229, 0.25);
+  box-shadow: 0 20px 60px -10px rgba(247, 168, 27, 0.15);
 }
 
 /* Hover card with lift shadow */
@@ -783,7 +775,7 @@
 }
 .card-hover-lift:hover {
   transform: translateY(-6px) scale(1.01);
-  box-shadow: 0 24px 50px -12px rgba(30, 136, 229, 0.2);
+  box-shadow: 0 24px 50px -12px rgba(247, 168, 27, 0.15);
 }
 
 /* Neon accent border */
@@ -797,21 +789,21 @@
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, var(--accent), #4FC3F7, var(--accent));
+  background: linear-gradient(135deg, var(--accent), #FBBF24, var(--accent));
   background-size: 200%;
   animation: gradientShift 4s linear infinite;
   z-index: -1;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling — Rotary Gold */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--background); }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: rgba(247, 168, 27, 0.4);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background: #F7A81B;
 }
 
 /* Animated underline on hover (link highlight) */
