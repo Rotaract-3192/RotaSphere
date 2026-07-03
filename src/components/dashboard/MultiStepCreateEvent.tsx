@@ -19,7 +19,7 @@ import {
   Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription 
 } from "@/components/ui/form"
 import { EventItem } from "@/data/mockData"
-import { createEventAction } from "@/app/actions/eventActions"
+import { createEventAction, updateEventAction } from "@/app/actions/eventActions"
 
 // Preset Unsplash images for banners and thumbnails
 const PRESET_BANNERS = [
@@ -157,17 +157,51 @@ interface MultiStepCreateEventProps {
   events: EventItem[];
   setEvents: React.Dispatch<React.SetStateAction<EventItem[]>>;
   organizerName: string;
+  editEvent?: EventItem;
 }
 
-export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, organizerName }: MultiStepCreateEventProps) {
+export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, organizerName, editEvent }: MultiStepCreateEventProps) {
   const [currentStep, setCurrentStep] = React.useState(1)
   const [tagInput, setTagInput] = React.useState("")
-  const [tagsList, setTagsList] = React.useState<string[]>([])
+  const [tagsList, setTagsList] = React.useState<string[]>(() => {
+    if (editEvent?.tags) {
+      return Array.isArray(editEvent.tags) 
+        ? (editEvent.tags as string[])
+        : String(editEvent.tags).split(",").map(t => t.trim()).filter(Boolean)
+    }
+    return []
+  })
   
   const form = useForm<EventFormValues>({
-    resolver: zodResolver(createEventSchema) as unknown as Resolver<EventFormValues>,
+    resolver: zodResolver(createEventSchema) as any,
     mode: "onTouched",
-    defaultValues: {
+    defaultValues: (editEvent ? {
+      title: editEvent.title || "",
+      slug: editEvent.slug || "",
+      description: editEvent.description || "",
+      fullDescription: editEvent.fullDescription || editEvent.description || "",
+      bannerUrl: editEvent.image || PRESET_BANNERS[0].url,
+      thumbnailUrl: editEvent.thumbnailUrl || editEvent.image || PRESET_THUMBNAILS[0].url,
+      startDate: editEvent.startDate || editEvent.date || "",
+      endDate: editEvent.endDate || editEvent.date || "",
+      timezone: editEvent.timezone || "IST",
+      type: editEvent.price && parseFloat(String(editEvent.price).replace(/[^0-9.]/g, "")) > 0 ? "paid" : "free",
+      price: editEvent.price ? String(editEvent.price).replace(/[^0-9.]/g, "") : "",
+      visibility: (editEvent.visibility as "public" | "private") || "public",
+      locationType: (editEvent.locationType as "in-person" | "online" | "hybrid") || "in-person",
+      venueName: editEvent.venueName || "",
+      venueDescription: editEvent.venueDescription || "",
+      country: editEvent.country || "India",
+      state: editEvent.state || "",
+      city: editEvent.city || "",
+      address: editEvent.address || "",
+      pincode: editEvent.pincode || "",
+      category: editEvent.category || "community",
+      tags: Array.isArray(editEvent.tags) ? editEvent.tags.join(", ") : (editEvent.tags || ""),
+      capacity: editEvent.capacity ? Number(editEvent.capacity) : 500,
+      contactEmail: editEvent.contactEmail || "",
+      contactPhone: editEvent.contactPhone || ""
+    } : {
       title: "",
       slug: "",
       description: "",
@@ -193,7 +227,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
       capacity: 500,
       contactEmail: "",
       contactPhone: ""
-    }
+    }) as EventFormValues
   })
 
   const { trigger, watch, setValue } = form
@@ -205,7 +239,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
 
   // Auto-generate slug from event title (with short random suffix for uniqueness)
   React.useEffect(() => {
-    if (titleValue) {
+    if (titleValue && !editEvent) {
       const base = titleValue
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, "") // remove non-alphanumeric except spaces/hyphens
@@ -216,7 +250,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
       const suffix = Math.random().toString(36).slice(2, 7)
       setValue("slug", `${base}-${suffix}`, { shouldValidate: true })
     }
-  }, [titleValue, setValue])
+  }, [titleValue, setValue, editEvent])
 
   // Sync react-hook-form state with custom tags list state
   React.useEffect(() => {
@@ -297,6 +331,24 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
   // Form Submit Handler
   const onSubmit = async (data: EventFormValues) => {
     try {
+      if (editEvent) {
+        const res = await updateEventAction(editEvent.id, {
+          ...data,
+          organizer: organizerName
+        })
+
+        if (res.success && res.event) {
+          const updatedEvent = res.event as EventItem
+          const updated = events.map(e => e.id === editEvent.id ? updatedEvent : e)
+          setEvents(updated)
+          localStorage.setItem("rotasphere_events", JSON.stringify(updated))
+          onSuccessRedirect()
+        } else {
+          alert(res.error || "Failed to update event. Please try again.")
+        }
+        return
+      }
+
       const res = await createEventAction({
         ...data,
         organizer: organizerName

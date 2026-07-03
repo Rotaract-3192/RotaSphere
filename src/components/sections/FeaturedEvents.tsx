@@ -1,13 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Calendar, MapPin, Ticket, Check } from "lucide-react"
+import { Calendar, MapPin, Ticket, Check, Copy, Upload, X, QrCode, ClipboardCheck, Loader2 } from "lucide-react"
 import { EventItem } from "@/data/mockData"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useAuthSession } from "@/context/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createRazorpayOrderAction, verifyPaymentAndBookTicketAction, bookFreeTicketAction } from "@/app/actions/paymentActions"
-import { Loader2 } from "lucide-react"
+import { createRazorpayOrderAction, verifyPaymentAndBookTicketAction, bookFreeTicketAction, bookOfflinePaidTicketAction } from "@/app/actions/paymentActions"
 
 interface FeaturedEventsProps {
   events: EventItem[];
@@ -23,6 +22,12 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const [bookingSuccess, setBookingSuccess] = React.useState(false)
   const [isPaying, setIsPaying] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
+
+  // Offline checkout states
+  const [checkoutStep, setCheckoutStep] = React.useState<'details' | 'payment'>('details')
+  const [screenshot, setScreenshot] = React.useState<string | null>(null)
+  const [screenshotError, setScreenshotError] = React.useState<string | null>(null)
+  const [copiedUpi, setCopiedUpi] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
@@ -66,6 +71,10 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         specialRequests: ""
       })
       setAttendees([])
+      setCheckoutStep("details")
+      setScreenshot(null)
+      setScreenshotError(null)
+      setCopiedUpi(false)
     }
   }, [bookingEvent, user])
 
@@ -124,6 +133,28 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
   const { isFree, totalPrice, currencySymbol } = getPriceDetails()
 
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setScreenshotError(null)
+
+    // Check size limit (3MB to avoid giant payloads)
+    if (file.size > 3 * 1024 * 1024) {
+      setScreenshotError("Receipt screenshot size exceeds 3MB limit.")
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setScreenshot(reader.result as string)
+    }
+    reader.onerror = () => {
+      setScreenshotError("Failed to read screenshot image.")
+    }
+    reader.readAsDataURL(file)
+  }
+
   const confirmBooking = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!bookingEvent) return
@@ -133,9 +164,10 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
       return
     }
 
-    setIsPaying(true)
-    try {
-      if (isFree) {
+    // 1. If it's a free event, book directly
+    if (isFree) {
+      setIsPaying(true)
+      try {
         const res = await bookFreeTicketAction(
           bookingEvent.id,
           formData.ticketCount,
@@ -183,143 +215,92 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         } else {
           alert(res.error || "Failed to book ticket")
         }
-        setIsPaying(false); return
+      } catch (err) {
+        console.error("Booking free ticket error:", err)
+        alert("Failed to complete free ticket booking.")
+      } finally {
+        setIsPaying(false)
       }
+      return
+    }
 
-      // Paid tickets Razorpay Order
-      const orderRes = await createRazorpayOrderAction(bookingEvent.id, formData.ticketCount)
-      if (!orderRes.success || !orderRes.orderId) {
-        alert(orderRes.error || "Failed to initiate payment order.")
-        setIsPaying(false); return
-      }
+    // 2. Paid event: if on details step, transition to payment QR page
+    if (checkoutStep === "details") {
+      setCheckoutStep("payment")
+      return
+    }
 
-      if (orderRes.simulated && orderRes.keyId === "rzp_test_simulated_key") {
-        const verifyRes = await verifyPaymentAndBookTicketAction({
-          eventId: bookingEvent.id,
-          orderId: orderRes.orderId,
-          paymentId: `pay_sim_${Date.now()}`,
-          signature: `sig_sim_${Date.now()}`,
-          isSimulated: true,
-          ticketCount: formData.ticketCount,
-          fullName: formData.fullName,
-          email: formData.email,
-          additionalAttendees: attendees
-        })
-        if (verifyRes.success) {
-          // Save registration details to local storage
-          const ticketCodes = (verifyRes.ticketCode || "").split(", ")
-          const savedDetails = localStorage.getItem("rotasphere_ticket_details")
-          const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
+    // 3. Paid event: if on payment step, submit receipt and screenshot
+    if (!screenshot) {
+      setScreenshotError("Please upload a payment verification screenshot first.")
+      return
+    }
 
-          ticketCodes.forEach((code, index) => {
-            const isPrimary = index === 0
-            const attendeeName = isPrimary ? formData.fullName : (attendees[index - 1]?.fullName || "")
-            const attendeeEmail = isPrimary ? formData.email : (attendees[index - 1]?.email || "")
+    setIsPaying(true)
+    try {
+      const res = await bookOfflinePaidTicketAction({
+        eventId: bookingEvent.id,
+        ticketCount: formData.ticketCount,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        specialRequests: formData.specialRequests,
+        additionalAttendees: attendees,
+        screenshotBase64: screenshot
+      })
 
-            detailsMap[code] = {
-              phone: formData.phone,
-              specialRequests: formData.specialRequests,
-              fullName: attendeeName,
-              email: attendeeEmail,
-              ticketCount: formData.ticketCount,
-              bookedAt: new Date().toISOString()
-            }
-          })
-          localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
+      if (res.success) {
+        // Save registration details to local storage
+        const ticketCodes = (res.ticketCode || "").split(", ")
+        const savedDetails = localStorage.getItem("rotasphere_ticket_details")
+        const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
 
-          const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
-          const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
-          if (!bookedList.some(evt => evt.id === bookingEvent.id)) {
-            const bookedEventItem = {
-              ...bookingEvent,
-              ticketCode: verifyRes.ticketCode,
-              ticketId: verifyRes.ticketId
-            }
-            bookedList.push(bookedEventItem)
-            localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
-          }
-          setBookingSuccess(true)
-          if (onEventBooked) onEventBooked(bookingEvent.id)
-          router.refresh()
-          setTimeout(() => { setBookingSuccess(false); setBookingEvent(null) }, 2200)
-        } else { alert(verifyRes.error || "Failed to complete ticket booking.") }
-        setIsPaying(false); return
-      }
+        ticketCodes.forEach((code, index) => {
+          const isPrimary = index === 0
+          const attendeeName = isPrimary ? formData.fullName : (attendees[index - 1]?.fullName || "")
+          const attendeeEmail = isPrimary ? formData.email : (attendees[index - 1]?.email || "")
 
-      // Real Razorpay options
-      const options = {
-        key: orderRes.keyId,
-        amount: orderRes.amount,
-        currency: orderRes.currency,
-        name: "RotaSphere Events",
-        description: `${formData.ticketCount} Ticket(s) for ${bookingEvent.title}`,
-        order_id: orderRes.orderId,
-        handler: async function (response: any) {
-          setIsPaying(true)
-          const verifyRes = await verifyPaymentAndBookTicketAction({
-            eventId: bookingEvent.id,
-            orderId: orderRes.orderId,
-            paymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-            isSimulated: false,
+          detailsMap[code] = {
+            phone: formData.phone,
+            specialRequests: formData.specialRequests,
+            fullName: attendeeName,
+            email: attendeeEmail,
             ticketCount: formData.ticketCount,
-            fullName: formData.fullName,
-            email: formData.email,
-            additionalAttendees: attendees
-          })
-          if (verifyRes.success) {
-            // Save registration details to local storage
-            const ticketCodes = (verifyRes.ticketCode || "").split(", ")
-            const savedDetails = localStorage.getItem("rotasphere_ticket_details")
-            const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
+            status: "pending",
+            bookedAt: new Date().toISOString()
+          }
+        })
+        localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
 
-            ticketCodes.forEach((code, index) => {
-              const isPrimary = index === 0
-              const attendeeName = isPrimary ? formData.fullName : (attendees[index - 1]?.fullName || "")
-              const attendeeEmail = isPrimary ? formData.email : (attendees[index - 1]?.email || "")
+        const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
+        const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
+        if (!bookedList.some(evt => evt.id === bookingEvent.id)) {
+          const bookedEventItem = {
+            ...bookingEvent,
+            ticketCode: res.ticketCode,
+            ticketId: res.ticketId,
+            status: "pending"
+          }
+          bookedList.push(bookedEventItem)
+          localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
+        }
 
-              detailsMap[code] = {
-                phone: formData.phone,
-                specialRequests: formData.specialRequests,
-                fullName: attendeeName,
-                email: attendeeEmail,
-                ticketCount: formData.ticketCount,
-                bookedAt: new Date().toISOString()
-              }
-            })
-            localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
-
-            const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
-            const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
-            if (!bookedList.some(evt => evt.id === bookingEvent.id)) {
-              const bookedEventItem = {
-                ...bookingEvent,
-                ticketCode: verifyRes.ticketCode,
-                ticketId: verifyRes.ticketId
-              }
-              bookedList.push(bookedEventItem)
-              localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
-            }
-            setBookingSuccess(true)
-            if (onEventBooked) onEventBooked(bookingEvent.id)
-            router.refresh()
-            setTimeout(() => { setBookingSuccess(false); setBookingEvent(null) }, 2200)
-          } else { alert(verifyRes.error || "Payment signature verification failed.") }
-          setIsPaying(false)
-        },
-        prefill: {
-          name: formData.fullName,
-          email: formData.email,
-          contact: formData.phone
-        },
-        theme: { color: "#CF4500" },
-        modal: { ondismiss: function () { setIsPaying(false) } }
+        setBookingSuccess(true)
+        if (onEventBooked) onEventBooked(bookingEvent.id)
+        router.refresh()
+        setTimeout(() => {
+          setBookingSuccess(false)
+          setBookingEvent(null)
+          setCheckoutStep("details")
+          setScreenshot(null)
+        }, 2200)
+      } else {
+        alert(res.error || "Failed to submit ticket request.")
       }
-      const rzp = new (window as any).Razorpay(options)
-      rzp.open()
     } catch (err) {
-      console.error("Payment flow error:", err)
-      alert("An unexpected error occurred during booking.")
+      console.error("Offline paid checkout error:", err)
+      alert("An unexpected error occurred during ticket booking.")
+    } finally {
       setIsPaying(false)
     }
   }
@@ -571,10 +552,16 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   className="text-xl font-medium mb-2"
                   style={{ color: "#17171c", letterSpacing: "-0.02em" }}
                 >
-                  {formData.ticketCount > 1 ? `${formData.ticketCount} Tickets Booked!` : "Ticket Booked!"}
+                  {isFree 
+                    ? (formData.ticketCount > 1 ? `${formData.ticketCount} Tickets Booked!` : "Ticket Booked!")
+                    : "Request Submitted!"
+                  }
                 </h3>
                 <p className="text-sm font-weight-450" style={{ color: "#616161" }}>
-                  Your confirmation has been sent to {formData.email}. See you there!
+                  {isFree 
+                    ? `Your confirmation has been sent to ${formData.email}. See you there!`
+                    : `We have received your payment screenshot. Verification is pending. An email has been sent to ${formData.email}.`
+                  }
                 </p>
               </div>
             ) : (
@@ -585,10 +572,16 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                       className="h-12 w-12 rounded-full flex items-center justify-center mb-3"
                       style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)" }}
                     >
-                      <Ticket className="h-6 w-6" style={{ color: "var(--accent)" }} />
+                      {checkoutStep === 'details' ? (
+                        <Ticket className="h-6 w-6" style={{ color: "var(--accent)" }} />
+                      ) : (
+                        <QrCode className="h-6 w-6" style={{ color: "var(--accent)" }} />
+                      )}
                     </div>
                     <div className="mb-1">
-                      <span className="eyebrow-accent" style={{ fontSize: "11px" }}>Secure Checkout</span>
+                      <span className="eyebrow-accent" style={{ fontSize: "11px" }}>
+                        {checkoutStep === 'details' ? "Secure Checkout" : "Verify UPI Payment"}
+                      </span>
                     </div>
                     <DialogTitle
                       className="text-xl font-medium line-clamp-1"
@@ -597,175 +590,283 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                       {bookingEvent.title}
                     </DialogTitle>
                     <DialogDescription className="text-sm font-weight-450" style={{ color: "var(--muted-foreground)" }}>
-                      Please fill out the registration details to complete your order.
+                      {checkoutStep === 'details' 
+                        ? "Please fill out the registration details to complete your order."
+                        : "Scan the QR code below on your banking app to transfer the amount."}
                     </DialogDescription>
                   </DialogHeader>
 
                   <form onSubmit={confirmBooking} className="space-y-4 text-left">
-                    {/* Name Input */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
-                        style={{
-                          background: "#ffffff",
-                          borderColor: "#d9d9dd",
-                          color: "#212121"
-                        }}
-                        placeholder="Enter attendee's full name"
-                      />
-                    </div>
+                    {checkoutStep === "details" ? (
+                      <>
+                        {/* Name Input */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={formData.fullName}
+                            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                            className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                            style={{
+                              background: "#ffffff",
+                              borderColor: "#d9d9dd",
+                              color: "#212121"
+                            }}
+                            placeholder="Enter attendee's full name"
+                          />
+                        </div>
 
-                    {/* Email Input */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
-                        style={{
-                          background: "#ffffff",
-                          borderColor: "#d9d9dd",
-                          color: "#212121"
-                        }}
-                        placeholder="email@example.com"
-                      />
-                    </div>
+                        {/* Email Input */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Email Address *
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                            style={{
+                              background: "#ffffff",
+                              borderColor: "#d9d9dd",
+                              color: "#212121"
+                            }}
+                            placeholder="email@example.com"
+                          />
+                        </div>
 
-                    {/* Phone Input */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
-                        style={{
-                          background: "#ffffff",
-                          borderColor: "#d9d9dd",
-                          color: "#212121"
-                        }}
-                        placeholder="+91 98765 43210"
-                      />
-                    </div>
+                        {/* Phone Input */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Phone Number *
+                          </label>
+                          <input
+                            type="tel"
+                            required
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                            style={{
+                              background: "#ffffff",
+                              borderColor: "#d9d9dd",
+                              color: "#212121"
+                            }}
+                            placeholder="+91 98765 43210"
+                          />
+                        </div>
 
-                    {/* Quantity and Special Requests */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="col-span-1 sm:col-span-1">
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                          Tickets *
-                        </label>
-                        <select
-                          value={formData.ticketCount}
-                          onChange={(e) => setFormData({ ...formData, ticketCount: parseInt(e.target.value) })}
-                          className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
-                          style={{
-                            background: "#ffffff",
-                            borderColor: "#d9d9dd",
-                            color: "#212121"
-                          }}
-                        >
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                            <option key={num} value={num}>
-                              {num}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="col-span-1 sm:col-span-2">
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-                          Special Requests
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.specialRequests}
-                          onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
-                          className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
-                          style={{
-                            background: "#ffffff",
-                            borderColor: "#d9d9dd",
-                            color: "#212121"
-                          }}
-                          placeholder="Dietary, access needs..."
-                        />
-                      </div>
-                    </div>
-
-                    {/* Dynamic Guest Attendee details */}
-                    {attendees.length > 0 && (
-                      <div className="space-y-3 pt-3 border-t border-dashed border-[#d9d9dd]">
-                        {attendees.map((att, idx) => (
-                          <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-[#f8f9fa] space-y-3">
-                            <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                              Guest Attendee {idx + 2}
-                            </span>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                  Full Name *
-                                </label>
-                                <input
-                                  type="text"
-                                  required
-                                  value={att.fullName}
-                                  onChange={(e) => {
-                                    const updated = [...attendees]
-                                    updated[idx] = { ...updated[idx], fullName: e.target.value }
-                                    setAttendees(updated)
-                                  }}
-                                  className="w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:border-[#17458f] transition-all"
-                                  style={{
-                                    background: "#ffffff",
-                                    borderColor: "#d9d9dd",
-                                    color: "#212121"
-                                  }}
-                                  placeholder={`Guest ${idx + 2} Full Name`}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                  Email Address *
-                                </label>
-                                <input
-                                  type="email"
-                                  required
-                                  value={att.email}
-                                  onChange={(e) => {
-                                    const updated = [...attendees]
-                                    updated[idx] = { ...updated[idx], email: e.target.value }
-                                    setAttendees(updated)
-                                  }}
-                                  className="w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:border-[#17458f] transition-all"
-                                  style={{
-                                    background: "#ffffff",
-                                    borderColor: "#d9d9dd",
-                                    color: "#212121"
-                                  }}
-                                  placeholder="guest@example.com"
-                                />
-                              </div>
-                            </div>
+                        {/* Quantity and Special Requests */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="col-span-1 sm:col-span-1">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Tickets *
+                            </label>
+                            <select
+                              value={formData.ticketCount}
+                              onChange={(e) => setFormData({ ...formData, ticketCount: parseInt(e.target.value) })}
+                              className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                              style={{
+                                background: "#ffffff",
+                                borderColor: "#d9d9dd",
+                                color: "#212121"
+                              }}
+                            >
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                <option key={num} value={num}>
+                                  {num}
+                                </option>
+                              ))}
+                            </select>
                           </div>
-                        ))}
+                          <div className="col-span-1 sm:col-span-2">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Special Requests
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.specialRequests}
+                              onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
+                              className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                              style={{
+                                background: "#ffffff",
+                                borderColor: "#d9d9dd",
+                                color: "#212121"
+                              }}
+                              placeholder="Dietary, access needs..."
+                            />
+                          </div>
+                        </div>
+
+                        {/* Dynamic Guest Attendee details */}
+                        {attendees.length > 0 && (
+                          <div className="space-y-3 pt-3 border-t border-dashed border-[#d9d9dd]">
+                            {attendees.map((att, idx) => (
+                              <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-[#f8f9fa] space-y-3 text-left">
+                                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                  Guest Attendee {idx + 2}
+                                </span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                      Full Name *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      required
+                                      value={att.fullName}
+                                      onChange={(e) => {
+                                        const updated = [...attendees]
+                                        updated[idx] = { ...updated[idx], fullName: e.target.value }
+                                        setAttendees(updated)
+                                      }}
+                                      className="w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:border-[#17458f] transition-all"
+                                      style={{
+                                        background: "#ffffff",
+                                        borderColor: "#d9d9dd",
+                                        color: "#212121"
+                                      }}
+                                      placeholder={`Guest ${idx + 2} Full Name`}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                      Email Address *
+                                    </label>
+                                    <input
+                                      type="email"
+                                      required
+                                      value={att.email}
+                                      onChange={(e) => {
+                                        const updated = [...attendees]
+                                        updated[idx] = { ...updated[idx], email: e.target.value }
+                                        setAttendees(updated)
+                                      }}
+                                      className="w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:border-[#17458f] transition-all"
+                                      style={{
+                                        background: "#ffffff",
+                                        borderColor: "#d9d9dd",
+                                        color: "#212121"
+                                      }}
+                                      placeholder="guest@example.com"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* UPI Payment Info & Copy */}
+                        <div className="p-3.5 rounded-xl border border-slate-200 bg-[#f8f9fa] space-y-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-semibold text-slate-600">UPI Payment Address:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText("srikara.s7259-1@okicici")
+                                setCopiedUpi(true)
+                                setTimeout(() => setCopiedUpi(false), 2000)
+                              }}
+                              className="text-[10px] font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1 font-mono uppercase"
+                            >
+                              {copiedUpi ? (
+                                <>
+                                  <Check className="h-3 w-3 text-emerald-600" />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="h-3 w-3" />
+                                  Copy ID
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <div className="font-mono text-sm font-bold text-slate-800 break-all">
+                            srikara.s7259-1@okicici
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            Merchant Name: SRIKARA SHET
+                          </div>
+                        </div>
+
+                        {/* Dynamic QR Code display */}
+                        <div className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 rounded-2xl bg-[#fafafa]">
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                              `upi://pay?pa=srikara.s7259-1@okicici&pn=SRIKARA%20SHET&am=${totalPrice.toFixed(2)}&cu=INR&aid=uGICAgIDjo5SJNQ`
+                            )}`}
+                            alt="Scan to Pay UPI QR Code"
+                            className="h-40 w-40 object-contain rounded-lg border border-slate-100 shadow-sm"
+                          />
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2 font-mono">
+                            Total Amount: ₹{totalPrice.toFixed(2)}
+                          </span>
+                        </div>
+
+                        {/* Screenshot Upload selector */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                            Upload Payment Screenshot *
+                          </label>
+                          
+                          {!screenshot ? (
+                            <div className="border border-dashed border-slate-300 hover:border-[#1E88E5]/50 rounded-xl p-6 transition-colors bg-white flex flex-col items-center text-center relative cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                required
+                                onChange={handleScreenshotChange}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              />
+                              <Upload className="h-6 w-6 text-slate-400 mb-2" />
+                              <span className="text-xs font-semibold text-slate-600 block">Click or Drag screenshot here</span>
+                              <span className="text-[9px] text-slate-400 mt-1">Accepts PNG, JPG, WEBP (Max 3MB)</span>
+                            </div>
+                          ) : (
+                            <div className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between gap-3 shadow-sm">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <img
+                                  src={screenshot}
+                                  alt="Screenshot preview"
+                                  className="h-10 w-10 object-cover rounded-lg border border-slate-100"
+                                />
+                                <div className="min-w-0">
+                                  <span className="text-xs font-semibold text-slate-700 block truncate">Payment Receipt</span>
+                                  <span className="text-[9px] text-emerald-600 flex items-center gap-0.5 font-bold">
+                                    <Check className="h-3 w-3" /> Ready to submit
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setScreenshot(null)}
+                                className="h-7 w-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 shrink-0"
+                                title="Remove screenshot"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+
+                          {screenshotError && (
+                            <span className="text-[10px] text-red-500 font-bold block mt-1.5 pl-1">
+                              {screenshotError}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
 
                     {/* Event Details Card & Price Calculation */}
                     <div
-                      className="mb-5 p-4 mt-4 space-y-2"
+                      className="mb-5 p-4 mt-4 space-y-2 text-left"
                       style={{
                         background: "var(--muted)",
                         borderRadius: "8px",
@@ -791,7 +892,13 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                     <DialogFooter className="flex gap-3 pt-2">
                       <button
                         type="button"
-                        onClick={() => setBookingEvent(null)}
+                        onClick={() => {
+                          if (checkoutStep === "payment") {
+                            setCheckoutStep("details")
+                          } else {
+                            setBookingEvent(null)
+                          }
+                        }}
                         className="flex-1 text-sm font-medium transition-colors cursor-pointer"
                         style={{
                           background: "var(--card)",
@@ -801,7 +908,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                           border: "1px solid var(--border)"
                         }}
                       >
-                        Cancel
+                        {checkoutStep === "payment" ? "Back" : "Cancel"}
                       </button>
                       <button
                         type="submit"
@@ -821,7 +928,13 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                             <Loader2 className="h-4 w-4 animate-spin" />
                             Processing…
                           </>
-                        ) : isFree ? "Book Free Pass" : "Proceed to Checkout"}
+                        ) : isFree ? (
+                          "Book Free Pass"
+                        ) : checkoutStep === "details" ? (
+                          "Proceed to Payment"
+                        ) : (
+                          "Submit & Request Ticket"
+                        )}
                       </button>
                     </DialogFooter>
                   </form>

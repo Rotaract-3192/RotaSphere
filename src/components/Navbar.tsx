@@ -54,6 +54,7 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
     { label: "Home", href: "/", icon: Home },
     { label: "Events", href: "/events", icon: Calendar },
     { label: "Categories", href: "/categories", icon: Tag },
+    ...(mounted && isSignedIn ? [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }] : []),
     { label: "About", href: "/about", icon: Info },
   ]
 
@@ -96,7 +97,7 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
       >
         {/* ─── Floating Nav Pill ─── */}
         <div
-          className="px-5 md:px-7 py-3 flex items-center justify-between relative overflow-hidden"
+          className="px-5 md:px-7 py-3 flex items-center justify-between relative"
           style={{
             borderRadius: "999px",
             background: isScrolled
@@ -286,7 +287,8 @@ export function Navbar({ onCreateEventClick }: NavbarProps) {
                             background: "var(--card)",
                             borderRadius: "18px",
                             border: "1px solid var(--border)",
-                            boxShadow: "0 16px 48px -8px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)"
+                            boxShadow: "0 16px 48px -8px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)",
+                            zIndex: 100
                           }}
                         >
                           {/* Profile header */}

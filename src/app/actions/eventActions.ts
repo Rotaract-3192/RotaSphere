@@ -285,6 +285,137 @@ export async function createEventAction(input: EventFormInput) {
   }
 }
 
+export async function updateEventAction(eventId: string, input: EventFormInput) {
+  try {
+    const { userId } = await auth()
+    if (!userId) {
+      return { success: false, error: "You must be signed in to edit events." }
+    }
+
+    const caller = await getCallerProfile(userId)
+    if (!caller) {
+      return { success: false, error: "User profile not found." }
+    }
+
+    if (caller.status !== "ACTIVE") {
+      return { success: false, error: `Unauthorized. Your account status is: ${caller.status}. Only ACTIVE accounts can edit events.` }
+    }
+
+    if (caller.role !== "SUPER_ADMIN" && caller.role !== "ADMIN" && caller.role !== "ORGANIZER") {
+      return { success: false, error: `Unauthorized. Your role (${caller.role}) does not have permission to edit events.` }
+    }
+
+    const startD = new Date(input.startDate)
+    const endD = new Date(input.endDate)
+    
+    if (!isNaN(startD.getTime()) && !isNaN(endD.getTime()) && endD <= startD) {
+      return { success: false, error: "Event end date/time must be after the start date/time." }
+    }
+
+    const dateStr = startD.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    const timeStr = `${startD.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} - ${endD.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} ${input.timezone}`
+    const locStr = input.locationType === "online" ? "Virtual Online Link" : `${input.venueName}, ${input.city}`
+    const priceVal = input.type === "free" ? 0 : parseFloat(input.price || "0")
+    const tagsArr = input.tags ? input.tags.split(",").map(t => t.trim()).filter(Boolean) : []
+    const priceStr = input.type === "free" ? "Free" : `₹${priceVal.toFixed(2)}`
+
+    if (!isSupabaseAdminConfigured) {
+      console.warn("Supabase Admin is not configured. Simulating event edit.")
+      const simulatedEditedEvent = {
+        id: eventId,
+        title: input.title,
+        description: input.description,
+        date: dateStr,
+        time: timeStr,
+        location: locStr,
+        image: input.bannerUrl,
+        organizer: input.organizer,
+        price: priceStr,
+        category: input.category,
+        capacity: String(input.capacity),
+        latitude: input.latitude,
+        longitude: input.longitude,
+        googleMapsUrl: input.googleMapsUrl,
+        locationType: input.locationType,
+        status: "PUBLISHED"
+      }
+      return { 
+        success: true, 
+        event: simulatedEditedEvent,
+        simulated: true 
+      }
+    }
+
+    // RBAC Check: standard organizers can only edit their own events
+    if (caller.role === "ORGANIZER") {
+      const { data: existingEvent, error: fetchError } = await supabaseAdmin
+        .from("events")
+        .select("organizer_id")
+        .eq("id", eventId)
+        .maybeSingle()
+
+      if (fetchError || !existingEvent) {
+        return { success: false, error: "Event not found" }
+      }
+      if (existingEvent.organizer_id !== userId) {
+        return { success: false, error: "Unauthorized. You can only edit your own event listings." }
+      }
+    }
+
+    // Update inside Supabase
+    const { data, error } = await supabaseAdmin
+      .from("events")
+      .update({
+        title: input.title,
+        description: input.description,
+        full_description: input.fullDescription,
+        banner_url: input.bannerUrl,
+        thumbnail_url: input.thumbnailUrl || input.bannerUrl,
+        start_date: startD.toISOString(),
+        end_date: endD.toISOString(),
+        timezone: input.timezone,
+        type: input.type,
+        price: priceVal,
+        visibility: input.visibility,
+        location_type: input.locationType,
+        venue_name: input.venueName,
+        venue_description: input.venueDescription,
+        country: input.country,
+        state: input.state,
+        city: input.city,
+        address: input.address,
+        pincode: input.pincode,
+        google_maps_url: input.googleMapsUrl,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        category: input.category,
+        tags: tagsArr,
+        capacity: Number(input.capacity),
+        contact_email: input.contactEmail,
+        contact_phone: input.contactPhone
+      })
+      .eq("id", eventId)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    const mapped = mapRowToEventItem(data)
+
+    return { 
+      success: true, 
+      event: mapped,
+      simulated: false
+    }
+  } catch (error: any) {
+    console.error("Error in updateEventAction:", error)
+    return { success: false, error: error?.message || "Failed to update event" }
+  }
+}
+
+
 export async function submitEventForApprovalAction(eventId: string) {
   try {
     const { userId } = await auth()

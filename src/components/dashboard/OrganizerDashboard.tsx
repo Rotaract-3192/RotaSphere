@@ -5,9 +5,10 @@ import { useTheme } from "next-themes"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Calendar, MapPin, Users, DollarSign, IndianRupee, Award, Ticket, 
-  BarChart3, Plus, UserCheck, Trash2, 
+  BarChart3, Plus, UserCheck, Trash2, Edit,
   TrendingUp, LayoutDashboard, Settings, Menu, Bell, Search, 
-  Sparkles, LogOut, Moon, Sun, ClipboardList, Info, Check, Home
+  Sparkles, LogOut, Moon, Sun, ClipboardList, Info, Check, Home,
+  QrCode
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -53,10 +54,17 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
   const [imageUrl, setImageUrl] = React.useState((activeUser as any).imageUrl || "")
   const [orgName, setOrgName] = React.useState("Rotasphere Events Org")
   const [toastMessage, setToastMessage] = React.useState<string | null>(null)
+  const [editingEvent, setEditingEvent] = React.useState<EventItem | null>(null)
 
   const [isProfileEditOpen, setIsProfileEditOpen] = React.useState(false)
   const [isOnboardingMode, setIsOnboardingMode] = React.useState(false)
   const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null)
+
+  // Organizer offline payment verification states
+  const [organizerTickets, setOrganizerTickets] = React.useState<any[]>([])
+  const [activeTicketTab, setActiveTicketTab] = React.useState<'active' | 'pending' | 'rejected'>('pending')
+  const [previewScreenshotUrl, setPreviewScreenshotUrl] = React.useState<string | null>(null)
+  const [previewTicketId, setPreviewTicketId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (authUser) {
@@ -77,6 +85,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
     async function loadStats() {
       try {
         const { getOrganizerStatsAction, getOrganizerAttendeesAction } = await import("@/app/actions/eventActions")
+        const { getOrganizerTicketsAction } = await import("@/app/actions/paymentActions")
+        
         const statsRes = await getOrganizerStatsAction()
         if (statsRes.success && statsRes.salesByDay) {
           setSalesByDay(statsRes.salesByDay)
@@ -85,12 +95,74 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
         if (attRes.success && attRes.attendees) {
           setAttendeeRegistry(attRes.attendees)
         }
+        const ticketsRes = await getOrganizerTicketsAction()
+        if (ticketsRes.success && ticketsRes.tickets) {
+          setOrganizerTickets(ticketsRes.tickets)
+        }
       } catch (err) {
         console.error("Failed to load organizer metrics:", err)
       }
     }
     loadStats()
   }, [events])
+
+  const handleApproveTicket = async (ticketId: string) => {
+    try {
+      const { approveTicketAction } = await import("@/app/actions/paymentActions")
+      const res = await approveTicketAction(ticketId)
+      if (res.success) {
+        showToast("✅ Ticket approved and email pass sent!")
+        
+        // Find matching target ticket to update status of all tickets in order
+        const targetTicket = organizerTickets.find(t => t.id === ticketId)
+        const orderId = targetTicket?.orderId
+
+        setOrganizerTickets(prev => prev.map(t => {
+          if (orderId && t.orderId === orderId) {
+            return { ...t, status: "active" }
+          }
+          return t
+        }))
+
+        // Refresh stats/attendee lists
+        const { getOrganizerAttendeesAction } = await import("@/app/actions/eventActions")
+        const attRes = await getOrganizerAttendeesAction()
+        if (attRes.success && attRes.attendees) {
+          setAttendeeRegistry(attRes.attendees)
+        }
+      } else {
+        showToast(`❌ Approval failed: ${res.error}`)
+      }
+    } catch (err) {
+      console.error(err)
+      showToast("❌ Failed to process ticket approval.")
+    }
+  }
+
+  const handleRejectTicket = async (ticketId: string) => {
+    try {
+      const { rejectTicketAction } = await import("@/app/actions/paymentActions")
+      const res = await rejectTicketAction(ticketId)
+      if (res.success) {
+        showToast("🗑️ Booking rejected. Email sent.")
+        
+        const targetTicket = organizerTickets.find(t => t.id === ticketId)
+        const orderId = targetTicket?.orderId
+
+        setOrganizerTickets(prev => prev.map(t => {
+          if (orderId && t.orderId === orderId) {
+            return { ...t, status: "rejected" }
+          }
+          return t
+        }))
+      } else {
+        showToast(`❌ Rejection failed: ${res.error}`)
+      }
+    } catch (err) {
+      console.error(err)
+      showToast("❌ Failed to reject ticket request.")
+    }
+  }
 
   // Trigger Toast Notification
   const showToast = (msg: string) => {
@@ -212,6 +284,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                 key={item.id}
                 onClick={() => {
                   setActiveView(item.id)
+                  setEditingEvent(null)
                   setMobileOpen(false)
                 }}
                 className={cn(
@@ -611,9 +684,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                  ========================================== */}
               {activeView === 'create-event' && (
                 <MultiStepCreateEvent 
+                  editEvent={editingEvent || undefined}
                   onSuccessRedirect={() => {
                     setActiveView('manage-events')
-                    showToast("🎉 Event successfully created!")
+                    setEditingEvent(null)
+                    showToast(editingEvent ? "🎉 Event details updated!" : "🎉 Event successfully created!")
                   }}
                   events={events}
                   setEvents={setEvents}
@@ -650,7 +725,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         Add Event
                       </Button>
                     </div>
-                       {/* Desktop View */}
+                  </div>
+                  {/* Desktop View */}
                   <div className="hidden md:block overflow-x-auto text-xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
@@ -725,6 +801,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                         Submit
                                       </Button>
                                     )}
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => {
+                                        setEditingEvent(evt)
+                                        setActiveView('create-event')
+                                      }}
+                                      className="rounded-lg hover:bg-accent/10 text-muted-foreground hover:text-accent h-8 w-8"
+                                      title="Edit Event"
+                                    >
+                                      <Edit className="h-3.5 w-3.5" />
+                                    </Button>
                                     <Button 
                                       variant="ghost" 
                                       size="icon" 
@@ -809,6 +897,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
+                                  onClick={() => {
+                                    setEditingEvent(evt)
+                                    setActiveView('create-event')
+                                  }}
+                                  className="rounded-lg hover:bg-accent/10 text-muted-foreground hover:text-accent h-8 w-8"
+                                  title="Edit Event"
+                                >
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
                                   onClick={() => setDeleteTargetId(evt.id)}
                                   className="rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive h-8 w-8"
                                   title="Delete Event"
@@ -821,7 +921,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         )
                       })
                     }
-                  </div>               </div>
+                  </div>
                 </Card>
               )}
 
@@ -830,78 +930,203 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                  ========================================== */}
               {activeView === 'tickets' && (
                 <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
-                  <h3 className="text-sm font-heading font-medium text-foreground mb-4">Ticketing Audit Log</h3>
-                  <p className="text-xs text-muted-foreground mb-6">
-                    Complete list of transaction receipts and generated active passes across platform bookings.
-                  </p>
-
-                  {/* Desktop View */}
-                  <div className="hidden md:block overflow-x-auto text-xs">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
-                          <th className="pb-3">Booking ID</th>
-                          <th className="pb-3">Event Detail</th>
-                          <th className="pb-3">Base Cost</th>
-                          <th className="pb-3">Status Code</th>
-                          <th className="pb-3 text-right">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/40">
-                        {bookedTickets.map((evt, idx) => (
-                          <tr key={idx} className="hover:bg-muted/30 dark:hover:bg-muted/10">
-                            <td className="py-3 font-mono font-bold text-foreground">#EVT-{evt.id.toUpperCase()}-{idx}</td>
-                            <td className="py-3">
-                              <span className="font-medium text-foreground block">{evt.title}</span>
-                              <span className="text-[10px] text-muted-foreground">{evt.date}</span>
-                            </td>
-                            <td className="py-3 font-semibold text-foreground">{evt.price}</td>
-                            <td className="py-3">
-                              <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                CONFIRMED
-                              </span>
-                            </td>
-                            <td className="py-3 text-right">
-                              <button 
-                                onClick={() => showToast(`Simulating barcode scan for EVT-${evt.id}`)}
-                                className="text-accent hover:underline font-medium"
-                              >
-                                Scan Ticket
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <div>
+                      <h3 className="text-sm font-heading font-medium text-foreground">Ticketing Verification & Audit Log</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Review UPI payment screenshot receipts, verify amounts, and confirm attendee passes.
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Mobile View */}
-                  <div className="block md:hidden space-y-3">
-                    {bookedTickets.map((evt, idx) => (
-                      <div key={idx} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-2 text-xs">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="font-mono font-bold text-foreground block">#EVT-{evt.id.toUpperCase()}-{idx}</span>
-                            <span className="font-medium text-foreground block mt-0.5">{evt.title}</span>
-                            <span className="text-[10px] text-muted-foreground block mt-0.5">{evt.date}</span>
-                          </div>
-                          <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-                            CONFIRMED
+                  {/* Sub-tabs */}
+                  <div className="flex border-b border-border mb-6">
+                    {[
+                      { id: 'pending', label: 'Pending Approvals', count: organizerTickets.filter(t => t.status === 'pending').length },
+                      { id: 'active', label: 'Active Passes', count: organizerTickets.filter(t => t.status === 'active').length },
+                      { id: 'rejected', label: 'Rejected Requests', count: organizerTickets.filter(t => t.status === 'rejected').length }
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTicketTab(tab.id as any)}
+                        className={cn(
+                          "px-4 py-2 text-xs font-semibold border-b-2 -mb-[2px] transition-all relative flex items-center gap-1.5",
+                          activeTicketTab === tab.id
+                            ? "border-accent text-foreground font-bold"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {tab.label}
+                        {tab.count > 0 && (
+                          <span className={cn(
+                            "text-[9px] px-1.5 py-0.5 rounded-full font-mono font-bold shrink-0",
+                            tab.id === 'pending' ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" :
+                            tab.id === 'active' ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+                            "bg-red-500/10 text-red-600 dark:text-red-400"
+                          )}>
+                            {tab.count}
                           </span>
-                        </div>
-                        
-                        <div className="flex justify-between items-center pt-2 border-t border-border/20">
-                          <span className="font-semibold text-foreground">{evt.price}</span>
-                          <button 
-                            onClick={() => showToast(`Simulating barcode scan for EVT-${evt.id}`)}
-                            className="text-accent hover:underline font-medium text-[11px]"
-                          >
-                            Scan Ticket
-                          </button>
-                        </div>
-                      </div>
+                        )}
+                      </button>
                     ))}
                   </div>
+
+                  {(() => {
+                    const filteredList = organizerTickets.filter(t => 
+                      t.status === (activeTicketTab === 'pending' ? 'pending' : activeTicketTab === 'active' ? 'active' : 'rejected')
+                    )
+
+                    if (filteredList.length === 0) {
+                      return (
+                        <div className="text-center py-16 text-muted-foreground text-xs bg-muted/10 rounded-2xl border border-dashed border-border/50">
+                          <Ticket className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                          <span>No tickets found in this tab.</span>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <>
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto text-xs">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
+                                <th className="pb-3">Booking ID</th>
+                                <th className="pb-3">Attendee Name</th>
+                                <th className="pb-3">Event Detail</th>
+                                <th className="pb-3">Base Cost</th>
+                                <th className="pb-3">Verification Details</th>
+                                <th className="pb-3 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/40">
+                              {filteredList.map((t, idx) => (
+                                <tr key={idx} className="hover:bg-muted/30 dark:hover:bg-muted/10">
+                                  <td className="py-3 font-mono font-bold text-foreground">#{t.ticketCode}</td>
+                                  <td className="py-3">
+                                    <span className="font-semibold text-foreground block">{t.attendeeName}</span>
+                                    <span className="text-[10px] text-muted-foreground">{t.attendeeEmail}</span>
+                                  </td>
+                                  <td className="py-3">
+                                    <span className="font-medium text-foreground block">{t.eventTitle}</span>
+                                    <span className="text-[10px] text-muted-foreground font-mono">{t.createdAt ? new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                                  </td>
+                                  <td className="py-3 font-semibold text-foreground">₹{t.pricePaid || 0}</td>
+                                  <td className="py-3">
+                                    {t.screenshotUrl ? (
+                                      <button
+                                        onClick={() => { setPreviewScreenshotUrl(t.screenshotUrl); setPreviewTicketId(t.id) }}
+                                        className="text-[10px] font-bold text-[#38BDF8] hover:underline flex items-center gap-1.5 uppercase font-mono"
+                                      >
+                                        <QrCode className="h-3.5 w-3.5" />
+                                        View Receipt Screenshot
+                                      </button>
+                                    ) : (
+                                      <span className="text-slate-400 italic">No proof attached</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 text-right">
+                                    {t.status === "pending" ? (
+                                      <div className="flex justify-end gap-1.5">
+                                        <Button
+                                          onClick={() => handleRejectTicket(t.id)}
+                                          size="xs"
+                                          className="rounded-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 font-semibold text-[10px] py-1 px-3 shadow-none"
+                                        >
+                                          Reject
+                                        </Button>
+                                        <Button
+                                          onClick={() => handleApproveTicket(t.id)}
+                                          size="xs"
+                                          className="rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[10px] py-1 px-3 shadow-none"
+                                        >
+                                          Approve
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <span className={cn(
+                                        "inline-block text-[9px] font-mono font-bold px-2.5 py-0.5 rounded-full border",
+                                        t.status === "active"
+                                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400"
+                                          : "bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400"
+                                      )}>
+                                        {t.status === "active" ? "Confirmed" : "Rejected"}
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile View */}
+                        <div className="block md:hidden space-y-3">
+                          {filteredList.map((t, idx) => (
+                            <div key={idx} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs text-left">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <span className="font-mono font-bold text-foreground block">#{t.ticketCode}</span>
+                                  <span className="font-semibold text-foreground block mt-1">{t.attendeeName}</span>
+                                  <span className="text-[10px] text-muted-foreground block">{t.attendeeEmail}</span>
+                                </div>
+                                <span className={cn(
+                                  "text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border shrink-0",
+                                  t.status === "active" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400" :
+                                  t.status === "pending" ? "bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400" :
+                                  "bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400"
+                                )}>
+                                  {t.status === "pending" ? "Pending Approval" : t.status === "active" ? "Confirmed" : "Rejected"}
+                                </span>
+                              </div>
+
+                              <div className="space-y-1.5 pt-2 border-t border-border/20">
+                                <div className="flex justify-between text-[10px] text-muted-foreground">
+                                  <span>Event</span>
+                                  <span className="font-medium text-foreground">{t.eventTitle}</span>
+                                </div>
+                                <div className="flex justify-between text-[10px] text-muted-foreground">
+                                  <span>Price Paid</span>
+                                  <span className="font-bold text-foreground">₹{t.pricePaid || 0}</span>
+                                </div>
+                                {t.screenshotUrl && (
+                                  <div className="pt-1.5">
+                                    <button
+                                      onClick={() => { setPreviewScreenshotUrl(t.screenshotUrl); setPreviewTicketId(t.id) }}
+                                      className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 uppercase font-mono"
+                                    >
+                                      <QrCode className="h-3 w-3" />
+                                      View Receipt Proof
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {t.status === "pending" && (
+                                <div className="flex gap-2 pt-2 border-t border-border/20">
+                                  <Button
+                                    onClick={() => handleRejectTicket(t.id)}
+                                    size="xs"
+                                    className="flex-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 font-semibold py-2"
+                                  >
+                                    Reject
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleApproveTicket(t.id)}
+                                    size="xs"
+                                    className="flex-1 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2"
+                                  >
+                                    Approve
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )
+                  })()}
                 </Card>
               )}
 
@@ -1235,6 +1460,69 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
             >
               Confirm Delete
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Screenshot Preview Dialog */}
+      <Dialog open={!!previewScreenshotUrl} onOpenChange={(open) => { if (!open) { setPreviewScreenshotUrl(null); setPreviewTicketId(null) } }}>
+        <DialogContent className="bg-gradient-to-br from-white to-[#fcfcfc] dark:from-[#131b26] dark:to-[#0a1017] w-full max-w-lg border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-2xl backdrop-blur-3xl text-left text-xs">
+          <DialogHeader className="space-y-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#38BDF8]">
+              UPI Payment Receipt Verification
+            </span>
+            <DialogTitle className="text-lg font-bold tracking-tight text-foreground">
+              Verify Attached Screenshot
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs leading-relaxed">
+              Verify that the transaction amount matches the ticket price and correct payee details.
+            </DialogDescription>
+          </DialogHeader>
+
+          {previewScreenshotUrl && (
+            <div className="my-4 border border-border bg-muted/20 dark:bg-muted/10 rounded-xl overflow-hidden max-h-[350px] flex items-center justify-center p-2">
+              <img
+                src={previewScreenshotUrl}
+                alt="Payment Screenshot Receipt"
+                className="max-h-[330px] max-w-full object-contain rounded-lg shadow-sm"
+              />
+            </div>
+          )}
+
+          <DialogFooter className="flex flex-row justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => { setPreviewScreenshotUrl(null); setPreviewTicketId(null) }}
+              className="rounded-full px-4 h-9 font-medium"
+            >
+              Close
+            </Button>
+            {previewTicketId && (
+              <>
+                <Button
+                  onClick={async () => {
+                    const tid = previewTicketId
+                    setPreviewScreenshotUrl(null)
+                    setPreviewTicketId(null)
+                    await handleRejectTicket(tid)
+                  }}
+                  className="rounded-full px-4 h-9 bg-destructive text-destructive-foreground hover:bg-destructive/90 font-medium"
+                >
+                  Reject Payment
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const tid = previewTicketId
+                    setPreviewScreenshotUrl(null)
+                    setPreviewTicketId(null)
+                    await handleApproveTicket(tid)
+                  }}
+                  className="rounded-full px-4 h-9 bg-emerald-600 text-white hover:bg-emerald-500 font-medium"
+                >
+                  Approve & Confirm Pass
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

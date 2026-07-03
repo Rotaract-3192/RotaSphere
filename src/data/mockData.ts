@@ -25,6 +25,21 @@ export interface EventItem {
   organizerId?: string;
   startDate?: string;
   endDate?: string;
+  slug?: string;
+  fullDescription?: string;
+  thumbnailUrl?: string;
+  timezone?: string;
+  visibility?: string;
+  venueName?: string;
+  venueDescription?: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  pincode?: string;
+  tags?: string | string[];
+  contactEmail?: string;
+  contactPhone?: string;
 }
 
 export interface CategoryItem {
