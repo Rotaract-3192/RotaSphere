@@ -716,14 +716,59 @@ export async function approveTicketAction(ticketId: string) {
       .maybeSingle()
 
     if (!attendeeError && attendee) {
+      // Build a human-readable date
+      const eventDate = event.start_date || event.date
+      let formattedDate = eventDate
+      try {
+        const d = new Date(eventDate)
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toLocaleDateString("en-IN", {
+            weekday: "long", year: "numeric", month: "long", day: "numeric"
+          })
+          const timeStr = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
+          formattedDate += ` at ${timeStr}`
+          if (event.timezone) formattedDate += ` (${event.timezone})`
+        }
+      } catch { /* use raw date string */ }
+
+      // Build location or meeting link row
+      const isOnline = event.location_type === "online"
+      const venueName = event.venue_name || event.location || "TBA"
+      const locationLink = event.google_maps_url
+        || (event.latitude && event.longitude
+            ? `https://www.google.com/maps?q=${event.latitude},${event.longitude}`
+            : null)
+      // For online events, the virtual link is stored in the address column
+      const meetingLink = isOnline ? (event.address || null) : null
+
+      const locationRowHtml = isOnline
+        ? `<tr>
+             <td style="padding: 6px 0; color: #64748b;">Meeting Link:</td>
+             <td style="padding: 6px 0; font-weight: bold; text-align: right;">
+               ${meetingLink
+                 ? `<a href="${meetingLink}" style="color: #F7A81B; text-decoration: underline;" target="_blank">Join Meeting →</a>`
+                 : 'Will be shared by organizer'}
+             </td>
+           </tr>`
+        : `<tr>
+             <td style="padding: 6px 0; color: #64748b;">Venue:</td>
+             <td style="padding: 6px 0; font-weight: bold; text-align: right;">${venueName}${event.city ? `, ${event.city}` : ''}</td>
+           </tr>
+           ${locationLink ? `<tr>
+             <td style="padding: 6px 0; color: #64748b;">Directions:</td>
+             <td style="padding: 6px 0; text-align: right;">
+               <a href="${locationLink}" style="color: #F7A81B; text-decoration: underline; font-weight: bold;" target="_blank">Open in Google Maps →</a>
+             </td>
+           </tr>` : ''}`
+
       const emailHtml = `
-        <div style="font-family: 'Inter', sans-serif; background-color: #041C32; color: #ffffff; padding: 40px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid #38BDF8/20;">
+        <div style="font-family: 'Inter', sans-serif; background-color: #07132A; color: #ffffff; padding: 40px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid rgba(247,168,27,0.2);">
           <h2 style="font-family: 'Outfit', sans-serif; color: #22c55e; font-size: 24px; margin-bottom: 20px;">✅ Ticket Confirmed!</h2>
           <p style="font-size: 16px; line-height: 1.6; color: #b8c2cc;">Hello ${attendee.full_name},</p>
           <p style="font-size: 16px; line-height: 1.6; color: #b8c2cc;">Great news! Your payment screenshot has been verified by the organizer. Your ticket request has been approved and confirmed for <strong>${event.title}</strong>.</p>
           
           <div style="background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; margin: 25px 0;">
-            <h3 style="margin-top: 0; color: #38BDF8; font-size: 14px; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace;">Your Confirmed Ticket Passes</h3>
+            <h3 style="margin-top: 0; color: #F7A81B; font-size: 14px; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace;">Your Confirmed Ticket Passes</h3>
             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
               <tr>
                 <td style="padding: 6px 0; color: #64748b;">Event:</td>
@@ -731,12 +776,9 @@ export async function approveTicketAction(ticketId: string) {
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #64748b;">Date & Time:</td>
-                <td style="padding: 6px 0; font-weight: bold; text-align: right;">${event.start_date || event.date}</td>
+                <td style="padding: 6px 0; font-weight: bold; text-align: right;">${formattedDate}</td>
               </tr>
-              <tr>
-                <td style="padding: 6px 0; color: #64748b;">Venue:</td>
-                <td style="padding: 6px 0; font-weight: bold; text-align: right;">${event.venue_name || event.location}</td>
-              </tr>
+              ${locationRowHtml}
               <tr>
                 <td style="padding: 6px 0; color: #64748b;">Ticket Passes:</td>
                 <td style="padding: 6px 0; font-family: 'IBM Plex Mono', monospace; text-align: right; color: #22c55e; font-weight: bold;">${ticketCodes}</td>
@@ -744,9 +786,9 @@ export async function approveTicketAction(ticketId: string) {
             </table>
           </div>
           
-          <p style="font-size: 14px; color: #94a3b8; margin-top: 30px;">Please present your ticket codes or active passes at the check-in gate. Enjoy the event!</p>
+          <p style="font-size: 14px; color: #94a3b8; margin-top: 30px;">${isOnline ? 'Click the meeting link above at the scheduled time to join. Enjoy the event!' : 'Please present your ticket codes or active passes at the check-in gate. Enjoy the event!'}</p>
           <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 30px 0;" />
-          <span style="font-size: 12px; color: #64748b; display: block; text-align: center;">RotaSphere Platform Operations</span>
+          <span style="font-size: 12px; color: #64748b; display: block; text-align: center;">RotaSphere — Rotaract District 3192</span>
         </div>
       `
 
