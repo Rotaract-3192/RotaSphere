@@ -6,6 +6,11 @@
 const BASE_URL = 'https://api.olamaps.io';
 
 function getApiKey(): string | undefined {
+  console.log(
+    "OLA KEY:",
+    process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY
+  );
+
   return process.env.NEXT_PUBLIC_OLA_MAPS_API_KEY;
 }
 
