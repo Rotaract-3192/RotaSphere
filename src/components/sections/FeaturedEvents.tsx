@@ -268,9 +268,9 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
     setScreenshotError(null)
 
-    // Check size limit (3MB to avoid giant payloads)
-    if (file.size > 3 * 1024 * 1024) {
-      setScreenshotError("Receipt screenshot size exceeds 3MB limit.")
+    // Check size limit (1GB limit)
+    if (file.size > 1024 * 1024 * 1024) {
+      setScreenshotError("Receipt screenshot size exceeds 1GB limit.")
       return
     }
 
@@ -1190,7 +1190,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                               />
                               <Upload className="h-6 w-6 text-slate-400 mb-2" />
                               <span className="text-xs font-semibold text-slate-600 block">Click or Drag screenshot here</span>
-                              <span className="text-[9px] text-slate-400 mt-1">Accepts PNG, JPG, WEBP (Max 3MB)</span>
+                              <span className="text-[9px] text-slate-400 mt-1">Accepts PNG, JPG, WEBP (Image should be under 1GB)</span>
                             </div>
                           ) : (
                             <div className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between gap-3 shadow-sm">
