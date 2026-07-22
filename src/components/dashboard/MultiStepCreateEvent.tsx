@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form"
 import { EventItem } from "@/data/mockData"
 import { createEventAction, updateEventAction } from "@/app/actions/eventActions"
+import { ROTARACT_CLUBS } from "@/data/clubs"
 
 // Preset Unsplash images for banners and thumbnails
 const PRESET_BANNERS = [
@@ -69,8 +70,17 @@ const createEventSchema = z.object({
   // Step 3: Event Settings
   type: z.enum(["free", "paid"]),
   price: z.string().optional(),
+  ticketTiers: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    price: z.coerce.number().min(0, "Price cannot be negative"),
+    capacity: z.coerce.number().min(1, "Capacity must be at least 1"),
+    ticketsSold: z.coerce.number().default(0),
+    enabled: z.boolean()
+  })).optional(),
   visibility: z.enum(["public", "private"]),
   locationType: z.enum(["in-person", "online", "hybrid"]),
+  hostClub: z.string().min(1, "Hosting Rotaract Club is required"),
 
   // Step 4: Venue Details
   venueName: z.string().optional(),
@@ -108,6 +118,17 @@ const createEventSchema = z.object({
       message: "Price is required for paid events",
       path: ["price"],
     })
+  }
+
+  if (data.type === "paid") {
+    const hasEnabled = data.ticketTiers?.some(t => t.enabled)
+    if (!hasEnabled) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one ticket type must be enabled for paid events",
+        path: ["ticketTiers"],
+      })
+    }
   }
 
   // Validate venue details if in-person or hybrid
@@ -163,6 +184,8 @@ interface MultiStepCreateEventProps {
 export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, organizerName, editEvent }: MultiStepCreateEventProps) {
   const [currentStep, setCurrentStep] = React.useState(1)
   const [tagInput, setTagInput] = React.useState("")
+  const [clubSearch, setClubSearch] = React.useState("")
+  const [clubDropdownOpen, setClubDropdownOpen] = React.useState(false)
   const [tagsList, setTagsList] = React.useState<string[]>(() => {
     if (editEvent?.tags) {
       return Array.isArray(editEvent.tags) 
@@ -200,7 +223,15 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
       tags: Array.isArray(editEvent.tags) ? editEvent.tags.join(", ") : (editEvent.tags || ""),
       capacity: editEvent.capacity ? Number(editEvent.capacity) : 500,
       contactEmail: editEvent.contactEmail || "",
-      contactPhone: editEvent.contactPhone || ""
+      contactPhone: editEvent.contactPhone || "",
+      hostClub: (editEvent as any).hostClub || "",
+      ticketTiers: (editEvent as any).ticketTiers && (editEvent as any).ticketTiers.length > 0
+        ? (editEvent as any).ticketTiers
+        : [
+            { id: "early-bird", name: "Early Bird", price: 0, capacity: 50, ticketsSold: 0, enabled: false },
+            { id: "normal", name: "Normal", price: editEvent.price ? parseFloat(String(editEvent.price).replace(/[^0-9.]/g, "")) || 0 : 0, capacity: editEvent.capacity ? Number(editEvent.capacity) : 500, ticketsSold: editEvent.attendees || 0, enabled: true },
+            { id: "vip", name: "VIP", price: 0, capacity: 20, ticketsSold: 0, enabled: false }
+          ]
     } : {
       title: "",
       slug: "",
@@ -226,7 +257,13 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
       tags: "",
       capacity: 500,
       contactEmail: "",
-      contactPhone: ""
+      contactPhone: "",
+      hostClub: "",
+      ticketTiers: [
+        { id: "early-bird", name: "Early Bird", price: 0, capacity: 50, ticketsSold: 0, enabled: false },
+        { id: "normal", name: "Normal", price: 0, capacity: 500, ticketsSold: 0, enabled: true },
+        { id: "vip", name: "VIP", price: 0, capacity: 20, ticketsSold: 0, enabled: false }
+      ]
     }) as EventFormValues
   })
 
@@ -257,6 +294,27 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
     setValue("tags", tagsList.join(", "), { shouldValidate: true })
   }, [tagsList, setValue])
 
+  const ticketTiersValue = watch("ticketTiers")
+
+  // Auto-calculate capacity and default price from enabled ticket tiers
+  React.useEffect(() => {
+    if (typeValue === "paid" && ticketTiersValue) {
+      const totalCap = ticketTiersValue
+        .filter((t: any) => t.enabled)
+        .reduce((sum: number, t: any) => sum + (Number(t.capacity) || 0), 0)
+      setValue("capacity", totalCap, { shouldValidate: true })
+
+      // Auto-set price to the first enabled tier's price (e.g. Early Bird if active, or Normal)
+      const activeTier = ticketTiersValue.find((t: any) => t.id === "early-bird" && t.enabled && t.ticketsSold < t.capacity)
+        || ticketTiersValue.find((t: any) => t.id === "normal" && t.enabled)
+        || ticketTiersValue.find((t: any) => t.enabled)
+      
+      if (activeTier) {
+        setValue("price", String(activeTier.price), { shouldValidate: true })
+      }
+    }
+  }, [ticketTiersValue, typeValue, setValue])
+
   const handleAddTag = (e: React.MouseEvent | React.KeyboardEvent) => {
     e.preventDefault()
     const trimmed = tagInput.trim().toLowerCase()
@@ -274,7 +332,7 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
   const steps = [
     { number: 1, label: "Basic Info", fields: ["title", "slug", "description", "fullDescription", "bannerUrl", "thumbnailUrl"] as const },
     { number: 2, label: "Date & Time", fields: ["startDate", "endDate", "timezone"] as const },
-    { number: 3, label: "Settings", fields: ["type", "price", "visibility", "locationType"] as const },
+    { number: 3, label: "Settings", fields: ["type", "price", "ticketTiers", "visibility", "locationType", "hostClub"] as const },
     { number: 4, label: "Venue Details", fields: ["venueName", "venueDescription", "country", "state", "city", "address", "pincode"] as const, skipIfOnline: true },
     { number: 5, label: "Additional Info", fields: ["category", "tags", "capacity", "contactEmail", "contactPhone"] as const }
   ]
@@ -765,25 +823,105 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                           )}
                         />
  
-                        {/* Price Input Field (Conditional) */}
+                        {/* Ticket Tiers Selector (Conditional) */}
                         {typeValue === "paid" && (
-                          <FormField
-                            control={form.control}
-                            name="price"
-                            render={({ field }) => (
-                              <FormItem className="animate-fade-in flex flex-col justify-end">
-                                <FormLabel>Ticket Price (₹ INR) *</FormLabel>
-                                <FormControl>
-                                  <div className="relative">
-                                    <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                                    <Input placeholder="99.00" className="pl-7" {...field} />
+                          <div className="col-span-1 md:col-span-2 space-y-4 border-t border-muted/50 pt-4 mt-2">
+                            <FormLabel className="text-sm font-bold block mb-1">Ticket Types & Pricing *</FormLabel>
+                            <p className="text-[10px] text-muted-foreground -mt-3 mb-3">Enable one or more ticket types and specify their individual price and capacity.</p>
+                            
+                            <div className="space-y-4">
+                              {ticketTiersValue?.map((tier: any, index: number) => {
+                                const isEnabled = tier.enabled;
+                                return (
+                                  <div 
+                                    key={tier.id} 
+                                    className={cn(
+                                      "p-4 rounded-2xl border transition-all duration-300 space-y-4 bg-background/50",
+                                      isEnabled 
+                                        ? "border-accent ring-1 ring-accent/10" 
+                                        : "border-border opacity-70"
+                                    )}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2.5">
+                                        <input
+                                          type="checkbox"
+                                          id={`tier-${tier.id}`}
+                                          checked={isEnabled}
+                                          onChange={(e) => {
+                                            const updated = [...ticketTiersValue]
+                                            updated[index] = { ...updated[index], enabled: e.target.checked }
+                                            setValue("ticketTiers", updated, { shouldValidate: true })
+                                          }}
+                                          className="h-4.5 w-4.5 rounded border-gray-300 text-accent focus:ring-accent accent-accent cursor-pointer"
+                                        />
+                                        <label 
+                                          htmlFor={`tier-${tier.id}`} 
+                                          className="text-xs font-bold text-foreground cursor-pointer select-none uppercase tracking-wider"
+                                        >
+                                          {tier.name} Ticket
+                                        </label>
+                                      </div>
+                                      
+                                      {isEnabled && (
+                                        <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-accent/10 text-accent font-bold">
+                                          Active Tier
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {isEnabled && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-dashed border-border/50 animate-fade-in">
+                                        <FormField
+                                          control={form.control}
+                                          name={`ticketTiers.${index}.price` as any}
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Ticket Price (₹) *</FormLabel>
+                                              <FormControl>
+                                                <div className="relative">
+                                                  <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                                  <Input type="number" placeholder="100.00" className="pl-7 h-8.5 text-xs" {...field} />
+                                                </div>
+                                              </FormControl>
+                                              <FormMessage className="text-[10px]" />
+                                            </FormItem>
+                                          )}
+                                        />
+                                        
+                                        <FormField
+                                          control={form.control}
+                                          name={`ticketTiers.${index}.capacity` as any}
+                                          render={({ field }) => (
+                                            <FormItem>
+                                              <FormLabel className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Quantity Needed *</FormLabel>
+                                              <FormControl>
+                                                <div className="relative">
+                                                  <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                                  <Input type="number" placeholder="100" className="pl-7 h-8.5 text-xs" {...field} />
+                                                </div>
+                                              </FormControl>
+                                              <FormMessage className="text-[10px]" />
+                                            </FormItem>
+                                          )}
+                                        />
+                                      </div>
+                                    )}
                                   </div>
-                                </FormControl>
-                                <FormDescription>Set ticket pricing amount.</FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                                )
+                              })}
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name="ticketTiers"
+                              render={() => (
+                                <FormItem>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         )}
                       </div>
  
@@ -801,32 +939,127 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                               ].map((option) => {
                                 const Icon = option.icon
                                 const isSelected = field.value === option.value
-                                return (
-                                  <button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => field.onChange(option.value)}
-                                    className={cn(
-                                      "flex items-center gap-3 p-4 rounded-xl border-2 text-left text-xs transition-all",
-                                      isSelected
-                                        ? "border-accent bg-accent/8 text-foreground ring-2 ring-accent/20"
-                                        : "border-border hover:bg-muted/40 text-muted-foreground"
-                                    )}
+                                  return (
+                                    <button
+                                      key={option.value}
+                                      type="button"
+                                      onClick={() => field.onChange(option.value)}
+                                      className={cn(
+                                        "flex items-center gap-3 p-4 rounded-xl border-2 text-left text-xs transition-all",
+                                        isSelected
+                                          ? "border-accent bg-accent/8 text-foreground ring-2 ring-accent/20"
+                                          : "border-border hover:bg-muted/40 text-muted-foreground"
+                                      )}
+                                    >
+                                      <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0">
+                                        <Icon className="h-4 w-4" />
+                                      </div>
+                                      <div>
+                                        <span className="font-bold block text-[11px]">{option.label}</span>
+                                        <span className="text-[9px] opacity-75">{option.desc}</span>
+                                      </div>
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                      {/* Host Club settings (District 3192 Searchable Combobox) */}
+                      <FormField
+                        control={form.control}
+                        name="hostClub"
+                        render={({ field }) => {
+                          const selectedClub = field.value
+                          const filteredClubs = ROTARACT_CLUBS.filter(club =>
+                            club.toLowerCase().includes(clubSearch.toLowerCase())
+                          )
+
+                          return (
+                            <FormItem className="space-y-2 relative">
+                              <FormLabel>Hosting Rotaract Club *</FormLabel>
+                              <div className="relative">
+                                <FormControl>
+                                  <div 
+                                    className="flex h-10 w-full items-center justify-between rounded-xl border border-input bg-background/50 px-3 py-2 text-xs placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-accent/20 cursor-pointer"
+                                    onClick={() => setClubDropdownOpen(!clubDropdownOpen)}
                                   >
-                                    <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent shrink-0">
-                                      <Icon className="h-4 w-4" />
+                                    <span className={cn(selectedClub ? "text-foreground font-medium" : "text-muted-foreground")}>
+                                      {selectedClub || "Select host club name..."}
+                                    </span>
+                                    <Users className="h-4 w-4 text-muted-foreground opacity-60" />
+                                  </div>
+                                </FormControl>
+                                
+                                {clubDropdownOpen && (
+                                  <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-border bg-background p-1.5 shadow-lg animate-fade-in backdrop-blur-md">
+                                    <div className="flex items-center border-b border-border/40 pb-1.5 mb-1.5 px-2">
+                                      <input
+                                        type="text"
+                                        placeholder="Search club name..."
+                                        value={clubSearch}
+                                        onChange={(e) => setClubSearch(e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-full bg-transparent text-xs text-foreground outline-none border-none placeholder:text-muted-foreground"
+                                        autoFocus
+                                      />
                                     </div>
-                                    <div>
-                                      <span className="font-bold block text-[11px]">{option.label}</span>
-                                      <span className="text-[9px] opacity-75">{option.desc}</span>
+                                    <div className="space-y-0.5">
+                                      {clubSearch.trim() && !ROTARACT_CLUBS.some(c => c.toLowerCase() === clubSearch.trim().toLowerCase()) && (
+                                        <div
+                                          onClick={() => {
+                                            field.onChange(clubSearch.trim())
+                                            setClubDropdownOpen(false)
+                                            setClubSearch("")
+                                          }}
+                                          className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors bg-accent/5 text-accent font-medium border border-dashed border-accent/25 hover:bg-accent/10 mb-1"
+                                        >
+                                          <span>Use custom: "{clubSearch.trim()}"</span>
+                                          <Plus className="h-3.5 w-3.5 text-accent" />
+                                        </div>
+                                      )}
+                                      
+                                      {filteredClubs.length === 0 ? (
+                                        clubSearch.trim() ? null : (
+                                          <div className="py-2 text-center text-xs text-muted-foreground">
+                                            No clubs found
+                                          </div>
+                                        )
+                                      ) : (
+                                        filteredClubs.map((club) => {
+                                          const isSelected = selectedClub === club
+                                          return (
+                                            <div
+                                              key={club}
+                                              onClick={() => {
+                                                field.onChange(club)
+                                                setClubDropdownOpen(false)
+                                                setClubSearch("")
+                                              }}
+                                              className={cn(
+                                                "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors",
+                                                isSelected 
+                                                  ? "bg-accent/10 text-accent font-semibold" 
+                                                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                                              )}
+                                            >
+                                              <span>{club}</span>
+                                              {isSelected && <Check className="h-3 w-3 text-accent" />}
+                                            </div>
+                                          )
+                                        })
+                                      )}
                                     </div>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                                  </div>
+                                )}
+                              </div>
+                              <FormDescription>Select the Rotaract Club hosting this event.</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )
+                        }}
                       />
  
                       {/* Location format settings */}
@@ -1031,10 +1264,20 @@ export function MultiStepCreateEvent({ onSuccessRedirect, events, setEvents, org
                               <FormControl>
                                 <div className="relative">
                                   <Users className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                                  <Input type="number" placeholder="500" className="pl-7" {...field} />
+                                  <Input 
+                                    type="number" 
+                                    placeholder="500" 
+                                    className="pl-7" 
+                                    disabled={typeValue === "paid"}
+                                    {...field} 
+                                  />
                                 </div>
                               </FormControl>
-                              <FormDescription>Limits total tickets that can be booked.</FormDescription>
+                              <FormDescription>
+                                {typeValue === "paid" 
+                                  ? "Calculated automatically from the sum of enabled ticket tier capacities."
+                                  : "Limits total tickets that can be booked."}
+                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}

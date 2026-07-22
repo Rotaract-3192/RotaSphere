@@ -48,6 +48,8 @@ export function mapRowToEventItem(row: any): any {
     contactPhone: row.contact_phone,
     organizerId: row.organizer_id,
     status: row.status || 'DRAFT',
-    reviewNotes: row.review_notes || ''
+    reviewNotes: row.review_notes || '',
+    ticketTiers: row.ticket_tiers || [],
+    hostClub: row.host_club
   }
 }

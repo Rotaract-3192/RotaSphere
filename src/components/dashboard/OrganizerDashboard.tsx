@@ -999,6 +999,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 <th className="pb-3">Booking ID</th>
                                 <th className="pb-3">Attendee Name</th>
                                 <th className="pb-3">Event Detail</th>
+                                <th className="pb-3">Ticket Type</th>
                                 <th className="pb-3">Base Cost</th>
                                 <th className="pb-3">Verification Details</th>
                                 <th className="pb-3 text-right">Actions</th>
@@ -1015,6 +1016,9 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                   <td className="py-3">
                                     <span className="font-medium text-foreground block">{t.eventTitle}</span>
                                     <span className="text-[10px] text-muted-foreground font-mono">{t.createdAt ? new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : ""}</span>
+                                  </td>
+                                  <td className="py-3 font-medium text-foreground uppercase font-semibold text-[10px] tracking-wide">
+                                    {t.ticketTierName || "Regular"}
                                   </td>
                                   <td className="py-3 font-semibold text-foreground">₹{t.pricePaid || 0}</td>
                                   <td className="py-3">
@@ -1089,6 +1093,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 <div className="flex justify-between text-[10px] text-muted-foreground">
                                   <span>Event</span>
                                   <span className="font-medium text-foreground">{t.eventTitle}</span>
+                                </div>
+                                <div className="flex justify-between text-[10px] text-muted-foreground">
+                                  <span>Ticket Type</span>
+                                  <span className="font-semibold text-foreground uppercase text-[9px]">{t.ticketTierName || "Regular"}</span>
                                 </div>
                                 <div className="flex justify-between text-[10px] text-muted-foreground">
                                   <span>Price Paid</span>
@@ -1260,6 +1268,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <thead>
                             <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
                               <th className="pb-3">Guest</th>
+                              <th className="pb-3">Club Name</th>
                               <th className="pb-3">Email Address</th>
                               <th className="pb-3">Event Registered</th>
                               <th className="pb-3">Date Registered</th>
@@ -1276,6 +1285,9 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                     </div>
                                     <span className="font-medium text-foreground">{item.name}</span>
                                   </div>
+                                </td>
+                                <td className="py-3 text-muted-foreground font-medium uppercase text-[9px] tracking-wide">
+                                  {(item as any).clubName || "Non-Member / Unknown"}
                                 </td>
                                 <td className="py-3 text-muted-foreground">{item.email}</td>
                                 <td className="py-3 text-muted-foreground">{item.eventTitle}</td>
@@ -1323,6 +1335,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                             </div>
 
                             <div className="space-y-1 text-[10px] text-muted-foreground pt-2 border-t border-border/20">
+                              <div className="flex justify-between">
+                                <span>Rotaract Club</span>
+                                <span className="font-semibold text-foreground uppercase text-[9px]">{(item as any).clubName || "Non-Member / Unknown"}</span>
+                              </div>
                               <div className="flex justify-between">
                                 <span>Event Registered</span>
                                 <span className="text-foreground text-right max-w-[180px] truncate">{item.eventTitle}</span>

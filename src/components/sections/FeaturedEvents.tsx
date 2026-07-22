@@ -1,12 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { Calendar, MapPin, Ticket, Check, Copy, Upload, X, QrCode, ClipboardCheck, Loader2 } from "lucide-react"
+import { Calendar, MapPin, Ticket, Check, Copy, Upload, X, QrCode, ClipboardCheck, Loader2, Users, Plus } from "lucide-react"
 import { EventItem } from "@/data/mockData"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useAuthSession } from "@/context/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createRazorpayOrderAction, verifyPaymentAndBookTicketAction, bookFreeTicketAction, bookOfflinePaidTicketAction } from "@/app/actions/paymentActions"
+import { createRazorpayOrderAction, verifyPaymentAndBookTicketAction, bookFreeTicketAction, bookOfflinePaidTicketAction, checkClubEarlyBirdLimitAction } from "@/app/actions/paymentActions"
+import { cn } from "@/lib/utils"
+import { ROTARACT_CLUBS } from "@/data/clubs"
 
 interface FeaturedEventsProps {
   events: EventItem[];
@@ -29,10 +31,52 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const [screenshotError, setScreenshotError] = React.useState<string | null>(null)
   const [copiedUpi, setCopiedUpi] = React.useState(false)
 
-  const remainingCapacity = bookingEvent
-    ? Math.max(0, (parseInt(bookingEvent.capacity) || 0) - (bookingEvent.attendees || 0))
-    : 0
+  const [selectedTierId, setSelectedTierId] = React.useState<string>("normal")
+
+  const [attendeeClubName, setAttendeeClubName] = React.useState("")
+  const [attendeeClubSearch, setAttendeeClubSearch] = React.useState("")
+  const [attendeeClubDropdownOpen, setAttendeeClubDropdownOpen] = React.useState(false)
+  const [clubEarlyBirdCount, setClubEarlyBirdCount] = React.useState(0)
+
+  const getTiersList = () => {
+    if (!bookingEvent) return []
+    return (bookingEvent as any).ticketTiers && (bookingEvent as any).ticketTiers.length > 0
+      ? (bookingEvent as any).ticketTiers
+      : [
+          { id: "normal", name: "Normal", price: parseFloat(String(bookingEvent.price).replace(/[^0-9.]/g, "")) || 0, capacity: parseInt(bookingEvent.capacity) || 500, ticketsSold: bookingEvent.attendees || 0, enabled: true }
+        ]
+  }
+
+  const tiersList = getTiersList()
+  const selectedTier = tiersList.find((t: any) => t.id === selectedTierId)
+
+  const getSelectedTierRemaining = () => {
+    if (!bookingEvent) return 0
+    if (bookingEvent.type === "free" || !selectedTier) {
+      return Math.max(0, (parseInt(bookingEvent.capacity) || 0) - (bookingEvent.attendees || 0))
+    }
+    return Math.max(0, selectedTier.capacity - (selectedTier.ticketsSold || 0))
+  }
+
+  const remainingCapacity = getSelectedTierRemaining()
   const maxSelectable = Math.max(1, Math.min(10, remainingCapacity))
+
+  const getEventPriceDisplay = (evt: EventItem) => {
+    if (evt.type === "free") return "Free"
+    const eventTiers = (evt as any).ticketTiers || []
+    if (eventTiers.length === 0) return evt.price || "Paid"
+    
+    // Find active tier
+    const activeTier = eventTiers.find((t: any) => t.id === "early-bird" && t.enabled && (t.ticketsSold || 0) < t.capacity)
+      || eventTiers.find((t: any) => t.id === "normal" && t.enabled)
+      || eventTiers.find((t: any) => t.enabled)
+      
+    if (activeTier) {
+      const isEarlyBird = activeTier.id === "early-bird"
+      return `₹${parseFloat(String(activeTier.price)).toFixed(2)}${isEarlyBird ? " (Early Bird)" : ""}`
+    }
+    return evt.price || "Paid"
+  }
 
   React.useEffect(() => {
     setMounted(true)
@@ -65,7 +109,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
   const [attendees, setAttendees] = React.useState<{ fullName: string; email: string }[]>([])
 
-  // Prefill user details when modal opens
+  // Prefill user details and default ticket tier selection when modal opens
   React.useEffect(() => {
     if (bookingEvent) {
       setFormData({
@@ -80,8 +124,78 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
       setScreenshot(null)
       setScreenshotError(null)
       setCopiedUpi(false)
+
+      // Initialize default active tier (Early Bird if not sold out, otherwise Normal)
+      const eventTiers = (bookingEvent as any).ticketTiers || []
+      const earlyBird = eventTiers.find((t: any) => t.id === "early-bird" && t.enabled && (t.ticketsSold || 0) < t.capacity)
+      const normal = eventTiers.find((t: any) => t.id === "normal" && t.enabled)
+      const firstEnabled = eventTiers.find((t: any) => t.enabled)
+      
+      if (earlyBird) {
+        setSelectedTierId("early-bird")
+      } else if (normal) {
+        setSelectedTierId("normal")
+      } else if (firstEnabled) {
+        setSelectedTierId(firstEnabled.id)
+      } else {
+        setSelectedTierId("normal")
+      }
+
+      setAttendeeClubName(user?.homeClub || "")
+      setAttendeeClubSearch("")
+      setAttendeeClubDropdownOpen(false)
+      setClubEarlyBirdCount(0)
     }
   }, [bookingEvent, user])
+
+  React.useEffect(() => {
+    let active = true
+
+    async function checkLimit() {
+      if (!bookingEvent || bookingEvent.type === "free" || selectedTierId !== "early-bird" || !attendeeClubName || attendeeClubName === "Non-Rotaractor") {
+        setClubEarlyBirdCount(0)
+        return
+      }
+
+      // Check simulated local storage first to keep count accurate in mock-mode
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingEvent.id)
+      if (!isUuid) {
+        const savedDetails = localStorage.getItem("rotasphere_ticket_details")
+        const detailsMap = savedDetails ? JSON.parse(savedDetails) : {}
+        let localCount = 0
+        Object.keys(detailsMap).forEach(code => {
+          const detail = detailsMap[code]
+          if (detail.clubName === attendeeClubName && detail.ticketTierId === "early-bird") {
+            localCount += 1 // increment by 1 for each ticket code issued
+          }
+        })
+        if (active) {
+          setClubEarlyBirdCount(localCount)
+          if (localCount >= 5) {
+            alert("Early Bird tickets sold out for your club")
+            setSelectedTierId("normal")
+          }
+        }
+        return
+      }
+
+      // Database-mode
+      const res = await checkClubEarlyBirdLimitAction(bookingEvent.id, attendeeClubName)
+      if (active && res.success && res.count !== undefined) {
+        setClubEarlyBirdCount(res.count)
+        if (res.count >= 5) {
+          alert("Early Bird tickets sold out for your club")
+          setSelectedTierId("normal")
+        }
+      }
+    }
+
+    checkLimit()
+
+    return () => {
+      active = false
+    }
+  }, [bookingEvent, attendeeClubName, selectedTierId])
 
   // Sync attendees array length to match ticketCount minus primary booker
   React.useEffect(() => {
@@ -124,19 +238,29 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
 
   // Parse price string to number for details display
   const getPriceDetails = () => {
-    if (!bookingEvent) return { isFree: true, unitPrice: 0, totalPrice: 0, currencySymbol: "₹" }
-    const priceStr = bookingEvent.price || "0"
-    const isFree = priceStr.toLowerCase().includes("free") ||
-      bookingEvent.type === "free" ||
-      parseFloat(priceStr.replace(/[^0-9.]/g, "")) === 0
+    if (!bookingEvent) return { isFree: true, unitPrice: 0, totalPrice: 0, currencySymbol: "₹", selectedTierName: "" }
+    
+    const isFree = bookingEvent.type === "free"
+    if (isFree) {
+      return { isFree: true, unitPrice: 0, totalPrice: 0, currencySymbol: "₹", selectedTierName: "Free Pass" }
+    }
 
-    const unitPrice = isFree ? 0 : parseFloat(priceStr.replace(/[^0-9.]/g, ""))
+    const unitPrice = selectedTier 
+      ? parseFloat(String(selectedTier.price)) 
+      : parseFloat(String(bookingEvent.price).replace(/[^0-9.]/g, "")) || 0
+      
     const totalPrice = unitPrice * formData.ticketCount
-    const currencySymbol = priceStr.startsWith("$") || priceStr.startsWith("₹") ? "₹" : "₹"
-    return { isFree, unitPrice, totalPrice, currencySymbol }
+    const currencySymbol = "₹"
+    return { 
+      isFree: false, 
+      unitPrice, 
+      totalPrice, 
+      currencySymbol, 
+      selectedTierName: selectedTier ? selectedTier.name : "Regular Ticket" 
+    }
   }
 
-  const { isFree, totalPrice, currencySymbol } = getPriceDetails()
+  const { isFree, unitPrice, totalPrice, currencySymbol, selectedTierName } = getPriceDetails()
 
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -174,6 +298,25 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
       return
     }
 
+    if (!attendeeClubName) {
+      alert("Please select your Rotaract Club (or choose Non-Rotaractor if you are not a member).")
+      return
+    }
+
+    // Enforce club-specific Early Bird limit client-side
+    if (selectedTierId === "early-bird" && attendeeClubName && attendeeClubName !== "Non-Rotaractor") {
+      const remainingLimit = 5 - clubEarlyBirdCount
+      if (formData.ticketCount > remainingLimit) {
+        if (remainingLimit <= 0) {
+          alert("Early Bird tickets sold out for your club")
+          setSelectedTierId("normal")
+        } else {
+          alert(`Only ${remainingLimit} Early Bird tickets can be booked for your club. Your request of ${formData.ticketCount} tickets exceeds this limit.`)
+        }
+        return
+      }
+    }
+
     // 1. If it's a free event, book directly
     if (isFree) {
       setIsPaying(true)
@@ -183,7 +326,8 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           formData.ticketCount,
           formData.fullName,
           formData.email,
-          attendees
+          attendees,
+          attendeeClubName
         )
         if (res.success) {
           // Save registration details to local storage
@@ -202,7 +346,9 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
               fullName: attendeeName,
               email: attendeeEmail,
               ticketCount: formData.ticketCount,
-              bookedAt: new Date().toISOString()
+              bookedAt: new Date().toISOString(),
+              clubName: attendeeClubName,
+              ticketTierId: "free"
             }
           })
           localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
@@ -217,6 +363,20 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
             }
             bookedList.push(bookedEventItem)
             localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
+          }
+
+          // Sync client-side localStorage copy of events
+          const savedEvents = localStorage.getItem("rotasphere_events")
+          if (savedEvents) {
+            const eventsList = JSON.parse(savedEvents)
+            const updatedList = eventsList.map((e: any) => {
+              if (e.id === bookingEvent.id) {
+                const attendees = (e.attendees || 0) + formData.ticketCount
+                return { ...e, attendees }
+              }
+              return e
+            })
+            localStorage.setItem("rotasphere_events", JSON.stringify(updatedList))
           }
           setBookingSuccess(true)
           if (onEventBooked) onEventBooked(bookingEvent.id)
@@ -256,7 +416,10 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         phone: formData.phone,
         specialRequests: formData.specialRequests,
         additionalAttendees: attendees,
-        screenshotBase64: screenshot
+        screenshotBase64: screenshot,
+        ticketTierId: selectedTierId,
+        ticketTierName: selectedTierName,
+        clubName: attendeeClubName
       })
 
       if (res.success) {
@@ -277,7 +440,9 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
             email: attendeeEmail,
             ticketCount: formData.ticketCount,
             status: "pending",
-            bookedAt: new Date().toISOString()
+            bookedAt: new Date().toISOString(),
+            clubName: attendeeClubName,
+            ticketTierId: selectedTierId
           }
         })
         localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
@@ -293,6 +458,27 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           }
           bookedList.push(bookedEventItem)
           localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
+        }
+
+        // Sync client-side localStorage copy of events
+        const savedEvents = localStorage.getItem("rotasphere_events")
+        if (savedEvents) {
+          const eventsList = JSON.parse(savedEvents)
+          const updatedList = eventsList.map((e: any) => {
+            if (e.id === bookingEvent.id) {
+              const attendees = (e.attendees || 0) + formData.ticketCount
+              const tiers = (e as any).ticketTiers || []
+              const updatedTiers = tiers.map((t: any) => {
+                if (t.id === selectedTierId) {
+                  return { ...t, ticketsSold: (t.ticketsSold || 0) + formData.ticketCount }
+                }
+                return t
+              })
+              return { ...e, attendees, ticketTiers: updatedTiers }
+            }
+            return e
+          })
+          localStorage.setItem("rotasphere_events", JSON.stringify(updatedList))
         }
 
         setBookingSuccess(true)
@@ -454,7 +640,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                         border: "1px solid var(--primary)"
                       }}
                     >
-                      {evt.price}
+                      {getEventPriceDisplay(evt)}
                     </div>
 
                     {/* Satellite CTA — docked bottom-right */}
@@ -620,6 +806,162 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                   <form onSubmit={confirmBooking} className="space-y-4 text-left">
                     {checkoutStep === "details" ? (
                       <>
+                        {/* Ticket Tier Selection */}
+                        {bookingEvent.type === "paid" && tiersList.filter((t: any) => t.enabled).length > 1 && (
+                          <div className="space-y-2 mb-4">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 font-mono">
+                              Select Ticket Type *
+                            </label>
+                            <div className="grid grid-cols-1 gap-2.5">
+                              {tiersList.filter((t: any) => t.enabled).map((tier: any) => {
+                                const isSoldOut = (tier.ticketsSold || 0) >= tier.capacity
+                                const isSelected = selectedTierId === tier.id
+                                
+                                return (
+                                  <button
+                                    key={tier.id}
+                                    type="button"
+                                    disabled={isSoldOut}
+                                    onClick={() => setSelectedTierId(tier.id)}
+                                    className={cn(
+                                      "flex items-center justify-between p-3.5 rounded-xl border text-left text-xs transition-all relative overflow-hidden cursor-pointer",
+                                      isSelected
+                                        ? "border-accent bg-accent/5 ring-1 ring-accent/20"
+                                        : isSoldOut
+                                        ? "border-border opacity-50 bg-muted/20 cursor-not-allowed"
+                                        : "border-border hover:bg-muted/30"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn(
+                                        "h-4.5 w-4.5 rounded-full border flex items-center justify-center shrink-0",
+                                        isSelected ? "border-accent text-accent" : "border-muted-foreground"
+                                      )}>
+                                        {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-accent" />}
+                                      </div>
+                                      <div>
+                                        <span className="font-bold text-foreground block text-[11px] uppercase tracking-wider">{tier.name}</span>
+                                        <span className="text-[10px] text-muted-foreground">
+                                          {isSoldOut 
+                                            ? "Sold Out" 
+                                            : `${tier.capacity - (tier.ticketsSold || 0)} tickets remaining`}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <span className="font-bold font-mono text-foreground text-xs">
+                                      ₹{parseFloat(String(tier.price)).toFixed(2)}
+                                    </span>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {/* Club selection searchable dropdown */}
+                        <div className="space-y-2 relative mb-4">
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Rotaract Club Name *
+                          </label>
+                          <div className="relative">
+                            <div 
+                              className="flex h-10 w-full items-center justify-between rounded-xl border border-slate-700/60 bg-slate-900/40 px-3 py-2 text-xs placeholder:text-slate-500 cursor-pointer text-white"
+                              onClick={() => setAttendeeClubDropdownOpen(!attendeeClubDropdownOpen)}
+                            >
+                              <span className={cn(attendeeClubName ? "text-white font-medium" : "text-slate-500")}>
+                                {attendeeClubName || "Select or search club name..."}
+                              </span>
+                              <Users className="h-4 w-4 text-slate-500 opacity-60" />
+                            </div>
+                            
+                            {attendeeClubDropdownOpen && (
+                              <div 
+                                className="absolute z-[9999] mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-700 bg-[#0B1528] p-1.5 shadow-lg animate-fade-in"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center border-b border-slate-700 pb-1.5 mb-1.5 px-2">
+                                  <input
+                                    type="text"
+                                    placeholder="Search club name..."
+                                    value={attendeeClubSearch}
+                                    onChange={(e) => setAttendeeClubSearch(e.target.value)}
+                                    className="w-full bg-transparent text-xs text-white outline-none border-none placeholder:text-slate-500"
+                                    autoFocus
+                                  />
+                                </div>
+                                <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                                  {attendeeClubSearch.trim() && !ROTARACT_CLUBS.some(c => c.toLowerCase() === attendeeClubSearch.trim().toLowerCase()) && (
+                                    <div
+                                      onClick={() => {
+                                        setAttendeeClubName(attendeeClubSearch.trim())
+                                        setAttendeeClubDropdownOpen(false)
+                                        setAttendeeClubSearch("")
+                                      }}
+                                      className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors bg-[#1E88E5]/10 text-[#38BDF8] font-medium border border-dashed border-[#1E88E5]/30 hover:bg-[#1E88E5]/20 mb-1"
+                                    >
+                                      <span>Use custom: "{attendeeClubSearch.trim()}"</span>
+                                      <Plus className="h-3.5 w-3.5 text-[#38BDF8]" />
+                                    </div>
+                                  )}
+                                  
+                                  {/* Non-Rotaractor / Custom option */}
+                                  <div
+                                    onClick={() => {
+                                      setAttendeeClubName("Non-Rotaractor")
+                                      setAttendeeClubDropdownOpen(false)
+                                      setAttendeeClubSearch("")
+                                    }}
+                                    className={cn(
+                                      "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors",
+                                      attendeeClubName === "Non-Rotaractor" 
+                                        ? "bg-[#1E88E5]/20 text-[#38BDF8] font-semibold" 
+                                        : "hover:bg-slate-800 text-slate-400 hover:text-white"
+                                    )}
+                                  >
+                                    <span>Non-Rotaractor (Guest)</span>
+                                    {attendeeClubName === "Non-Rotaractor" && <Check className="h-3 w-3 text-[#38BDF8]" />}
+                                  </div>
+                                  
+                                  {ROTARACT_CLUBS.filter(club => 
+                                    club.toLowerCase().includes(attendeeClubSearch.toLowerCase())
+                                  ).length === 0 ? (
+                                    attendeeClubSearch.trim() ? null : (
+                                      <div className="py-2 text-center text-xs text-slate-500">
+                                        No clubs found
+                                      </div>
+                                    )
+                                  ) : (
+                                    ROTARACT_CLUBS.filter(club => 
+                                      club.toLowerCase().includes(attendeeClubSearch.toLowerCase())
+                                    ).map((club) => {
+                                      const isSelected = attendeeClubName === club
+                                      return (
+                                        <div
+                                          key={club}
+                                          onClick={() => {
+                                            setAttendeeClubName(club)
+                                            setAttendeeClubDropdownOpen(false)
+                                            setAttendeeClubSearch("")
+                                          }}
+                                          className={cn(
+                                            "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors",
+                                            isSelected 
+                                              ? "bg-[#1E88E5]/20 text-[#38BDF8] font-semibold" 
+                                              : "hover:bg-slate-800 text-slate-400 hover:text-white"
+                                          )}
+                                        >
+                                          <span>{club}</span>
+                                          {isSelected && <Check className="h-3 w-3 text-[#38BDF8]" />}
+                                        </div>
+                                      )
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500">Search and select the club you belong to. If you are not a Rotaractor, select "Non-Rotaractor".</p>
+                        </div>
+
                         {/* Name Input */}
                         <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -896,7 +1238,9 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                     >
                       <div className="flex justify-between text-sm">
                         <span className="font-weight-450" style={{ color: "var(--muted-foreground)" }}>Price per Ticket</span>
-                        <span className="font-medium" style={{ color: "var(--foreground)" }}>{bookingEvent.price}</span>
+                        <span className="font-medium" style={{ color: "var(--foreground)" }}>
+                          {isFree ? "Free" : `₹${unitPrice.toFixed(2)} (${selectedTierName})`}
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="font-weight-450" style={{ color: "var(--muted-foreground)" }}>Ticket Count</span>

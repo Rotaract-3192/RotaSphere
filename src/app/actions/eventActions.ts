@@ -34,6 +34,8 @@ export interface EventFormInput {
   googleMapsUrl?: string;
   latitude?: number;
   longitude?: number;
+  ticketTiers?: any[];
+  hostClub?: string;
 }
 
 const SUPER_ADMIN_EMAIL = "tech.rotaract3192@gmail.com"
@@ -204,7 +206,9 @@ export async function createEventAction(input: EventFormInput) {
       googleMapsUrl: input.googleMapsUrl,
       locationType: input.locationType,
       status: "PUBLISHED",
-      reviewNotes: ""
+      reviewNotes: "",
+      ticketTiers: input.ticketTiers || [],
+      hostClub: input.hostClub
     }
 
     if (!isSupabaseAdminConfigured) {
@@ -262,7 +266,9 @@ export async function createEventAction(input: EventFormInput) {
         organizer_id: userId,
         attendees_count: 0,
         status: "PUBLISHED",
-        review_notes: null
+        review_notes: null,
+        ticket_tiers: input.ticketTiers || [],
+        host_club: input.hostClub
       })
       .select()
       .single()
@@ -337,7 +343,9 @@ export async function updateEventAction(eventId: string, input: EventFormInput) 
         longitude: input.longitude,
         googleMapsUrl: input.googleMapsUrl,
         locationType: input.locationType,
-        status: "PUBLISHED"
+        status: "PUBLISHED",
+        ticketTiers: input.ticketTiers || [],
+        hostClub: input.hostClub
       }
       return { 
         success: true, 
@@ -392,7 +400,9 @@ export async function updateEventAction(eventId: string, input: EventFormInput) 
         tags: tagsArr,
         capacity: Number(input.capacity),
         contact_email: input.contactEmail,
-        contact_phone: input.contactPhone
+        contact_phone: input.contactPhone,
+        ticket_tiers: input.ticketTiers,
+        host_club: input.hostClub
       })
       .eq("id", eventId)
       .select()
@@ -804,7 +814,7 @@ export async function getOrganizerAttendeesAction() {
     // Fetch all attendees for these events
     const { data: attendees, error: attendeesError } = await supabaseAdmin
       .from("attendees")
-      .select("id, email, full_name, event_id, registered_at, ticket_id")
+      .select("id, email, full_name, event_id, registered_at, ticket_id, club_name")
       .in("event_id", eventIds)
       .order("registered_at", { ascending: false })
 
@@ -816,7 +826,8 @@ export async function getOrganizerAttendeesAction() {
       email: att.email,
       eventTitle: eventTitlesMap[att.event_id] || "Unknown Event",
       date: new Date(att.registered_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      checkedIn: true
+      checkedIn: true,
+      clubName: att.club_name
     }))
 
     return { success: true, attendees: mapped, simulated: false }

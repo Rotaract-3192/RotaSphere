@@ -118,6 +118,30 @@ export async function createRazorpayOrderAction(eventId: string, ticketCount: nu
   }
 }
 
+export async function checkClubEarlyBirdLimitAction(eventId: string, clubName: string) {
+  try {
+    if (!isSupabaseAdminConfigured) {
+      return { success: true, count: 0, simulated: true }
+    }
+    
+    // Count existing early bird bookings for this club (excluding rejected tickets)
+    const { data, error } = await supabaseAdmin
+      .from("attendees")
+      .select("ticket_id, tickets!inner(status, ticket_tier_id)")
+      .eq("event_id", eventId)
+      .eq("club_name", clubName)
+      .eq("tickets.ticket_tier_id", "early-bird")
+      .neq("tickets.status", "rejected")
+      
+    if (error) throw error
+    
+    return { success: true, count: data?.length || 0 }
+  } catch (err) {
+    console.error("Error checking club limit:", err)
+    return { success: false, error: "Failed to check club ticket limit" }
+  }
+}
+
 export async function verifyPaymentAndBookTicketAction(input: {
   eventId: string;
   orderId: string;
@@ -128,6 +152,9 @@ export async function verifyPaymentAndBookTicketAction(input: {
   fullName?: string;
   email?: string;
   additionalAttendees?: { fullName: string; email: string }[];
+  ticketTierId?: string;
+  ticketTierName?: string;
+  clubName?: string;
 }) {
   try {
     const { userId } = await auth()
@@ -167,6 +194,19 @@ export async function verifyPaymentAndBookTicketAction(input: {
       return { success: false, error: "Event not found." }
     }
 
+    // Enforce club-specific Early Bird limit of 5 tickets
+    if (input.ticketTierId === "early-bird" && input.clubName && input.clubName !== "Non-Rotaractor") {
+      const { count, success } = await checkClubEarlyBirdLimitAction(input.eventId, input.clubName)
+      if (success && count !== undefined) {
+        if (count >= 5) {
+          return { success: false, error: "Early Bird tickets sold out for your club" }
+        }
+        if (count + ticketCount > 5) {
+          return { success: false, error: `Only ${5 - count} Early Bird tickets can be booked for your club. Your request of ${ticketCount} tickets exceeds this limit.` }
+        }
+      }
+    }
+
     // Signature verification (only if not simulated)
     if (!input.isSimulated && isRazorpayConfigured) {
       const generated = crypto
@@ -183,6 +223,11 @@ export async function verifyPaymentAndBookTicketAction(input: {
     const createdTickets = []
     let primaryTicketId = ""
 
+    // Determine the price paid from the selected ticket tier
+    const tiers = event.ticket_tiers || []
+    const selectedTier = tiers.find((t: any) => t.id === input.ticketTierId)
+    const pricePaid = selectedTier ? selectedTier.price : (event.price || 0)
+
     for (let i = 0; i < ticketCount; i++) {
       const ticketCode = generateTicketCode()
       const { data: ticket, error: ticketError } = await supabaseAdmin
@@ -191,10 +236,12 @@ export async function verifyPaymentAndBookTicketAction(input: {
           event_id: input.eventId,
           user_id: userId,
           ticket_code: ticketCode,
-          price_paid: event.price,
+          price_paid: pricePaid,
           status: "active",
           payment_id: input.paymentId,
-          order_id: input.orderId
+          order_id: input.orderId,
+          ticket_tier_id: input.ticketTierId,
+          ticket_tier_name: input.ticketTierName
         })
         .select()
         .single()
@@ -221,7 +268,8 @@ export async function verifyPaymentAndBookTicketAction(input: {
           clerk_id: userId,
           email: attendeeEmail,
           full_name: attendeeName,
-          ticket_id: ticket.id
+          ticket_id: ticket.id,
+          club_name: input.clubName
         })
 
       if (attendeeError) {
@@ -238,11 +286,27 @@ export async function verifyPaymentAndBookTicketAction(input: {
       }
     }
 
-    // Increment attendee count by ticketCount
+    // Sync home_club to user profile
+    if (input.clubName && userId) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ home_club: input.clubName })
+        .eq("id", userId)
+    }
+
+    const updatedTiers = tiers.map((t: any) => {
+      if (t.id === input.ticketTierId) {
+        return { ...t, ticketsSold: (t.ticketsSold || 0) + ticketCount }
+      }
+      return t
+    })
+
+    // Increment attendee count by ticketCount and update ticket tiers
     const { error: updateError } = await supabaseAdmin
       .from("events")
       .update({
         attendees_count: (event.attendees_count || 0) + ticketCount,
+        ticket_tiers: updatedTiers,
         updated_at: new Date().toISOString()
       })
       .eq("id", input.eventId)
@@ -265,7 +329,8 @@ export async function bookFreeTicketAction(
   ticketCount: number = 1,
   fullName?: string,
   email?: string,
-  additionalAttendees?: { fullName: string; email: string }[]
+  additionalAttendees?: { fullName: string; email: string }[],
+  clubName?: string
 ) {
   try {
     const { userId } = await auth()
@@ -353,7 +418,8 @@ export async function bookFreeTicketAction(
           clerk_id: userId,
           email: attendeeEmail,
           full_name: attendeeName,
-          ticket_id: ticket.id
+          ticket_id: ticket.id,
+          club_name: clubName
         })
 
       if (attendeeError) {
@@ -368,6 +434,14 @@ export async function bookFreeTicketAction(
             : `Failed to register attendee ${i + 1}. They might already be registered.`
         }
       }
+    }
+
+    // Sync home_club to user profile
+    if (clubName && userId) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ home_club: clubName })
+        .eq("id", userId)
     }
 
     // Increment attendee count by ticketCount
@@ -484,6 +558,9 @@ export async function bookOfflinePaidTicketAction(input: {
   specialRequests?: string;
   additionalAttendees?: { fullName: string; email: string }[];
   screenshotBase64: string;
+  ticketTierId?: string;
+  ticketTierName?: string;
+  clubName?: string;
 }) {
   try {
     const { userId } = await auth()
@@ -508,6 +585,19 @@ export async function bookOfflinePaidTicketAction(input: {
       return { success: false, error: "Event not found" }
     }
 
+    // Enforce club-specific Early Bird limit of 5 tickets
+    if (input.ticketTierId === "early-bird" && input.clubName && input.clubName !== "Non-Rotaractor") {
+      const { count, success } = await checkClubEarlyBirdLimitAction(input.eventId, input.clubName)
+      if (success && count !== undefined) {
+        if (count >= 5) {
+          return { success: false, error: "Early Bird tickets sold out for your club" }
+        }
+        if (count + ticketCount > 5) {
+          return { success: false, error: `Only ${5 - count} Early Bird tickets can be booked for your club. Your request of ${ticketCount} tickets exceeds this limit.` }
+        }
+      }
+    }
+
     // Check capacity
     if ((event.attendees_count || 0) + ticketCount > event.capacity) {
       return { success: false, error: "Event capacity reached or ticket count exceeds remaining capacity." }
@@ -520,6 +610,11 @@ export async function bookOfflinePaidTicketAction(input: {
     const createdTickets = []
     let primaryTicketId = ""
 
+    // Determine the price paid from the selected ticket tier
+    const tiers = event.ticket_tiers || []
+    const selectedTier = tiers.find((t: any) => t.id === input.ticketTierId)
+    const pricePaid = selectedTier ? selectedTier.price : (event.price || 0)
+
     for (let i = 0; i < ticketCount; i++) {
       const ticketCode = generateTicketCode()
       
@@ -528,10 +623,12 @@ export async function bookOfflinePaidTicketAction(input: {
         event_id: input.eventId,
         user_id: userId,
         ticket_code: ticketCode,
-        price_paid: event.price,
+        price_paid: pricePaid,
         status: "pending",
         order_id: orderId,
-        payment_id: "offline_upi"
+        payment_id: "offline_upi",
+        ticket_tier_id: input.ticketTierId,
+        ticket_tier_name: input.ticketTierName
       }
 
       // We'll write to both screenshot column AND fallback in order_id/payment_id if column missing
@@ -585,7 +682,8 @@ export async function bookOfflinePaidTicketAction(input: {
           clerk_id: userId,
           email: attendeeEmail,
           full_name: attendeeName,
-          ticket_id: currentTicket.id
+          ticket_id: currentTicket.id,
+          club_name: input.clubName
         })
 
       if (attendeeError) {
@@ -600,6 +698,14 @@ export async function bookOfflinePaidTicketAction(input: {
             : `Failed to register attendee ${i + 1}. They might already be registered.`
         }
       }
+    }
+
+    // Sync home_club to user profile
+    if (input.clubName && userId) {
+      await supabaseAdmin
+        .from("profiles")
+        .update({ home_club: input.clubName })
+        .eq("id", userId)
     }
 
     const ticketCodes = createdTickets.map(t => t.ticket_code).join(", ")
@@ -697,11 +803,20 @@ export async function approveTicketAction(ticketId: string) {
 
     if (updateError) throw updateError
 
-    // Increment event attendees count
+    const eventTiers = event.ticket_tiers || []
+    const updatedTiers = eventTiers.map((t: any) => {
+      if (t.id === ticket.ticket_tier_id) {
+        return { ...t, ticketsSold: (t.ticketsSold || 0) + ticketIds.length }
+      }
+      return t
+    })
+
+    // Increment event attendees count and update ticket tiers
     const { error: capacityError } = await supabaseAdmin
       .from("events")
       .update({
         attendees_count: (event.attendees_count || 0) + ticketIds.length,
+        ticket_tiers: updatedTiers,
         updated_at: new Date().toISOString()
       })
       .eq("id", event.id)
@@ -911,7 +1026,9 @@ export async function getOrganizerTicketsAction() {
         screenshotUrl: screenshotUrl,
         attendeeName: primaryAttendeeName,
         attendeeEmail: primaryAttendeeEmail,
-        orderId: t.order_id
+        orderId: t.order_id,
+        ticketTierId: t.ticket_tier_id,
+        ticketTierName: t.ticket_tier_name
       }
     })
 
