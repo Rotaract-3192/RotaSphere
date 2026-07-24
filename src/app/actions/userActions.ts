@@ -58,25 +58,27 @@ async function getCallerProfile(userId: string) {
       const rawStatus = (clerkUser.publicMetadata?.status as string) || (isSuperAdmin ? "ACTIVE" : "ACTIVE")
       const rawBio = (clerkUser.publicMetadata?.bio as string) || ""
       const rawHomeClub = (clerkUser.publicMetadata?.homeClub as string) || ""
+      const rawDesignation = (clerkUser.publicMetadata?.designation as string) || ""
       return { 
         role: normalizeRole(rawRole), 
         status: normalizeStatus(rawStatus), 
         email,
         bio: rawBio,
-        homeClub: rawHomeClub
+        homeClub: rawHomeClub,
+        designation: rawDesignation
       }
     } catch (e) {
-      return { role: "SUPER_ADMIN" as UserRole, status: "ACTIVE" as UserStatus, email: SUPER_ADMIN_EMAIL, bio: "", homeClub: "" }
+      return { role: "SUPER_ADMIN" as UserRole, status: "ACTIVE" as UserStatus, email: SUPER_ADMIN_EMAIL, bio: "", homeClub: "", designation: "" }
     }
   }
 
   let profile: any = null
   let error: any = null
 
-  // Safely try to select role, status, email, bio, and home_club
+  // Safely try to select role, status, email, bio, home_club, and designation
   const { data: fullProfile, error: fullError } = await supabaseAdmin
     .from("profiles")
-    .select("role, status, email, bio, home_club")
+    .select("role, status, email, bio, home_club, designation")
     .eq("id", userId)
     .maybeSingle()
 
@@ -146,7 +148,8 @@ async function getCallerProfile(userId: string) {
         status: normalizedStatus, 
         email, 
         bio: "", 
-        homeClub: "" 
+        homeClub: "",
+        designation: ""
       }
     } catch (fallbackErr) {
       console.error("[Auth] Auto-sync fallback failed:", fallbackErr)
@@ -159,7 +162,8 @@ async function getCallerProfile(userId: string) {
     status: normalizeStatus(profile.status),
     email: profile.email,
     bio: profile.bio || "",
-    homeClub: profile.home_club || ""
+    homeClub: profile.home_club || "",
+    designation: profile.designation || ""
   }
 }
 
@@ -183,7 +187,8 @@ export async function syncClerkUserAction(userData: {
         role,
         status,
         bio: "",
-        homeClub: ""
+        homeClub: "",
+        designation: ""
       }
     }
 
@@ -193,12 +198,13 @@ export async function syncClerkUserAction(userData: {
     let statusForDb = isSuperAdmin ? "ACTIVE" : "ACTIVE"
     let existingBio = ""
     let existingHomeClub = ""
+    let existingDesignation = ""
 
     if (!isSuperAdmin) {
-      // Safely fetch existing role, status, bio, and home_club
+      // Safely fetch existing role, status, bio, home_club, and designation
       const { data: existing, error: selectError } = await supabaseAdmin
         .from("profiles")
-        .select("role, status, bio, home_club")
+        .select("role, status, bio, home_club, designation")
         .eq("id", userData.clerkId)
         .maybeSingle()
 
@@ -218,17 +224,19 @@ export async function syncClerkUserAction(userData: {
         if (existing.status) statusForDb = existing.status
         if (existing.bio) existingBio = existing.bio
         if (existing.home_club) existingHomeClub = existing.home_club
+        if (existing.designation) existingDesignation = existing.designation
       }
     } else {
-      // Fetch super admin bio/home_club if they exist
+      // Fetch super admin bio/home_club/designation if they exist
       const { data: existing } = await supabaseAdmin
         .from("profiles")
-        .select("bio, home_club")
+        .select("bio, home_club, designation")
         .eq("id", userData.clerkId)
         .maybeSingle()
       if (existing) {
         if (existing.bio) existingBio = existing.bio
         if (existing.home_club) existingHomeClub = existing.home_club
+        if (existing.designation) existingDesignation = existing.designation
       }
     }
 
@@ -257,6 +265,7 @@ export async function syncClerkUserAction(userData: {
         status: normalizeStatus(statusForDb), 
         bio: existingBio,
         homeClub: existingHomeClub,
+        designation: existingDesignation,
         simulated: false 
       }
     }
@@ -268,7 +277,7 @@ export async function syncClerkUserAction(userData: {
     try {
       const client = await clerkClient()
       await client.users.updateUserMetadata(userData.clerkId, {
-        publicMetadata: { role, status, bio: existingBio, homeClub: existingHomeClub }
+        publicMetadata: { role, status, bio: existingBio, homeClub: existingHomeClub, designation: existingDesignation }
       })
     } catch (clerkErr) {
       console.warn("[Auth] Clerk metadata sync failed (non-fatal):", clerkErr)
@@ -280,6 +289,7 @@ export async function syncClerkUserAction(userData: {
       status, 
       bio: existingBio,
       homeClub: existingHomeClub,
+      designation: existingDesignation,
       simulated: false 
     }
   } catch (error) {
@@ -731,6 +741,7 @@ export async function updateUserProfileAction(profileData: {
   imageUrl?: string;
   bio?: string;
   homeClub?: string;
+  designation?: string;
   role?: UserRole;
 }) {
   try {
@@ -769,7 +780,8 @@ export async function updateUserProfileAction(profileData: {
           status: newStatus,
           imageUrl: profileData.imageUrl || "",
           bio: profileData.bio || "",
-          homeClub: profileData.homeClub || ""
+          homeClub: profileData.homeClub || "",
+          designation: profileData.designation || ""
         }
       }
     }
@@ -787,11 +799,12 @@ export async function updateUserProfileAction(profileData: {
       updatePayload.image_url = profileData.imageUrl
     }
 
-    // Try updating everything including bio and home_club
+    // Try updating everything including bio, home_club, and designation
     const fullPayload = {
       ...updatePayload,
       bio: profileData.bio || "",
-      home_club: profileData.homeClub || ""
+      home_club: profileData.homeClub || "",
+      designation: profileData.designation || ""
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -801,7 +814,7 @@ export async function updateUserProfileAction(profileData: {
 
     if (updateError) {
       console.warn("[Auth] Failed to update full profile. Retrying with basic fields (migration may be missing).", updateError)
-      // Retry without bio and home_club
+      // Retry without bio, home_club, and designation
       const { error: fallbackUpdateError } = await supabaseAdmin
         .from("profiles")
         .update(updatePayload)
@@ -829,7 +842,8 @@ export async function updateUserProfileAction(profileData: {
           role: roleToSet,
           status: newStatus,
           bio: profileData.bio || "",
-          homeClub: profileData.homeClub || ""
+          homeClub: profileData.homeClub || "",
+          designation: profileData.designation || ""
         }
       })
     } catch (clerkErr) {
@@ -854,7 +868,8 @@ export async function updateUserProfileAction(profileData: {
         status: newStatus,
         imageUrl: profileData.imageUrl || "",
         bio: profileData.bio || "",
-        homeClub: profileData.homeClub || ""
+        homeClub: profileData.homeClub || "",
+        designation: profileData.designation || ""
       }
     }
   } catch (error) {

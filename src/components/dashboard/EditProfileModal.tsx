@@ -3,7 +3,7 @@
 import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
-  User, Mail, FileText, Building2, ShieldAlert, Check, Loader2, Sparkles, Image as ImageIcon, Camera
+  User, Mail, FileText, Building2, ShieldAlert, Check, Loader2, Sparkles, Image as ImageIcon, Camera, Briefcase
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { useAuthSession, UserRole, UserStatus } from "@/context/AuthContext"
 import { cn } from "@/lib/utils"
+import { ROTARACT_DESIGNATIONS } from "@/data/clubs"
 
 // 6 premium preset avatar seeds for Dicebear Adventurer style
 const PRESET_AVATAR_SEEDS = [
@@ -31,6 +32,9 @@ export function EditProfileModal({ isOpen, onClose, isOnboarding = false }: Edit
   const [email, setEmail] = React.useState("")
   const [bio, setBio] = React.useState("")
   const [homeClub, setHomeClub] = React.useState("")
+  const [designation, setDesignation] = React.useState("")
+  const [customDesignation, setCustomDesignation] = React.useState("")
+  const [isCustomDesignation, setIsCustomDesignation] = React.useState(false)
   const [selectedRole, setSelectedRole] = React.useState<UserRole>("ATTENDEE")
   const [imageUrl, setImageUrl] = React.useState("")
   const [customImageMode, setCustomImageMode] = React.useState(false)
@@ -49,6 +53,12 @@ export function EditProfileModal({ isOpen, onClose, isOnboarding = false }: Edit
       setSelectedRole(user.role || "ATTENDEE")
       setImageUrl(user.imageUrl || `https://api.dicebear.com/7.x/adventurer/svg?seed=Buster`)
       
+      const userDesignation = (user as any).designation || ""
+      const isCustom = userDesignation && !ROTARACT_DESIGNATIONS.includes(userDesignation)
+      setDesignation(isCustom ? "Custom" : userDesignation)
+      setCustomDesignation(isCustom ? userDesignation : "")
+      setIsCustomDesignation(isCustom)
+
       // If image is not a preset seed, show custom image mode
       const isPreset = PRESET_AVATAR_SEEDS.some(seed => 
         user.imageUrl === `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`
@@ -79,6 +89,12 @@ export function EditProfileModal({ isOpen, onClose, isOnboarding = false }: Edit
       return
     }
 
+    const designationToSave = designation === "Custom" ? customDesignation.trim() : designation
+    if (!designationToSave) {
+      setError("Please specify your Designation")
+      return
+    }
+
     setIsSubmitting(true)
     setError("")
     
@@ -88,6 +104,7 @@ export function EditProfileModal({ isOpen, onClose, isOnboarding = false }: Edit
         email: email.trim().toLowerCase(),
         bio: bio.trim(),
         homeClub: homeClub.trim(),
+        designation: designationToSave,
         imageUrl: imageUrl.trim(),
         role: selectedRole
       })
@@ -290,6 +307,48 @@ export function EditProfileModal({ isOpen, onClose, isOnboarding = false }: Edit
                 <span className="text-[10px] text-muted-foreground block">
                   The Rotaract Club you are currently registered with.
                 </span>
+              </div>
+
+              {/* Designation Input Dropdown */}
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-designation" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Designation / Role in Club *
+                </Label>
+                <div className="relative">
+                  <select
+                    id="edit-designation"
+                    value={designation}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      setDesignation(val)
+                      if (val === "Custom") {
+                        setIsCustomDesignation(true)
+                      } else {
+                        setIsCustomDesignation(false)
+                        setCustomDesignation("")
+                      }
+                    }}
+                    className="w-full text-xs p-2.5 rounded-[8px] border border-border bg-background/50 text-foreground focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                    required
+                  >
+                    <option value="" disabled>Select your designation...</option>
+                    {ROTARACT_DESIGNATIONS.map((des) => (
+                      <option key={des} value={des}>{des}</option>
+                    ))}
+                    <option value="Custom">Custom Designation...</option>
+                  </select>
+                </div>
+                {isCustomDesignation && (
+                  <div className="mt-2 relative animate-fade-in">
+                    <Input
+                      placeholder="Enter custom designation"
+                      value={customDesignation}
+                      onChange={(e) => setCustomDesignation(e.target.value)}
+                      className="rounded-[8px] border-border bg-background/50 focus-visible:ring-1 focus-visible:ring-accent text-foreground text-xs"
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Bio Textarea */}

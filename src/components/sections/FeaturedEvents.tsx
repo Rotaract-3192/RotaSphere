@@ -8,7 +8,7 @@ import { useAuthSession } from "@/context/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createRazorpayOrderAction, verifyPaymentAndBookTicketAction, bookFreeTicketAction, bookOfflinePaidTicketAction, checkClubEarlyBirdLimitAction } from "@/app/actions/paymentActions"
 import { cn } from "@/lib/utils"
-import { ROTARACT_CLUBS } from "@/data/clubs"
+import { ROTARACT_CLUBS, ROTARACT_DESIGNATIONS } from "@/data/clubs"
 
 interface FeaturedEventsProps {
   events: EventItem[];
@@ -37,6 +37,9 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const [attendeeClubSearch, setAttendeeClubSearch] = React.useState("")
   const [attendeeClubDropdownOpen, setAttendeeClubDropdownOpen] = React.useState(false)
   const [clubEarlyBirdCount, setClubEarlyBirdCount] = React.useState(0)
+  const [attendeeDesignation, setAttendeeDesignation] = React.useState("")
+  const [customDesignation, setCustomDesignation] = React.useState("")
+  const [isCustomDesignation, setIsCustomDesignation] = React.useState(false)
 
   const getTiersList = () => {
     if (!bookingEvent) return []
@@ -115,7 +118,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
     specialRequests: ""
   })
 
-  const [attendees, setAttendees] = React.useState<{ fullName: string; email: string }[]>([])
+  const [attendees, setAttendees] = React.useState<{ fullName: string; email: string; designation?: string; customDesignation?: string; isCustom?: boolean }[]>([])
 
   // Prefill user details and default ticket tier selection when modal opens
   React.useEffect(() => {
@@ -128,6 +131,12 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         specialRequests: ""
       })
       setAttendees([])
+      
+      const userDesignation = (user as any)?.designation || ""
+      const isCustom = userDesignation && !ROTARACT_DESIGNATIONS.includes(userDesignation)
+      setAttendeeDesignation(isCustom ? "Custom" : userDesignation)
+      setCustomDesignation(isCustom ? userDesignation : "")
+      setIsCustomDesignation(isCustom)
       setCheckoutStep("details")
       setScreenshot(null)
       setScreenshotError(null)
@@ -220,7 +229,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         const next = [...prev]
         if (next.length < targetLength) {
           while (next.length < targetLength) {
-            next.push({ fullName: "", email: "" })
+            next.push({ fullName: "", email: "", designation: "", customDesignation: "", isCustom: false })
           }
         } else if (next.length > targetLength) {
           next.splice(targetLength)
@@ -318,6 +327,28 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
       return
     }
 
+    const primaryDesignation = attendeeDesignation === "Custom" ? customDesignation.trim() : attendeeDesignation
+    if (!primaryDesignation) {
+      alert("Please select your designation.")
+      return
+    }
+
+    // Validate guest attendees
+    for (let i = 0; i < attendees.length; i++) {
+      const att = attendees[i]
+      const des = att.isCustom ? att.customDesignation?.trim() : att.designation
+      if (!des) {
+        alert(`Please select a designation for Guest Attendee ${i + 2}.`)
+        return
+      }
+    }
+
+    const formattedAttendees = attendees.map(a => ({
+      fullName: a.fullName,
+      email: a.email,
+      designation: a.isCustom ? a.customDesignation?.trim() : a.designation
+    }))
+
     // Enforce club-specific Early Bird limit client-side
     if (selectedTierId === "early-bird" && attendeeClubName && attendeeClubName !== "Non-Rotaractor") {
       const remainingLimit = 5 - clubEarlyBirdCount
@@ -341,8 +372,9 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           formData.ticketCount,
           formData.fullName,
           formData.email,
-          attendees,
-          attendeeClubName
+          formattedAttendees,
+          attendeeClubName,
+          primaryDesignation
         )
         if (res.success) {
           // Save registration details to local storage
@@ -354,12 +386,14 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
             const isPrimary = index === 0
             const attendeeName = isPrimary ? formData.fullName : (attendees[index - 1]?.fullName || "")
             const attendeeEmail = isPrimary ? formData.email : (attendees[index - 1]?.email || "")
+            const attendeeDes = isPrimary ? primaryDesignation : (attendees[index - 1]?.designation || "")
 
             detailsMap[code] = {
               phone: formData.phone,
               specialRequests: formData.specialRequests,
               fullName: attendeeName,
               email: attendeeEmail,
+              designation: attendeeDes,
               ticketCount: formData.ticketCount,
               bookedAt: new Date().toISOString(),
               clubName: attendeeClubName,
@@ -430,11 +464,12 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         email: formData.email,
         phone: formData.phone,
         specialRequests: formData.specialRequests,
-        additionalAttendees: attendees,
+        additionalAttendees: formattedAttendees,
         screenshotBase64: screenshot,
         ticketTierId: selectedTierId,
         ticketTierName: selectedTierName,
-        clubName: attendeeClubName
+        clubName: attendeeClubName,
+        designation: primaryDesignation
       })
 
       if (res.success) {
@@ -447,12 +482,14 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
           const isPrimary = index === 0
           const attendeeName = isPrimary ? formData.fullName : (attendees[index - 1]?.fullName || "")
           const attendeeEmail = isPrimary ? formData.email : (attendees[index - 1]?.email || "")
+          const attendeeDes = isPrimary ? primaryDesignation : (attendees[index - 1]?.designation || "")
 
           detailsMap[code] = {
             phone: formData.phone,
             specialRequests: formData.specialRequests,
             fullName: attendeeName,
             email: attendeeEmail,
+            designation: attendeeDes,
             ticketCount: formData.ticketCount,
             status: "pending",
             bookedAt: new Date().toISOString(),
@@ -1037,6 +1074,60 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                           />
                         </div>
 
+                        {/* Designation Input */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            Designation / Role in Club *
+                          </label>
+                          <select
+                            value={attendeeDesignation}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              setAttendeeDesignation(val)
+                              if (val === "Custom") {
+                                setIsCustomDesignation(true)
+                              } else {
+                                setIsCustomDesignation(false)
+                                setCustomDesignation("")
+                              }
+                            }}
+                            className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                            style={{
+                              background: "#ffffff",
+                              borderColor: "#d9d9dd",
+                              color: "#212121"
+                            }}
+                            required
+                          >
+                            <option value="" disabled>Select your designation...</option>
+                            {ROTARACT_DESIGNATIONS.map((des) => (
+                              <option key={des} value={des}>{des}</option>
+                            ))}
+                            <option value="Custom">Custom Designation...</option>
+                          </select>
+                        </div>
+
+                        {isCustomDesignation && (
+                          <div className="animate-fade-in">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              Custom Designation *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={customDesignation}
+                              onChange={(e) => setCustomDesignation(e.target.value)}
+                              className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                              style={{
+                                background: "#ffffff",
+                                borderColor: "#d9d9dd",
+                                color: "#212121"
+                              }}
+                              placeholder="Enter custom designation"
+                            />
+                          </div>
+                        )}
+
                         {/* Quantity and Special Requests */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div className="col-span-1 sm:col-span-1">
@@ -1083,7 +1174,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                         {attendees.length > 0 && (
                           <div className="space-y-3 pt-3 border-t border-dashed border-[#d9d9dd]">
                             {attendees.map((att, idx) => (
-                              <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-[#f8f9fa] space-y-3 text-left">
+                              <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-[#f8f9fa] space-y-3 text-left animate-fade-in">
                                 <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                                   Guest Attendee {idx + 2}
                                 </span>
@@ -1132,6 +1223,60 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
                                       placeholder="guest@example.com"
                                     />
                                   </div>
+                                  
+                                  <div className="col-span-1 sm:col-span-2">
+                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                      Designation / Role in Club *
+                                    </label>
+                                    <select
+                                      required
+                                      value={att.designation || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value
+                                        const updated = [...attendees]
+                                        updated[idx] = { 
+                                          ...updated[idx], 
+                                          designation: val,
+                                          isCustom: val === "Custom",
+                                          customDesignation: val === "Custom" ? (updated[idx].customDesignation || "") : ""
+                                        }
+                                        setAttendees(updated)
+                                      }}
+                                      className="w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:border-[#17458f] transition-all bg-white text-[#212121]"
+                                      style={{ borderColor: "#d9d9dd" }}
+                                    >
+                                      <option value="" disabled>Select designation...</option>
+                                      {ROTARACT_DESIGNATIONS.map((des) => (
+                                        <option key={des} value={des}>{des}</option>
+                                      ))}
+                                      <option value="Custom">Custom Designation...</option>
+                                    </select>
+                                  </div>
+                                  
+                                  {att.isCustom && (
+                                    <div className="col-span-1 sm:col-span-2 animate-fade-in">
+                                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                        Custom Designation *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        required
+                                        value={att.customDesignation || ""}
+                                        onChange={(e) => {
+                                          const updated = [...attendees]
+                                          updated[idx] = { ...updated[idx], customDesignation: e.target.value }
+                                          setAttendees(updated)
+                                        }}
+                                        className="w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:border-[#17458f] transition-all"
+                                        style={{
+                                          background: "#ffffff",
+                                          borderColor: "#d9d9dd",
+                                          color: "#212121"
+                                        }}
+                                        placeholder="Enter custom designation"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             ))}

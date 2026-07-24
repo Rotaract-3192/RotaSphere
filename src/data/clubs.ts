@@ -86,3 +86,24 @@ export const ROTARACT_CLUBS = [
   "Rotaract Club of Yelahanka",
   "Rotaract Club of Yenepoya"
 ];
+
+export const ROTARACT_DESIGNATIONS = [
+  "President",
+  "Vice President",
+  "President Elect",
+  "Secretary",
+  "Joint Secretary",
+  "Treasurer",
+  "Sergeant At Arms",
+  "Club Service Director",
+  "Community Service Director",
+  "Professional Development Director",
+  "International Service Director",
+  "Public Relations Director",
+  "Editorial Director",
+  "Social Media Director",
+  "Tech Director",
+  "Faculty Coordinator",
+  "Youth Service Director"
+];
+

@@ -151,10 +151,11 @@ export async function verifyPaymentAndBookTicketAction(input: {
   ticketCount?: number;
   fullName?: string;
   email?: string;
-  additionalAttendees?: { fullName: string; email: string }[];
+  additionalAttendees?: { fullName: string; email: string; designation?: string }[];
   ticketTierId?: string;
   ticketTierName?: string;
   clubName?: string;
+  designation?: string;
 }) {
   try {
     const { userId } = await auth()
@@ -259,6 +260,9 @@ export async function verifyPaymentAndBookTicketAction(input: {
       const attendeeEmail = i === 0 
         ? formEmail 
         : (input.additionalAttendees?.[i - 1]?.email || "");
+      const attendeeDesignation = i === 0 
+        ? input.designation 
+        : (input.additionalAttendees?.[i - 1]?.designation || "");
 
       // Create attendee registration
       const { error: attendeeError } = await supabaseAdmin
@@ -269,7 +273,8 @@ export async function verifyPaymentAndBookTicketAction(input: {
           email: attendeeEmail,
           full_name: attendeeName,
           ticket_id: ticket.id,
-          club_name: input.clubName
+          club_name: input.clubName,
+          designation: attendeeDesignation
         })
 
       if (attendeeError) {
@@ -286,12 +291,17 @@ export async function verifyPaymentAndBookTicketAction(input: {
       }
     }
 
-    // Sync home_club to user profile
-    if (input.clubName && userId) {
-      await supabaseAdmin
-        .from("profiles")
-        .update({ home_club: input.clubName })
-        .eq("id", userId)
+    // Sync home_club & designation to user profile
+    if (userId) {
+      const updateObj: any = {}
+      if (input.clubName) updateObj.home_club = input.clubName
+      if (input.designation) updateObj.designation = input.designation
+      if (Object.keys(updateObj).length > 0) {
+        await supabaseAdmin
+          .from("profiles")
+          .update(updateObj)
+          .eq("id", userId)
+      }
     }
 
     const updatedTiers = tiers.map((t: any) => {
@@ -329,8 +339,9 @@ export async function bookFreeTicketAction(
   ticketCount: number = 1,
   fullName?: string,
   email?: string,
-  additionalAttendees?: { fullName: string; email: string }[],
-  clubName?: string
+  additionalAttendees?: { fullName: string; email: string; designation?: string }[],
+  clubName?: string,
+  designation?: string
 ) {
   try {
     const { userId } = await auth()
@@ -409,6 +420,9 @@ export async function bookFreeTicketAction(
       const attendeeEmail = i === 0 
         ? formEmail 
         : (additionalAttendees?.[i - 1]?.email || "");
+      const attendeeDesignation = i === 0 
+        ? designation 
+        : (additionalAttendees?.[i - 1]?.designation || "");
 
       // Create attendee registration
       const { error: attendeeError } = await supabaseAdmin
@@ -419,7 +433,8 @@ export async function bookFreeTicketAction(
           email: attendeeEmail,
           full_name: attendeeName,
           ticket_id: ticket.id,
-          club_name: clubName
+          club_name: clubName,
+          designation: attendeeDesignation
         })
 
       if (attendeeError) {
@@ -436,12 +451,17 @@ export async function bookFreeTicketAction(
       }
     }
 
-    // Sync home_club to user profile
-    if (clubName && userId) {
-      await supabaseAdmin
-        .from("profiles")
-        .update({ home_club: clubName })
-        .eq("id", userId)
+    // Sync home_club & designation to user profile
+    if (userId) {
+      const updateObj: any = {}
+      if (clubName) updateObj.home_club = clubName
+      if (designation) updateObj.designation = designation
+      if (Object.keys(updateObj).length > 0) {
+        await supabaseAdmin
+          .from("profiles")
+          .update(updateObj)
+          .eq("id", userId)
+      }
     }
 
     // Increment attendee count by ticketCount
@@ -556,11 +576,12 @@ export async function bookOfflinePaidTicketAction(input: {
   email: string;
   phone: string;
   specialRequests?: string;
-  additionalAttendees?: { fullName: string; email: string }[];
+  additionalAttendees?: { fullName: string; email: string; designation?: string }[];
   screenshotBase64: string;
   ticketTierId?: string;
   ticketTierName?: string;
   clubName?: string;
+  designation?: string;
 }) {
   try {
     const { userId } = await auth()
@@ -673,6 +694,9 @@ export async function bookOfflinePaidTicketAction(input: {
       const attendeeEmail = i === 0 
         ? input.email 
         : (input.additionalAttendees?.[i - 1]?.email || "");
+      const attendeeDesignation = i === 0 
+        ? input.designation 
+        : (input.additionalAttendees?.[i - 1]?.designation || "");
 
       // Create attendee registration
       const { error: attendeeError } = await supabaseAdmin
@@ -683,7 +707,8 @@ export async function bookOfflinePaidTicketAction(input: {
           email: attendeeEmail,
           full_name: attendeeName,
           ticket_id: currentTicket.id,
-          club_name: input.clubName
+          club_name: input.clubName,
+          designation: attendeeDesignation
         })
 
       if (attendeeError) {
@@ -700,12 +725,17 @@ export async function bookOfflinePaidTicketAction(input: {
       }
     }
 
-    // Sync home_club to user profile
-    if (input.clubName && userId) {
-      await supabaseAdmin
-        .from("profiles")
-        .update({ home_club: input.clubName })
-        .eq("id", userId)
+    // Sync home_club & designation to user profile
+    if (userId) {
+      const updateObj: any = {}
+      if (input.clubName) updateObj.home_club = input.clubName
+      if (input.designation) updateObj.designation = input.designation
+      if (Object.keys(updateObj).length > 0) {
+        await supabaseAdmin
+          .from("profiles")
+          .update(updateObj)
+          .eq("id", userId)
+      }
     }
 
     const ticketCodes = createdTickets.map(t => t.ticket_code).join(", ")

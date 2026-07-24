@@ -21,6 +21,7 @@ import { MultiStepCreateEvent } from "./MultiStepCreateEvent"
 import { deleteEventAction, submitEventForApprovalAction } from "@/app/actions/eventActions"
 import { useAuthSession } from "@/context/AuthContext"
 import { EditProfileModal } from "./EditProfileModal"
+import { ROTARACT_DESIGNATIONS } from "@/data/clubs"
 
 interface OrganizerDashboardProps {
   events: EventItem[];
@@ -52,6 +53,9 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
   const [profileEmail, setProfileEmail] = React.useState(activeUser.email)
   const [bio, setBio] = React.useState((activeUser as any).bio || "")
   const [homeClub, setHomeClub] = React.useState((activeUser as any).homeClub || "")
+  const [designation, setDesignation] = React.useState("")
+  const [customDesignation, setCustomDesignation] = React.useState("")
+  const [isCustomDesignation, setIsCustomDesignation] = React.useState(false)
   const [imageUrl, setImageUrl] = React.useState((activeUser as any).imageUrl || "")
   const [orgName, setOrgName] = React.useState("Rotasphere Events Org")
   const [toastMessage, setToastMessage] = React.useState<string | null>(null)
@@ -74,6 +78,12 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       setBio(authUser.bio || "")
       setHomeClub(authUser.homeClub || "")
       setImageUrl(authUser.imageUrl || "")
+      
+      const userDesignation = (authUser as any).designation || ""
+      const isCustom = userDesignation && !ROTARACT_DESIGNATIONS.includes(userDesignation)
+      setDesignation(isCustom ? "Custom" : userDesignation)
+      setCustomDesignation(isCustom ? userDesignation : "")
+      setIsCustomDesignation(isCustom)
     }
   }, [authUser])
 
@@ -236,11 +246,13 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      const designationToSave = designation === "Custom" ? customDesignation.trim() : designation
       const res = await updateProfile({
         fullName: profileName,
         email: profileEmail,
         bio: bio,
         homeClub: homeClub,
+        designation: designationToSave,
         imageUrl: imageUrl
       })
       if (res.success) {
@@ -1419,7 +1431,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       />
                     </div>
 
-                    <div className="space-y-1">
+                     <div className="space-y-1">
                       <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Home Club Association</label>
                       <input 
                         type="text" 
@@ -1430,6 +1442,45 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         placeholder="e.g. Rotaract Club of Chennai"
                       />
                     </div>
+
+                    <div className="space-y-1">
+                      <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px] block">Designation / Role in Club</label>
+                      <select 
+                        required
+                        className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 text-foreground focus:border-accent focus:outline-none text-xs"
+                        value={designation}
+                        onChange={(e) => {
+                          const val = e.target.value
+                          setDesignation(val)
+                          if (val === "Custom") {
+                            setIsCustomDesignation(true)
+                          } else {
+                            setIsCustomDesignation(false)
+                            setCustomDesignation("")
+                          }
+                        }}
+                      >
+                        <option value="" disabled>Select your designation...</option>
+                        {ROTARACT_DESIGNATIONS.map((des) => (
+                          <option key={des} value={des}>{des}</option>
+                        ))}
+                        <option value="Custom">Custom Designation...</option>
+                      </select>
+                    </div>
+
+                    {isCustomDesignation && (
+                      <div className="space-y-1 relative animate-fade-in">
+                        <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Custom Designation</label>
+                        <input 
+                          type="text" 
+                          required
+                          className="w-full px-3 py-2 rounded-[8px] border border-border bg-background/50 focus:border-accent focus:outline-none"
+                          value={customDesignation}
+                          onChange={(e) => setCustomDesignation(e.target.value)}
+                          placeholder="Enter custom designation"
+                        />
+                      </div>
+                    )}
 
                     <div className="space-y-1">
                       <label className="font-mono text-muted-foreground uppercase tracking-wider text-[10px]">Biography / Bio</label>

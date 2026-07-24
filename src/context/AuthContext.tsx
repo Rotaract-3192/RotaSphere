@@ -16,6 +16,7 @@ export interface UserSession {
   imageUrl?: string;
   bio?: string;
   homeClub?: string;
+  designation?: string;
 }
 
 interface AuthContextType {
@@ -27,7 +28,7 @@ interface AuthContextType {
   signUp: (email: string, fullName: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   loginWithGoogle: (role: UserRole) => Promise<void>;
-  updateProfile: (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; role?: UserRole }) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; designation?: string; role?: UserRole }) => Promise<{ success: boolean; error?: string }>;
   isClerkActive: boolean;
 }
 
@@ -80,6 +81,10 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
           ? syncResult.homeClub
           : ((clerkUser.publicMetadata?.homeClub as string) || '')
 
+        const finalDesignation = (syncResult.success && syncResult.designation)
+          ? syncResult.designation
+          : ((clerkUser.publicMetadata?.designation as string) || '')
+
         setSyncedUser({
           id: clerkUser.id,
           email,
@@ -88,7 +93,8 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
           status: finalStatus as UserStatus,
           imageUrl,
           bio: finalBio,
-          homeClub: finalHomeClub
+          homeClub: finalHomeClub,
+          designation: finalDesignation
         })
       } else {
         setSyncedUser(null)
@@ -121,7 +127,7 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
     console.log("Social login with Clerk. Use Clerk UI instead. Role:", role)
   }
 
-  const updateProfile = async (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; role?: UserRole }) => {
+  const updateProfile = async (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; designation?: string; role?: UserRole }) => {
     const { updateUserProfileAction } = await import("@/app/actions/userActions")
     const res = await updateUserProfileAction(data)
     if (res.success && res.user) {
@@ -133,7 +139,8 @@ function ClerkAuthProviderInner({ children }: { children: React.ReactNode }) {
         role: res.user.role as UserRole,
         status: res.user.status as UserStatus,
         bio: res.user.bio,
-        homeClub: res.user.homeClub
+        homeClub: res.user.homeClub,
+        designation: res.user.designation
       } : null)
       return { success: true }
     }
@@ -277,14 +284,15 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       status: isSuperAdmin ? 'ACTIVE' : 'ACTIVE',
       imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
       bio: "",
-      homeClub: ""
+      homeClub: "",
+      designation: ""
     }
     localStorage.setItem("rotasphere_mock_user", JSON.stringify(newUser))
     setUser(newUser)
     setIsLoaded(true)
   }
 
-  const updateProfile = async (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; role?: UserRole }) => {
+  const updateProfile = async (data: { fullName: string; email: string; imageUrl?: string; bio?: string; homeClub?: string; designation?: string; role?: UserRole }) => {
     setIsLoaded(false)
     await new Promise((resolve) => setTimeout(resolve, 800))
 
@@ -308,7 +316,8 @@ function MockAuthProviderInner({ children }: { children: React.ReactNode }) {
       role: roleToSet,
       status: newStatus,
       bio: data.bio || "",
-      homeClub: data.homeClub || ""
+      homeClub: data.homeClub || "",
+      designation: data.designation || ""
     }
 
     localStorage.setItem("rotasphere_mock_user", JSON.stringify(updatedUser))
