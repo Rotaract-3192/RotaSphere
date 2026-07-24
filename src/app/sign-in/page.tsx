@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
  
-export default function SignInPage() {
+function SignInContent() {
   const { isClerkActive, signIn, loginWithGoogle, isSignedIn } = useAuthSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -218,5 +218,19 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background bg-dot-grid py-12 px-4 relative">
+          <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        </div>
+      }
+    >
+      <SignInContent />
+    </React.Suspense>
   )
 }
