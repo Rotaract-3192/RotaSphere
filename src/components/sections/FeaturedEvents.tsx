@@ -59,7 +59,15 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   }
 
   const remainingCapacity = getSelectedTierRemaining()
-  const maxSelectable = Math.max(1, Math.min(10, remainingCapacity))
+  const getMaxSelectable = () => {
+    let maxSel = Math.max(1, Math.min(10, remainingCapacity))
+    if (selectedTierId === "early-bird" && attendeeClubName && attendeeClubName !== "Non-Rotaractor") {
+      const remainingLimit = Math.max(0, 5 - clubEarlyBirdCount)
+      maxSel = Math.max(1, Math.min(maxSel, remainingLimit))
+    }
+    return maxSel
+  }
+  const maxSelectable = getMaxSelectable()
 
   const getEventPriceDisplay = (evt: EventItem) => {
     if (evt.type === "free") return "Free"
@@ -196,6 +204,13 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
       active = false
     }
   }, [bookingEvent, attendeeClubName, selectedTierId])
+
+  // Clamp ticket count if it exceeds maxSelectable
+  React.useEffect(() => {
+    if (formData.ticketCount > maxSelectable) {
+      setFormData(prev => ({ ...prev, ticketCount: maxSelectable }))
+    }
+  }, [maxSelectable, formData.ticketCount])
 
   // Sync attendees array length to match ticketCount minus primary booker
   React.useEffect(() => {
