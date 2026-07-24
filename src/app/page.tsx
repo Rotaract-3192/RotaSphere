@@ -51,10 +51,37 @@ const pages = [
 ]
 
 export default function Home() {
-  // Trigger Next.js SSR cache rebuild
   const [events, setEvents] = React.useState<EventItem[]>([])
-  const [isCreateEventOpen, setIsCreateEventOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(true)
+
+  const getEventPriceDisplay = (evt: EventItem) => {
+    if (evt.type === "free") return "Free"
+    const eventTiers = (evt as any).ticketTiers || []
+    if (eventTiers.length === 0) {
+      const parsed = parseFloat(String(evt.price).replace(/[^0-9.]/g, ""))
+      if (!isNaN(parsed)) {
+        return `₹${parsed.toFixed(2)}`
+      }
+      return evt.price || "Paid"
+    }
+    
+    // Find active tier
+    const activeTier = eventTiers.find((t: any) => t.id === "early-bird" && t.enabled && (t.ticketsSold || 0) < t.capacity)
+      || eventTiers.find((t: any) => t.id === "normal" && t.enabled)
+      || eventTiers.find((t: any) => t.enabled)
+      
+    if (activeTier) {
+      const isEarlyBird = activeTier.id === "early-bird"
+      return `₹${parseFloat(String(activeTier.price)).toFixed(2)}${isEarlyBird ? " (Early Bird)" : ""}`
+    }
+    const parsed = parseFloat(String(evt.price).replace(/[^0-9.]/g, ""))
+    if (!isNaN(parsed)) {
+      return `₹${parsed.toFixed(2)}`
+    }
+    return evt.price || "Paid"
+  }
+
+  const [isCreateEventOpen, setIsCreateEventOpen] = React.useState(false)
 
   React.useEffect(() => {
     async function fetchDbEvents() {
@@ -307,7 +334,7 @@ export default function Home() {
                         {evt.date}
                       </p>
                       <Link
-                        href="/events"
+                        href={`/events?eventId=${evt.id}`}
                         className="text-xs font-medium block text-center py-2 transition-opacity hover:opacity-80"
                         style={{
                           background: "var(--accent)",
@@ -316,7 +343,7 @@ export default function Home() {
                           textDecoration: "none"
                         }}
                       >
-                        {evt.price === "Free" ? "Register Free" : `Get Ticket · ${evt.price}`}
+                        {getEventPriceDisplay(evt) === "Free" ? "Register Free" : `Get Ticket · ${getEventPriceDisplay(evt)}`}
                       </Link>
                     </div>
                   </div>

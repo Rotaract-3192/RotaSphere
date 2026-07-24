@@ -112,6 +112,33 @@ export function EventCalendar({ events }: EventCalendarProps) {
 
   const selectedEvents = eventsByDay[selectedDayKey] || []
 
+  const getEventPriceDisplay = (evt: EventItem) => {
+    if (evt.type === "free") return "Free"
+    const eventTiers = (evt as any).ticketTiers || []
+    if (eventTiers.length === 0) {
+      const parsed = parseFloat(String(evt.price).replace(/[^0-9.]/g, ""))
+      if (!isNaN(parsed)) {
+        return `₹${parsed.toFixed(2)}`
+      }
+      return evt.price || "Paid"
+    }
+    
+    // Find active tier
+    const activeTier = eventTiers.find((t: any) => t.id === "early-bird" && t.enabled && (t.ticketsSold || 0) < t.capacity)
+      || eventTiers.find((t: any) => t.id === "normal" && t.enabled)
+      || eventTiers.find((t: any) => t.enabled)
+      
+    if (activeTier) {
+      const isEarlyBird = activeTier.id === "early-bird"
+      return `₹${parseFloat(String(activeTier.price)).toFixed(2)}${isEarlyBird ? " (Early Bird)" : ""}`
+    }
+    const parsed = parseFloat(String(evt.price).replace(/[^0-9.]/g, ""))
+    if (!isNaN(parsed)) {
+      return `₹${parsed.toFixed(2)}`
+    }
+    return evt.price || "Paid"
+  }
+
   // Month labels
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -407,7 +434,7 @@ export function EventCalendar({ events }: EventCalendarProps) {
 
                               {/* Link action */}
                               <div className="flex justify-between items-center mt-2 pt-2.5 border-t border-white/5">
-                                <span className="text-xs font-bold text-white font-mono">{evt.price}</span>
+                                <span className="text-xs font-bold text-white font-mono">{getEventPriceDisplay(evt)}</span>
                                 <Link
                                   href={`/events?eventId=${evt.id}`}
                                   className="text-[9px] font-bold text-[#38BDF8] hover:text-[#6EB7FF] flex items-center gap-1 transition-all uppercase tracking-wider font-mono"

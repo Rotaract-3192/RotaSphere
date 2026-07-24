@@ -65,6 +65,33 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
   const mapInstanceRef = React.useRef<any | null>(null);
   const markersRef = React.useRef<any[]>([]);
 
+  const getEventPriceDisplay = (evt: EventItem) => {
+    if (evt.type === "free") return "Free"
+    const eventTiers = (evt as any).ticketTiers || []
+    if (eventTiers.length === 0) {
+      const parsed = parseFloat(String(evt.price).replace(/[^0-9.]/g, ""))
+      if (!isNaN(parsed)) {
+        return `₹${parsed.toFixed(2)}`
+      }
+      return evt.price || "Paid"
+    }
+    
+    // Find active tier
+    const activeTier = eventTiers.find((t: any) => t.id === "early-bird" && t.enabled && (t.ticketsSold || 0) < t.capacity)
+      || eventTiers.find((t: any) => t.id === "normal" && t.enabled)
+      || eventTiers.find((t: any) => t.enabled)
+      
+    if (activeTier) {
+      const isEarlyBird = activeTier.id === "early-bird"
+      return `₹${parseFloat(String(activeTier.price)).toFixed(2)}${isEarlyBird ? " (Early Bird)" : ""}`
+    }
+    const parsed = parseFloat(String(evt.price).replace(/[^0-9.]/g, ""))
+    if (!isNaN(parsed)) {
+      return `₹${parsed.toFixed(2)}`
+    }
+    return evt.price || "Paid"
+  }
+
   const [maplibregl, setMaplibregl] = React.useState<any>(null);
   const [isOlaConfigured, setIsOlaConfigured] = React.useState(false);
 
@@ -613,7 +640,7 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                       </div>
                       
                       <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
-                        <span className="text-[10px] font-extrabold text-white">{selectedEvent.price}</span>
+                        <span className="text-[10px] font-extrabold text-white">{getEventPriceDisplay(selectedEvent)}</span>
                         <Link
                           href={`/events?eventId=${selectedEvent.id}`}
                           className="text-[9px] font-bold text-coral hover:text-coral-soft flex items-center gap-1 transition-all uppercase tracking-wider"
@@ -675,7 +702,7 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                             </div>
                             <div className="flex justify-between items-center mt-1">
                               <span className="text-[9px] font-mono text-slate-400">{evt.date}</span>
-                              <span className="text-[9px] font-bold text-white">{evt.price}</span>
+                              <span className="text-[9px] font-bold text-white">{getEventPriceDisplay(evt)}</span>
                             </div>
                           </div>
                           

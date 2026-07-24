@@ -98,6 +98,10 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
     if (eventId) {
       const found = events.find(e => e.id === eventId)
       if (found) {
+        if (!isSignedIn) {
+          router.push(`/sign-in?redirect_url=${encodeURIComponent(`/events?eventId=${eventId}`)}`)
+          return
+        }
         // Open booking modal
         setBookingEvent(found)
         // Clean search params from URL so it doesn't reopen on refresh
@@ -107,7 +111,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         }
       }
     }
-  }, [events, searchParams])
+  }, [events, searchParams, isSignedIn, router])
 
   // Registration Form State
   const [formData, setFormData] = React.useState({
@@ -256,7 +260,10 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
     : events.filter(evt => evt.category === selectedCategory)
 
   const handleBookTicket = (event: EventItem) => {
-    if (!isSignedIn) { router.push("/sign-in"); return }
+    if (!isSignedIn) {
+      router.push(`/sign-in?redirect_url=${encodeURIComponent(`/events?eventId=${event.id}`)}`)
+      return
+    }
     setBookingEvent(event)
   }
 
