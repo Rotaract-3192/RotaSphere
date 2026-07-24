@@ -18,7 +18,7 @@ interface FeaturedEventsProps {
 export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, isSignedIn, role } = useAuthSession()
+  const { user, isSignedIn, isLoaded, role } = useAuthSession()
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all")
   const [bookingEvent, setBookingEvent] = React.useState<EventItem | null>(null)
   const [bookingSuccess, setBookingSuccess] = React.useState(false)
@@ -94,6 +94,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
   }, [])
 
   React.useEffect(() => {
+    if (!isLoaded) return
     const eventId = searchParams.get("eventId")
     if (eventId) {
       const found = events.find(e => e.id === eventId)
@@ -111,7 +112,7 @@ export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
         }
       }
     }
-  }, [events, searchParams, isSignedIn, router])
+  }, [events, searchParams, isSignedIn, isLoaded, router])
 
   // Registration Form State
   const [formData, setFormData] = React.useState({

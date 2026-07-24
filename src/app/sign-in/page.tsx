@@ -1,7 +1,7 @@
 "use client"
  
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuthSession, UserRole } from "@/context/AuthContext"
 import { SignIn as ClerkSignIn } from "@clerk/nextjs"
 import { Sparkles, Mail, Lock, Loader2, ArrowRight } from "lucide-react"
@@ -13,6 +13,8 @@ import Link from "next/link"
 export default function SignInPage() {
   const { isClerkActive, signIn, loginWithGoogle, isSignedIn } = useAuthSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get("redirect_url") || "/dashboard"
   
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
@@ -22,15 +24,15 @@ export default function SignInPage() {
   // Redirect if already signed in
   React.useEffect(() => {
     if (isSignedIn) {
-      router.push("/dashboard")
+      router.push(redirectUrl)
     }
-  }, [isSignedIn, router])
+  }, [isSignedIn, redirectUrl, router])
  
   if (isClerkActive) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background bg-dot-grid py-12 px-4 relative">
         <div className="relative z-10 border border-border bg-card p-4 rounded-[16px] shadow-none">
-          <ClerkSignIn routing="hash" />
+          <ClerkSignIn routing="hash" fallbackRedirectUrl={redirectUrl} forceRedirectUrl={redirectUrl} />
         </div>
       </div>
     )
@@ -58,7 +60,7 @@ export default function SignInPage() {
       }
  
       await signIn(email, matchedRole)
-      router.push("/dashboard")
+      router.push(redirectUrl)
     } catch {
       setError("Invalid login credentials")
     } finally {
@@ -70,7 +72,7 @@ export default function SignInPage() {
     setIsLoading(true)
     try {
       await loginWithGoogle("ATTENDEE") // Default to attendee role on mock google login
-      router.push("/dashboard")
+      router.push(redirectUrl)
     } catch {
       setError("Google Login failed")
     } finally {
@@ -207,7 +209,7 @@ export default function SignInPage() {
           <p className="text-center text-xs text-muted-foreground mt-6">
             Don&apos;t have an account?{" "}
             <Link
-              href="/sign-up"
+              href={redirectUrl !== "/dashboard" ? `/sign-up?redirect_url=${encodeURIComponent(redirectUrl)}` : "/sign-up"}
               className="text-accent font-medium hover:underline"
             >
               Sign up for free

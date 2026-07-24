@@ -1,7 +1,7 @@
 "use client"
  
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuthSession, UserRole } from "@/context/AuthContext"
 import { SignUp as ClerkSignUp } from "@clerk/nextjs"
 import { Sparkles, Mail, Lock, User, Loader2, Users, Calendar, ShieldCheck, ArrowRight } from "lucide-react"
@@ -13,6 +13,8 @@ import Link from "next/link"
 export default function SignUpPage() {
   const { isClerkActive, signUp, loginWithGoogle, isSignedIn } = useAuthSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectUrl = searchParams.get("redirect_url") || "/dashboard"
  
   const [fullName, setFullName] = React.useState("")
   const [email, setEmail] = React.useState("")
@@ -24,15 +26,15 @@ export default function SignUpPage() {
   // Redirect if already signed in
   React.useEffect(() => {
     if (isSignedIn) {
-      router.push("/dashboard")
+      router.push(redirectUrl)
     }
-  }, [isSignedIn, router])
+  }, [isSignedIn, redirectUrl, router])
  
   if (isClerkActive) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background bg-dot-grid py-12 px-4 relative">
         <div className="relative z-10 border border-border bg-card p-4 rounded-[16px] shadow-none">
-          <ClerkSignUp routing="hash" />
+          <ClerkSignUp routing="hash" fallbackRedirectUrl={redirectUrl} forceRedirectUrl={redirectUrl} />
         </div>
       </div>
     )
@@ -50,7 +52,7 @@ export default function SignUpPage() {
  
     try {
       await signUp(email, fullName, selectedRole)
-      router.push("/dashboard")
+      router.push(redirectUrl)
     } catch {
       setError("Failed to register user. Try another email.")
     } finally {
@@ -62,7 +64,7 @@ export default function SignUpPage() {
     setIsLoading(true)
     try {
       await loginWithGoogle(selectedRole)
-      router.push("/dashboard")
+      router.push(redirectUrl)
     } catch {
       setError("Google Signup failed")
     } finally {
@@ -269,7 +271,7 @@ export default function SignUpPage() {
           <p className="text-center text-xs text-muted-foreground mt-5">
             Already have an account?{" "}
             <Link
-              href="/sign-in"
+              href={redirectUrl !== "/dashboard" ? `/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}` : "/sign-in"}
               className="text-accent font-medium hover:underline"
             >
               Sign In

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { 
-  MapPin, Search, Calendar, Compass, TrendingUp, SlidersHorizontal, Info, Tag, ArrowRight, Video, Map
+  MapPin, Search, Calendar, Compass, TrendingUp, SlidersHorizontal, Info, Tag, ArrowRight, Video, Map, Ticket
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,8 @@ import { EventItem } from '@/data/mockData'
 import { cn } from '@/lib/utils'
 import { isOlaMapsConfigured } from '@/lib/olaMapsService'
 import { MapSkeleton } from '@/components/skeletons/MapSkeleton'
+import { useAuthSession } from "@/context/AuthContext"
+import { useRouter } from "next/navigation"
 import Link from 'next/link'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
@@ -61,9 +63,21 @@ function isDateWithinRange(eventDateStr: string, range: 'all' | 'today' | 'week'
 }
 
 export default function EventsMapSection({ events }: EventsMapSectionProps) {
+  const router = useRouter();
+  const { isSignedIn } = useAuthSession();
   const mapContainerRef = React.useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = React.useRef<any | null>(null);
   const markersRef = React.useRef<any[]>([]);
+
+  const handleBookClick = (evt: EventItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const targetUrl = `/events?eventId=${evt.id}`;
+    if (!isSignedIn) {
+      router.push(`/sign-in?redirect_url=${encodeURIComponent(targetUrl)}`);
+    } else {
+      router.push(targetUrl);
+    }
+  };
 
   const getEventPriceDisplay = (evt: EventItem) => {
     if (evt.type === "free") return "Free"
@@ -639,14 +653,23 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                         )}
                       </div>
                       
-                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
+                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5 gap-2">
                         <span className="text-[10px] font-extrabold text-white">{getEventPriceDisplay(selectedEvent)}</span>
-                        <Link
-                          href={`/events?eventId=${selectedEvent.id}`}
-                          className="text-[9px] font-bold text-coral hover:text-coral-soft flex items-center gap-1 transition-all uppercase tracking-wider"
-                        >
-                          Details <ArrowRight className="h-3 w-3" />
-                        </Link>
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            href={`/events?eventId=${selectedEvent.id}`}
+                            className="text-[9px] font-bold text-slate-300 hover:text-white flex items-center gap-0.5 transition-all uppercase tracking-wider"
+                          >
+                            Details <ArrowRight className="h-2.5 w-2.5" />
+                          </Link>
+                          <Button
+                            onClick={(e) => handleBookClick(selectedEvent, e)}
+                            className="h-6 px-2.5 rounded-full bg-coral hover:bg-coral-soft text-white text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer shadow-md"
+                          >
+                            <Ticket className="h-2.5 w-2.5" />
+                            Book Tickets
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -700,9 +723,18 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                                 {evt.location}
                               </p>
                             </div>
-                            <div className="flex justify-between items-center mt-1">
+                            <div className="flex justify-between items-center mt-1.5 gap-2">
                               <span className="text-[9px] font-mono text-slate-400">{evt.date}</span>
-                              <span className="text-[9px] font-bold text-white">{getEventPriceDisplay(evt)}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] font-bold text-white">{getEventPriceDisplay(evt)}</span>
+                                <Button
+                                  onClick={(e) => handleBookClick(evt, e)}
+                                  className="h-5 px-2 rounded-full bg-coral hover:bg-coral-soft text-white text-[8px] font-bold uppercase tracking-wider flex items-center gap-0.5 cursor-pointer shadow-sm"
+                                >
+                                  <Ticket className="h-2 w-2" />
+                                  Book
+                                </Button>
+                              </div>
                             </div>
                           </div>
                           
