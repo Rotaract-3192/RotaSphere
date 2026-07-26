@@ -51,6 +51,6 @@ export function mapRowToEventItem(row: any): any {
     reviewNotes: row.review_notes || '',
     ticketTiers: row.ticket_tiers || [],
     hostClub: row.host_club,
-    registrationsDisabled: Boolean(row.registrations_disabled)
+    registrationsDisabled: Boolean(row.registrations_disabled) || String(row.review_notes || '').includes('[PAUSED]')
   }
 }

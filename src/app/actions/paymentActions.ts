@@ -7,6 +7,7 @@ import crypto from "crypto"
 import { mapRowToEventItem } from "@/lib/eventMapper"
 import { sendEmail } from "@/lib/nodemailer"
 import { getCallerProfile, logAuditAction } from "@/app/actions/eventActions"
+import { logEvent } from "@/lib/logger"
  
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
 
@@ -269,29 +270,54 @@ export async function verifyPaymentAndBookTicketAction(input: {
         ? input.designation 
         : (input.additionalAttendees?.[i - 1]?.designation || "");
 
+      let finalAttendeeEmail = attendeeEmail ? attendeeEmail.trim() : ""
+      if (!finalAttendeeEmail && i > 0) {
+        finalAttendeeEmail = formEmail.includes("@")
+          ? formEmail.replace("@", `+guest${i + 1}@`)
+          : `${formEmail}_guest${i + 1}`
+      }
+
       // Create attendee registration
-      const { error: attendeeError } = await supabaseAdmin
+      let { error: attendeeError } = await supabaseAdmin
         .from("attendees")
         .insert({
           event_id: input.eventId,
           clerk_id: userId,
-          email: attendeeEmail,
+          email: finalAttendeeEmail || formEmail,
           full_name: attendeeName,
           ticket_id: ticket.id,
           club_name: input.clubName,
           designation: attendeeDesignation
         })
 
-      if (attendeeError) {
-        // Rollback tickets
+      // Retry with unique ticket suffix if unique constraint triggered
+      if (attendeeError && (attendeeError.code === "23505" || attendeeError.message?.includes("unique"))) {
+        const uniqueEmail = formEmail.includes("@")
+          ? formEmail.replace("@", `+pass_${ticket.id.substring(0, 6)}@`)
+          : `${formEmail}_pass_${ticket.id.substring(0, 6)}`
+
+        const retryRes = await supabaseAdmin
+          .from("attendees")
+          .insert({
+            event_id: input.eventId,
+            clerk_id: userId,
+            email: uniqueEmail,
+            full_name: attendeeName,
+            ticket_id: ticket.id,
+            club_name: input.clubName,
+            designation: attendeeDesignation
+          })
+        attendeeError = retryRes.error
+      }
+
+      if (attendeeError && i === 0) {
+        // Rollback tickets only if primary attendee failed
         for (const t of createdTickets) {
           await supabaseAdmin.from("tickets").delete().eq("id", t.id)
         }
         return { 
           success: false, 
-          error: i === 0 
-            ? "You are already registered for this event." 
-            : `Failed to register attendee ${i + 1}. They might already be registered.`
+          error: "You are already registered for this event." 
         }
       }
     }
@@ -433,29 +459,54 @@ export async function bookFreeTicketAction(
         ? designation 
         : (additionalAttendees?.[i - 1]?.designation || "");
 
+      let finalAttendeeEmail = attendeeEmail ? attendeeEmail.trim() : ""
+      if (!finalAttendeeEmail && i > 0) {
+        finalAttendeeEmail = formEmail.includes("@")
+          ? formEmail.replace("@", `+guest${i + 1}@`)
+          : `${formEmail}_guest${i + 1}`
+      }
+
       // Create attendee registration
-      const { error: attendeeError } = await supabaseAdmin
+      let { error: attendeeError } = await supabaseAdmin
         .from("attendees")
         .insert({
           event_id: eventId,
           clerk_id: userId,
-          email: attendeeEmail,
+          email: finalAttendeeEmail || formEmail,
           full_name: attendeeName,
           ticket_id: ticket.id,
           club_name: clubName,
           designation: attendeeDesignation
         })
 
-      if (attendeeError) {
-        // Rollback tickets
+      // Retry with unique ticket suffix if unique constraint triggered
+      if (attendeeError && (attendeeError.code === "23505" || attendeeError.message?.includes("unique"))) {
+        const uniqueEmail = formEmail.includes("@")
+          ? formEmail.replace("@", `+pass_${ticket.id.substring(0, 6)}@`)
+          : `${formEmail}_pass_${ticket.id.substring(0, 6)}`
+
+        const retryRes = await supabaseAdmin
+          .from("attendees")
+          .insert({
+            event_id: eventId,
+            clerk_id: userId,
+            email: uniqueEmail,
+            full_name: attendeeName,
+            ticket_id: ticket.id,
+            club_name: clubName,
+            designation: attendeeDesignation
+          })
+        attendeeError = retryRes.error
+      }
+
+      if (attendeeError && i === 0) {
+        // Rollback tickets only if primary attendee failed
         for (const t of createdTickets) {
           await supabaseAdmin.from("tickets").delete().eq("id", t.id)
         }
         return { 
           success: false, 
-          error: i === 0 
-            ? "You are already registered for this event." 
-            : `Failed to register attendee ${i + 1}. They might already be registered.`
+          error: "You are already registered for this event." 
         }
       }
     }
@@ -711,29 +762,54 @@ export async function bookOfflinePaidTicketAction(input: {
         ? input.designation 
         : (input.additionalAttendees?.[i - 1]?.designation || "");
 
+      let finalAttendeeEmail = attendeeEmail ? attendeeEmail.trim() : ""
+      if (!finalAttendeeEmail && i > 0) {
+        finalAttendeeEmail = input.email.includes("@")
+          ? input.email.replace("@", `+guest${i + 1}@`)
+          : `${input.email}_guest${i + 1}`
+      }
+
       // Create attendee registration
-      const { error: attendeeError } = await supabaseAdmin
+      let { error: attendeeError } = await supabaseAdmin
         .from("attendees")
         .insert({
           event_id: input.eventId,
           clerk_id: userId,
-          email: attendeeEmail,
+          email: finalAttendeeEmail || input.email,
           full_name: attendeeName,
           ticket_id: currentTicket.id,
           club_name: input.clubName,
           designation: attendeeDesignation
         })
 
-      if (attendeeError) {
-        // Rollback
+      // Retry with unique ticket suffix if unique constraint triggered
+      if (attendeeError && (attendeeError.code === "23505" || attendeeError.message?.includes("unique"))) {
+        const uniqueEmail = input.email.includes("@")
+          ? input.email.replace("@", `+pass_${currentTicket.id.substring(0, 6)}@`)
+          : `${input.email}_pass_${currentTicket.id.substring(0, 6)}`
+
+        const retryRes = await supabaseAdmin
+          .from("attendees")
+          .insert({
+            event_id: input.eventId,
+            clerk_id: userId,
+            email: uniqueEmail,
+            full_name: attendeeName,
+            ticket_id: currentTicket.id,
+            club_name: input.clubName,
+            designation: attendeeDesignation
+          })
+        attendeeError = retryRes.error
+      }
+
+      if (attendeeError && i === 0) {
+        // Rollback only if primary attendee failed
         for (const t of createdTickets) {
           await supabaseAdmin.from("tickets").delete().eq("id", t.id)
         }
         return { 
           success: false, 
-          error: i === 0 
-            ? "You are already registered for this event." 
-            : `Failed to register attendee ${i + 1}. They might already be registered.`
+          error: "You are already registered for this event." 
         }
       }
     }
@@ -750,6 +826,23 @@ export async function bookOfflinePaidTicketAction(input: {
           .eq("id", userId)
       }
     }
+
+    const updatedTiers = tiers.map((t: any) => {
+      if (t.id === input.ticketTierId) {
+        return { ...t, ticketsSold: (t.ticketsSold || 0) + ticketCount }
+      }
+      return t
+    })
+
+    // Increment attendee count by ticketCount and update ticket tiers in Supabase events table
+    await supabaseAdmin
+      .from("events")
+      .update({
+        attendees_count: (event.attendees_count || 0) + ticketCount,
+        ticket_tiers: updatedTiers,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", input.eventId)
 
     const ticketCodes = createdTickets.map(t => t.ticket_code).join(", ")
 
@@ -1025,20 +1118,41 @@ export async function getOrganizerTicketsAction() {
       return acc
     }, {})
 
-    // 2. Fetch all tickets for these events, including the attendee details
+    // 2. Fetch all tickets for these events
     const { data: tickets, error: ticketsError } = await supabaseAdmin
       .from("tickets")
-      .select("*, attendee:attendees(*)")
+      .select("*")
       .in("event_id", eventIds)
       .order("purchased_at", { ascending: false })
 
     if (ticketsError) throw ticketsError
 
+    // 3. Fetch matching attendee records directly from attendees table using event_id and ticket_id
+    const { data: attendeesData } = await supabaseAdmin
+      .from("attendees")
+      .select("ticket_id, full_name, email, clerk_id")
+      .in("event_id", eventIds)
+
+    const attendeeByTicketMap: Record<string, { full_name: string; email: string }> = {}
+    const attendeeByClerkMap: Record<string, { full_name: string; email: string }> = {}
+
+    if (attendeesData) {
+      attendeesData.forEach(att => {
+        if (att.ticket_id) {
+          attendeeByTicketMap[att.ticket_id] = { full_name: att.full_name, email: att.email }
+        }
+        if (att.clerk_id && !attendeeByClerkMap[att.clerk_id]) {
+          attendeeByClerkMap[att.clerk_id] = { full_name: att.full_name, email: att.email }
+        }
+      })
+    }
+
     // Map to a clean structure resolving private bucket signed URLs
     const mappedPromises = (tickets || []).map(async (t: any) => {
-      // Find matching attendee name
-      const primaryAttendeeName = t.attendee?.[0]?.full_name || t.attendee?.full_name || "Attendee"
-      const primaryAttendeeEmail = t.attendee?.[0]?.email || t.attendee?.email || ""
+      // Find matching attendee name & email entered in form
+      const matchedAttendee = attendeeByTicketMap[t.id] || attendeeByClerkMap[t.user_id]
+      const primaryAttendeeName = matchedAttendee?.full_name || "Attendee Pass"
+      const primaryAttendeeEmail = matchedAttendee?.email || ""
 
       let screenshotUrl = t.payment_screenshot_url || (t.payment_id !== "offline_upi" && t.payment_id?.startsWith("data:") ? t.payment_id : null)
 
@@ -1177,29 +1291,12 @@ export async function issueManualTicketAction(input: IssueManualTicketInput) {
     const createdTickets = []
 
     for (const pass of passesToCreate) {
-      // Insert attendee
-      const { error: attendeeError } = await supabaseAdmin
-        .from("attendees")
-        .insert({
-          event_id: input.eventId,
-          user_id: null,
-          full_name: pass.fullName,
-          email: pass.email,
-          club_name: pass.clubName,
-          designation: pass.designation,
-          status: "confirmed"
-        })
-
-      if (attendeeError) {
-        console.warn("Attendee insert warning:", attendeeError.message)
-      }
-
-      // Insert ticket
+      // 1. Insert ticket record
       const { data: ticketData, error: ticketError } = await supabaseAdmin
         .from("tickets")
         .insert({
           event_id: input.eventId,
-          user_id: null,
+          user_id: userId,
           ticket_code: pass.ticketCode,
           price_paid: 0,
           status: "active",
@@ -1212,10 +1309,89 @@ export async function issueManualTicketAction(input: IssueManualTicketInput) {
 
       if (ticketError) throw ticketError
 
+      // Ensure pass email is unique for guest passes
+      let passEmail = pass.email ? pass.email.trim() : ""
+      if (!passEmail) {
+        passEmail = input.primaryEmail.includes("@")
+          ? input.primaryEmail.replace("@", `+pass_${pass.ticketCode}@`)
+          : `${input.primaryEmail}_pass_${pass.ticketCode}`
+      }
+
+      // 2. Insert attendee record with ticket_id link
+      let { error: attendeeError } = await supabaseAdmin
+        .from("attendees")
+        .insert({
+          event_id: input.eventId,
+          clerk_id: userId,
+          full_name: pass.fullName,
+          email: passEmail,
+          ticket_id: ticketData.id,
+          club_name: pass.clubName,
+          designation: pass.designation,
+          status: "confirmed"
+        })
+
+      // If duplicate email unique constraint triggers, retry with unique ticket pass email
+      if (attendeeError && (attendeeError.code === "23505" || attendeeError.message?.includes("unique"))) {
+        const fallbackEmail = input.primaryEmail.includes("@")
+          ? input.primaryEmail.replace("@", `+pass_${pass.ticketCode}@`)
+          : `${input.primaryEmail}_pass_${pass.ticketCode}`
+
+        const retryRes = await supabaseAdmin
+          .from("attendees")
+          .insert({
+            event_id: input.eventId,
+            clerk_id: userId,
+            full_name: pass.fullName,
+            email: fallbackEmail,
+            ticket_id: ticketData.id,
+            club_name: pass.clubName,
+            designation: pass.designation,
+            status: "confirmed"
+          })
+        attendeeError = retryRes.error
+      }
+
+      if (attendeeError) {
+        console.warn("Attendee insert warning for manual ticket issue:", attendeeError.message)
+      }
+
+      // 3. Send email pass to attendee
+      try {
+        const emailHtml = `
+          <div style="font-family: 'Inter', sans-serif; background-color: #041C32; color: #ffffff; padding: 40px; border-radius: 16px; max-width: 600px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.1);">
+            <h2 style="font-family: 'Outfit', sans-serif; color: #38BDF8; font-size: 24px; margin-bottom: 20px;">🎟️ Event Pass Issued!</h2>
+            <p style="font-size: 16px; line-height: 1.6; color: #b8c2cc;">Hello ${pass.fullName},</p>
+            <p style="font-size: 16px; line-height: 1.6; color: #b8c2cc;">An event ticket pass has been manually issued for you for <strong>${event.title}</strong>.</p>
+            
+            <div style="background-color: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; margin: 25px 0;">
+              <h3 style="margin-top: 0; color: #38BDF8; font-size: 14px; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace;">Ticket Details</h3>
+              <p style="margin: 5px 0; color: #e2e8f0; font-size: 14px;"><strong>Ticket Code:</strong> #${pass.ticketCode}</p>
+              <p style="margin: 5px 0; color: #e2e8f0; font-size: 14px;"><strong>Ticket Type:</strong> ${input.ticketTierName || "Organizer Pass"}</p>
+              <p style="margin: 5px 0; color: #e2e8f0; font-size: 14px;"><strong>Club:</strong> ${pass.clubName || "Non-Rotaractor"}</p>
+              <p style="margin: 5px 0; color: #e2e8f0; font-size: 14px;"><strong>Designation:</strong> ${pass.designation || "Member"}</p>
+            </div>
+
+            <p style="font-size: 14px; color: #94a3b8;">Please present this email or ticket code at the registration desk on the event day.</p>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 30px 0;" />
+            <span style="font-size: 12px; color: #64748b; display: block; text-align: center;">Rotaract District 3192 Platform Operations</span>
+          </div>
+        `
+
+        await sendEmail({
+          to: passEmail,
+          subject: `🎟️ Your Event Pass for ${event.title}`,
+          html: emailHtml
+        })
+      } catch (eErr) {
+        console.warn("Failed to send email pass to manual attendee:", eErr)
+      }
+
       createdTickets.push({
+        id: ticketData.id,
         ticketCode: pass.ticketCode,
         fullName: pass.fullName,
-        email: pass.email,
+        email: passEmail,
         clubName: pass.clubName,
         designation: pass.designation,
         tierName: input.ticketTierName || "Organizer Pass"
@@ -1228,9 +1404,13 @@ export async function issueManualTicketAction(input: IssueManualTicketInput) {
       .update({ attendees_count: currentCount + count })
       .eq("id", input.eventId)
 
-    await logAuditAction(userId, caller.email || "", "MANUAL_TICKET_ISSUANCE", input.eventId, {
-      ticketCount: count,
-      primaryEmail: input.primaryEmail
+    await logEvent({
+      userId,
+      userEmail: caller.email,
+      action: "MANUAL_TICKET_ISSUED",
+      targetId: input.eventId,
+      level: "INFO",
+      details: { ticketCount: count, primaryEmail: input.primaryEmail }
     })
 
     return {
@@ -1239,7 +1419,14 @@ export async function issueManualTicketAction(input: IssueManualTicketInput) {
       tickets: createdTickets
     }
   } catch (error) {
-    console.error("Error in issueManualTicketAction:", error)
-    return { success: false, error: error instanceof Error ? error.message : "Failed to issue tickets" }
+    const errorMsg = error instanceof Error ? error.message : "Failed to issue tickets"
+    console.error("[SERVER ACTION ERROR in issueManualTicketAction]:", error)
+    await logEvent({
+      action: "MANUAL_TICKET_ERROR",
+      level: "ERROR",
+      errorMsg,
+      details: { errorStack: error instanceof Error ? error.stack : String(error), input }
+    })
+    return { success: false, error: errorMsg }
   }
 }

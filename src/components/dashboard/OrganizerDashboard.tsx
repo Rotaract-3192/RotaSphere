@@ -8,7 +8,7 @@ import {
   BarChart3, Plus, UserCheck, Trash2, Edit,
   TrendingUp, LayoutDashboard, Settings, Menu, Bell, Search, 
   Sparkles, LogOut, Moon, Sun, ClipboardList, Info, Check, Home,
-  QrCode, Shield, Download
+  QrCode, Shield, Download, Terminal
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -37,7 +37,7 @@ interface OrganizerDashboardProps {
   onSwitchToAdminClick?: () => void;
 }
 
-type ViewType = 'dashboard' | 'create-event' | 'manage-events' | 'tickets' | 'analytics' | 'attendees' | 'settings';
+export type ViewType = 'dashboard' | 'create-event' | 'manage-events' | 'tickets' | 'analytics' | 'attendees' | 'settings' | 'logs';
 
 export function OrganizerDashboard({ events, setEvents, bookedTickets, user, signOut, initialView, onSwitchToAdminClick }: OrganizerDashboardProps) {
   const { theme, setTheme } = useTheme()
@@ -97,10 +97,16 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       try {
         const { getOrganizerStatsAction, getOrganizerAttendeesAction } = await import("@/app/actions/eventActions")
         const { getOrganizerTicketsAction } = await import("@/app/actions/paymentActions")
+        const { getAuditLogsAction } = await import("@/app/actions/userActions")
         
         const statsRes = await getOrganizerStatsAction()
         if (statsRes.success && statsRes.salesByDay) {
           setSalesByDay(statsRes.salesByDay)
+        }
+
+        const logsRes = await getAuditLogsAction()
+        if (logsRes.success && logsRes.auditLogs) {
+          setSystemLogs(logsRes.auditLogs)
         }
 
         const savedDetails = typeof window !== "undefined" ? localStorage.getItem("rotasphere_ticket_details") : null
@@ -239,6 +245,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
   }, 0)
   const activeAttendees = attendeeRegistry.filter(a => a.checkedIn).length
 
+  const [systemLogs, setSystemLogs] = React.useState<any[]>([])
+
   // Navigation config
   const navItems = [
     { id: 'dashboard' as ViewType, label: 'Dashboard', icon: LayoutDashboard },
@@ -247,6 +255,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
     { id: 'tickets' as ViewType, label: 'Tickets', icon: Ticket },
     { id: 'analytics' as ViewType, label: 'Analytics', icon: BarChart3 },
     { id: 'attendees' as ViewType, label: 'Attendees', icon: Users },
+    { id: 'logs' as ViewType, label: 'System Logs', icon: Terminal },
     { id: 'settings' as ViewType, label: 'Settings', icon: Settings },
   ]
 
@@ -380,6 +389,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
         setEvents(prev => prev.map(evt => evt.id === manualBookingEventId ? { ...evt, attendees: evt.attendees + manualBookingForm.ticketCount } : evt))
 
         showToast(`🎉 Successfully issued ${res.tickets.length} ticket pass(es)!`)
+        setManualBookingOpen(false)
+        setManualBookingForm({
+          fullName: "",
+          email: "",
+          clubName: "Rotaract Club of Bengaluru East",
+          designation: "Member",
+          customDesignation: "",
+          isCustomDesignation: false,
+          ticketCount: 1,
+          paymentNote: "UPI Spot Payment Verified",
+          ticketTierName: "Regular Pass"
+        })
       } else {
         showToast(`❌ Failed to issue ticket: ${res.error}`)
       }
@@ -411,13 +432,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       "Designation / Role",
       "Rotaract Club Name",
       "Event Registered",
+      "Ticket Code / Booking ID",
+      "Ticket Type / Tier",
+      "Tickets in Booking",
+      "Amount Paid",
+      "Admin Approval Status",
       "Registration Date",
       "Check-In Status"
     ]
 
     const csvRows = [
       headers.join(","),
-      ...listToExport.map((att, index) => {
+      ...listToExport.map((att: any, index: number) => {
         const escape = (val: any) => `"${String(val || "").replace(/"/g, '""')}"`
         return [
           index + 1,
@@ -426,6 +452,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
           escape(att.designation || "Member"),
           escape(att.clubName || "Non-Member"),
           escape(att.eventTitle),
+          escape(att.ticketCode || "N/A"),
+          escape(att.ticketTierName || "Regular Pass"),
+          escape(att.ticketCountInOrder || 1),
+          escape(att.pricePaid || "₹0.00"),
+          escape(att.approvalStatus || "Approved (Active)"),
           escape(att.date),
           escape(att.checkedIn ? "Checked In" : "Pending Check-In")
         ].join(",")
@@ -1683,6 +1714,80 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
               )}
 
               {/* ==========================================
+                 8. SYSTEM LOGS & DIAGNOSTICS VIEW
+                 ========================================== */}
+              {activeView === 'logs' && (
+                <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                    <div>
+                      <h3 className="text-sm font-heading font-medium text-foreground flex items-center gap-2">
+                        <Terminal className="h-4 w-4 text-accent" />
+                        System Diagnostics & Error Logs
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Real-time error tracebacks, database audit events, and server action diagnostics.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        const { getAuditLogsAction } = await import("@/app/actions/userActions")
+                        const res = await getAuditLogsAction()
+                        if (res.success && res.auditLogs) {
+                          setSystemLogs(res.auditLogs)
+                          showToast("🔄 Diagnostics logs refreshed!")
+                        }
+                      }}
+                      size="xs"
+                      variant="outline"
+                      className="rounded-full gap-1.5"
+                    >
+                      Refresh Logs
+                    </Button>
+                  </div>
+
+                  {systemLogs.length === 0 ? (
+                    <div className="text-center py-12 text-xs text-muted-foreground bg-muted/10 rounded-2xl border border-dashed border-border/50">
+                      <span>No diagnostic logs recorded yet. All system operations are clean!</span>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto text-xs">
+                      <table className="w-full text-left border-collapse font-mono">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground font-semibold uppercase text-[9px] pb-2">
+                            <th className="pb-3">Timestamp</th>
+                            <th className="pb-3">Event / Action</th>
+                            <th className="pb-3">User Email</th>
+                            <th className="pb-3">Trace & Error Message</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/40 text-[11px]">
+                          {systemLogs.map((log, idx) => {
+                            const isError = log.action?.includes("ERROR") || log.details?.level === "ERROR"
+                            return (
+                              <tr key={idx} className={cn("hover:bg-muted/20", isError ? "bg-red-500/10 text-red-600 dark:text-red-400" : "")}>
+                                <td className="py-2.5 whitespace-nowrap text-muted-foreground">
+                                  {new Date(log.created_at || log.timestamp).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                </td>
+                                <td className="py-2.5">
+                                  <span className={cn("px-2 py-0.5 rounded-md font-bold text-[10px]", isError ? "bg-red-500/20 text-red-500" : "bg-accent/10 text-accent")}>
+                                    {log.action}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 text-foreground">{log.user_email || log.user_id}</td>
+                                <td className="py-2.5 text-muted-foreground max-w-md truncate">
+                                  {log.details?.errorMsg || JSON.stringify(log.details)}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              )}
+
+              {/* ==========================================
                  7. SETTINGS VIEW
                  ========================================== */}
               {activeView === 'settings' && (
@@ -1830,18 +1935,18 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
         isOnboarding={isOnboardingMode}
       />
 
-      {/* Delete Confirmation Warning Dialog */}
+      {/* Delete / Archive Confirmation Warning Dialog */}
       <Dialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}>
         <DialogContent className="bg-gradient-to-br from-white to-[#fcfcfc] dark:from-[#1b1b22] dark:to-[#101014] w-full max-w-sm border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-2xl backdrop-blur-3xl text-left text-xs">
           <DialogHeader className="space-y-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-destructive">
-              Caution Area
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-500">
+              ARCHIVE EVENT LISTING
             </span>
             <DialogTitle className="text-lg font-bold tracking-tight text-foreground">
-              Delete Event Listing?
+              Archive & Hide Event?
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-xs leading-relaxed">
-              This action cannot be undone. All ticket configurations and registrations associated with this event will be permanently deleted.
+              This event will be hidden from the public portal and attendees. All event details, ticket configurations, revenue metrics, and attendee records will be permanently preserved in your organizer database.
             </DialogDescription>
           </DialogHeader>
 
@@ -1860,9 +1965,9 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                   setDeleteTargetId(null)
                 }
               }}
-              className="rounded-full px-4 h-9 bg-destructive text-destructive-foreground hover:opacity-90 font-medium"
+              className="rounded-full px-4 h-9 bg-amber-600 hover:bg-amber-700 text-white font-medium shadow-none"
             >
-              Confirm Delete
+              Archive Event
             </Button>
           </DialogFooter>
         </DialogContent>

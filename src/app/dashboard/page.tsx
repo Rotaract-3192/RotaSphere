@@ -1076,14 +1076,14 @@ export default function DashboardPage() {
           }}
         >
           <DialogHeader className="items-center text-center">
-            <div className="h-12 w-12 rounded-full flex items-center justify-center bg-red-500/10 text-red-500 mb-3">
-              <AlertCircle className="h-6 w-6" />
+            <div className="h-12 w-12 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-500 mb-3">
+              <AlertCircle className="h-6 w-6 text-amber-500" />
             </div>
             <DialogTitle className="text-xl font-heading font-bold" style={{ letterSpacing: "-0.02em" }}>
-              Delete Event Listing?
+              Archive & Hide Event?
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground mt-2">
-              Are you sure you want to delete this event? This action cannot be undone. All ticket configurations and registrations associated with this event will be permanently deleted.
+              This event will be hidden from the public portal and attendees. All event details, ticket configurations, revenue metrics, and attendee records will be safely preserved in your organizer database.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-4">
@@ -1095,16 +1095,15 @@ export default function DashboardPage() {
               Cancel
             </Button>
             <Button
-              variant="destructive"
               onClick={async () => {
                 if (deleteTargetId) {
                   await handleDeleteEvent(deleteTargetId)
                   setDeleteTargetId(null)
                 }
               }}
-              className="flex-1 rounded-full bg-red-600 hover:bg-red-700 text-white"
+              className="flex-1 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-medium"
             >
-              Confirm Delete
+              Archive Event
             </Button>
           </DialogFooter>
         </DialogContent>

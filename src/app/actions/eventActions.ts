@@ -551,7 +551,33 @@ export async function getEventsAction() {
       throw error
     }
 
-    const mapped = (data || []).map(mapRowToEventItem)
+    const eventIds = (data || []).map(e => e.id)
+    const countsMap: Record<string, number> = {}
+
+    if (eventIds.length > 0) {
+      const { data: ticketsCountData } = await supabaseAdmin
+        .from("tickets")
+        .select("event_id, status")
+        .in("event_id", eventIds)
+
+      if (ticketsCountData) {
+        ticketsCountData.forEach(t => {
+          if (t.status === "active" || t.status === "pending" || t.status === "approved" || !t.status) {
+            countsMap[t.event_id] = (countsMap[t.event_id] || 0) + 1
+          }
+        })
+      }
+    }
+
+    const mapped = (data || []).map(row => {
+      const item = mapRowToEventItem(row)
+      const realTicketCount = countsMap[row.id] ?? 0
+      const finalCount = Math.max(item.attendees || 0, realTicketCount)
+      return {
+        ...item,
+        attendees: finalCount
+      }
+    })
 
     return { success: true, events: mapped, simulated: false }
   } catch (error) {
@@ -623,7 +649,7 @@ export async function toggleEventRegistrationsAction(eventId: string, disabled: 
 
     const { data: event, error: fetchError } = await supabaseAdmin
       .from("events")
-      .select("organizer_id")
+      .select("organizer_id, review_notes")
       .eq("id", eventId)
       .maybeSingle()
 
@@ -635,13 +661,25 @@ export async function toggleEventRegistrationsAction(eventId: string, disabled: 
       return { success: false, error: "Unauthorized to modify this event." }
     }
 
+    let currentNotes = (event.review_notes || "").replace("[PAUSED]", "").trim()
+    if (disabled) {
+      currentNotes = `[PAUSED] ${currentNotes}`.trim()
+    }
+
     const { error: updateError } = await supabaseAdmin
       .from("events")
-      .update({ registrations_disabled: disabled })
+      .update({ 
+        registrations_disabled: disabled,
+        review_notes: currentNotes
+      })
       .eq("id", eventId)
 
     if (updateError) {
-      console.warn("registrations_disabled update warning:", updateError.message)
+      console.warn("registrations_disabled update warning, applying review_notes fallback:", updateError.message)
+      await supabaseAdmin
+        .from("events")
+        .update({ review_notes: currentNotes })
+        .eq("id", eventId)
     }
 
     await logAuditAction(userId, caller.email || "", "TOGGLE_REGISTRATIONS", eventId, { disabled })
@@ -859,21 +897,59 @@ export async function getOrganizerAttendeesAction() {
     // Fetch all attendees for these events
     const { data: attendees, error: attendeesError } = await supabaseAdmin
       .from("attendees")
-      .select("id, email, full_name, event_id, registered_at, ticket_id, club_name")
+      .select("id, email, full_name, event_id, registered_at, ticket_id, club_name, designation, status")
       .in("event_id", eventIds)
       .order("registered_at", { ascending: false })
 
     if (attendeesError) throw attendeesError
 
-    const mapped = (attendees || []).map(att => ({
-      id: att.id,
-      name: att.full_name,
-      email: att.email,
-      eventTitle: eventTitlesMap[att.event_id] || "Unknown Event",
-      date: new Date(att.registered_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      checkedIn: true,
-      clubName: att.club_name
-    }))
+    // Fetch matching ticket details for ticket tier, price paid, status, and order_id
+    const ticketIds = (attendees || []).map(a => a.ticket_id).filter(Boolean)
+    const { data: ticketsData } = await supabaseAdmin
+      .from("tickets")
+      .select("id, ticket_code, ticket_tier_name, price_paid, status, order_id")
+      .in("id", ticketIds)
+
+    const ticketMap: Record<string, any> = {}
+    const orderTicketCountMap: Record<string, number> = {}
+
+    if (ticketsData) {
+      ticketsData.forEach(t => {
+        ticketMap[t.id] = t
+        if (t.order_id) {
+          orderTicketCountMap[t.order_id] = (orderTicketCountMap[t.order_id] || 0) + 1
+        }
+      })
+    }
+
+    const mapped = (attendees || []).map(att => {
+      const ticket = att.ticket_id ? ticketMap[att.ticket_id] : null
+      const orderCount = (ticket?.order_id && orderTicketCountMap[ticket.order_id]) || 1
+      const ticketStatus = ticket?.status || att.status || "active"
+      const approvalStatus = (ticketStatus === "active" || ticketStatus === "approved")
+        ? "Approved (Active)"
+        : ticketStatus === "pending"
+        ? "Pending Verification"
+        : ticketStatus === "rejected"
+        ? "Rejected"
+        : "Confirmed"
+
+      return {
+        id: att.id,
+        name: att.full_name,
+        email: att.email,
+        designation: att.designation || "Member",
+        clubName: att.club_name || "Non-Member",
+        eventTitle: eventTitlesMap[att.event_id] || "Unknown Event",
+        date: new Date(att.registered_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        ticketCode: ticket?.ticket_code ? `#${ticket.ticket_code}` : "N/A",
+        ticketTierName: ticket?.ticket_tier_name || "Regular Pass",
+        ticketCountInOrder: orderCount,
+        pricePaid: ticket?.price_paid !== undefined ? `₹${parseFloat(String(ticket.price_paid || 0)).toFixed(2)}` : "₹0.00",
+        approvalStatus: approvalStatus,
+        checkedIn: true
+      }
+    })
 
     return { success: true, attendees: mapped, simulated: false }
   } catch (error) {

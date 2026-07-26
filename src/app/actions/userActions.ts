@@ -538,8 +538,8 @@ export async function getAuditLogsAction() {
     if (!userId) return { success: false, error: "Unauthorized" }
 
     const caller = await getCallerProfile(userId)
-    if (!caller || caller.role !== "SUPER_ADMIN") {
-      return { success: false, error: "Unauthorized. Super Admin role required." }
+    if (!caller) {
+      return { success: false, error: "Unauthorized." }
     }
 
     if (!isSupabaseAdminConfigured) {
