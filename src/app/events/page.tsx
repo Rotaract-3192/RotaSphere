@@ -12,7 +12,9 @@ import { getEventsAction } from "@/app/actions/eventActions"
 
 import { EventCardSkeleton } from "@/components/skeletons/EventCardSkeleton"
 
-export default function EventsPage() {
+import { Loader2 } from "lucide-react"
+
+function EventsContent() {
   const [events, setEvents] = React.useState<EventItem[]>([])
   const [isCreateEventOpen, setIsCreateEventOpen] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(true)
@@ -107,9 +109,7 @@ export default function EventsPage() {
         ) : (
           <>
             <EventCalendar events={events} />
-            <React.Suspense fallback={<div className="py-10 text-center text-slate-400 text-xs font-mono">Initializing ticketing system...</div>}>
-              <FeaturedEvents events={events} onEventBooked={handleEventBooked} />
-            </React.Suspense>
+            <FeaturedEvents events={events} onEventBooked={handleEventBooked} />
           </>
         )}
       </main>
@@ -122,5 +122,13 @@ export default function EventsPage() {
         onEventCreated={handleEventCreated}
       />
     </>
+  )
+}
+
+export default function EventsPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-accent" /></div>}>
+      <EventsContent />
+    </React.Suspense>
   )
 }
