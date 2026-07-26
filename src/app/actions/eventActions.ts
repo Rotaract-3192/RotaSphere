@@ -41,7 +41,7 @@ export interface EventFormInput {
 const SUPER_ADMIN_EMAIL = "tech.rotaract3192@gmail.com"
 
 // Helper to log audit actions
-async function logAuditAction(adminId: string, adminEmail: string, action: string, targetId: string, details: any) {
+export async function logAuditAction(adminId: string, adminEmail: string, action: string, targetId: string, details: any) {
   try {
     if (isSupabaseAdminConfigured) {
       await supabaseAdmin.from("audit_logs").insert({
@@ -75,7 +75,7 @@ function dbStatus(status: string): string {
 }
 
 // Helper to resolve user roles/status
-async function getCallerProfile(userId: string) {
+export async function getCallerProfile(userId: string) {
   if (!isSupabaseAdminConfigured) {
     try {
       const client = await clerkClient()
@@ -591,20 +591,65 @@ export async function deleteEventAction(id: string) {
       return { success: false, error: "Unauthorized: You did not create this event and do not have administrative permissions." }
     }
 
-    const { error: deleteError } = await supabaseAdmin
+    // Soft-delete for attendees: update status to CANCELLED (keeps DB record, tickets, and stats intact for organizer)
+    const { error: updateError } = await supabaseAdmin
       .from("events")
-      .delete()
+      .update({ status: "CANCELLED" })
       .eq("id", id)
 
-    if (deleteError) throw deleteError
+    if (updateError) throw updateError
 
     // Write audit log
-    await logAuditAction(userId, caller.email || "", "DELETE_EVENT", id, {})
+    await logAuditAction(userId, caller.email || "", "CANCEL_EVENT", id, {})
 
     return { success: true, simulated: false }
   } catch (error) {
     console.error("Error in deleteEventAction:", error)
     return { success: false, error: error instanceof Error ? error.message : "Failed to delete event" }
+  }
+}
+
+export async function toggleEventRegistrationsAction(eventId: string, disabled: boolean) {
+  try {
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    const caller = await getCallerProfile(userId)
+    if (!caller) return { success: false, error: "Profile not found." }
+
+    if (!isSupabaseAdminConfigured) {
+      return { success: true, disabled, simulated: true }
+    }
+
+    const { data: event, error: fetchError } = await supabaseAdmin
+      .from("events")
+      .select("organizer_id")
+      .eq("id", eventId)
+      .maybeSingle()
+
+    if (fetchError || !event) {
+      return { success: false, error: "Event not found" }
+    }
+
+    if (event.organizer_id !== userId && caller.role !== "ADMIN" && caller.role !== "SUPER_ADMIN") {
+      return { success: false, error: "Unauthorized to modify this event." }
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from("events")
+      .update({ registrations_disabled: disabled })
+      .eq("id", eventId)
+
+    if (updateError) {
+      console.warn("registrations_disabled update warning:", updateError.message)
+    }
+
+    await logAuditAction(userId, caller.email || "", "TOGGLE_REGISTRATIONS", eventId, { disabled })
+
+    return { success: true, disabled, simulated: false }
+  } catch (error) {
+    console.error("Error in toggleEventRegistrationsAction:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Failed to toggle registrations" }
   }
 }
 

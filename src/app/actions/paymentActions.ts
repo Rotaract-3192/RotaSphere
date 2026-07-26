@@ -6,6 +6,7 @@ import Razorpay from "razorpay"
 import crypto from "crypto"
 import { mapRowToEventItem } from "@/lib/eventMapper"
 import { sendEmail } from "@/lib/nodemailer"
+import { getCallerProfile, logAuditAction } from "@/app/actions/eventActions"
  
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
 
@@ -73,6 +74,10 @@ export async function createRazorpayOrderAction(eventId: string, ticketCount: nu
 
     if (event.type === "free") {
       return { success: false, error: "This is a free event. Use bookFreeTicketAction instead." }
+    }
+
+    if (event.registrations_disabled) {
+      return { success: false, error: "Registrations for this event have been paused by the organizer." }
     }
 
     // Check capacity
@@ -384,6 +389,10 @@ export async function bookFreeTicketAction(
       return { success: false, error: "This is a paid event. Please complete checkout." }
     }
 
+    if (event.registrations_disabled) {
+      return { success: false, error: "Registrations for this event have been paused by the organizer." }
+    }
+
     // Check capacity
     if ((event.attendees_count || 0) + ticketCount > event.capacity) {
       return { success: false, error: "Event capacity reached or ticket count exceeds remaining capacity." }
@@ -617,6 +626,10 @@ export async function bookOfflinePaidTicketAction(input: {
           return { success: false, error: `Only ${5 - count} Early Bird tickets can be booked for your club. Your request of ${ticketCount} tickets exceeds this limit.` }
         }
       }
+    }
+
+    if (event.registrations_disabled) {
+      return { success: false, error: "Registrations for this event have been paused by the organizer." }
     }
 
     // Check capacity
@@ -1068,5 +1081,165 @@ export async function getOrganizerTicketsAction() {
   } catch (error) {
     console.error("Error in getOrganizerTicketsAction:", error)
     return { success: false, error: error instanceof Error ? error.message : "Failed to fetch organizer tickets" }
+  }
+}
+
+export interface IssueManualTicketInput {
+  eventId: string
+  ticketCount: number
+  primaryFullName: string
+  primaryEmail: string
+  primaryClubName?: string
+  primaryDesignation?: string
+  ticketTierName?: string
+  paymentNote?: string
+  guests?: Array<{
+    fullName: string
+    email: string
+    clubName?: string
+    designation?: string
+  }>
+}
+
+export async function issueManualTicketAction(input: IssueManualTicketInput) {
+  try {
+    const { userId } = await auth()
+    if (!userId) {
+      return { success: false, error: "Unauthorized: Please log in." }
+    }
+
+    const caller = await getCallerProfile(userId)
+    if (!caller) return { success: false, error: "Profile not found." }
+
+    if (!input.eventId || !input.primaryFullName || !input.primaryEmail) {
+      return { success: false, error: "Missing required fields (eventId, full name, email)." }
+    }
+
+    const count = Math.max(1, input.ticketCount || 1)
+
+    if (!isSupabaseAdminConfigured) {
+      const simulatedTickets = Array.from({ length: count }, (_, i) => ({
+        ticketCode: `ORG-PASS-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+        fullName: i === 0 ? input.primaryFullName : input.guests?.[i - 1]?.fullName || `${input.primaryFullName} Guest ${i}`,
+        email: i === 0 ? input.primaryEmail : input.guests?.[i - 1]?.email || input.primaryEmail,
+        clubName: i === 0 ? input.primaryClubName || "Rotaract" : input.guests?.[i - 1]?.clubName || input.primaryClubName || "Rotaract",
+        designation: i === 0 ? input.primaryDesignation || "Member" : input.guests?.[i - 1]?.designation || input.primaryDesignation || "Member",
+        tierName: input.ticketTierName || "Organizer Manual Pass",
+        paymentNote: input.paymentNote || "Issued by Organizer"
+      }))
+
+      return {
+        success: true,
+        simulated: true,
+        tickets: simulatedTickets
+      }
+    }
+
+    // Fetch event from Supabase
+    const { data: event, error: fetchError } = await supabaseAdmin
+      .from("events")
+      .select("id, organizer_id, capacity, attendees_count, title")
+      .eq("id", input.eventId)
+      .maybeSingle()
+
+    if (fetchError || !event) {
+      return { success: false, error: "Event not found." }
+    }
+
+    // Check authorization (must be organizer of event or admin)
+    if (event.organizer_id !== userId && caller.role !== "ADMIN" && caller.role !== "SUPER_ADMIN") {
+      return { success: false, error: "Unauthorized: You can only issue tickets for your own events." }
+    }
+
+    const currentCount = event.attendees_count || 0
+    if (currentCount + count > event.capacity) {
+      return { success: false, error: `Event capacity reached (${currentCount}/${event.capacity}). Cannot issue ${count} tickets.` }
+    }
+
+    // Build passes array
+    const passesToCreate = Array.from({ length: count }, (_, i) => {
+      const isPrimary = i === 0
+      const guestObj = !isPrimary ? input.guests?.[i - 1] : undefined
+      const fullName = isPrimary ? input.primaryFullName : guestObj?.fullName || `${input.primaryFullName} Guest ${i}`
+      const email = isPrimary ? input.primaryEmail : guestObj?.email || input.primaryEmail
+      const clubName = isPrimary ? input.primaryClubName || "" : guestObj?.clubName || input.primaryClubName || ""
+      const designation = isPrimary ? input.primaryDesignation || "" : guestObj?.designation || input.primaryDesignation || ""
+
+      return {
+        ticketCode: `ORG-PASS-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+        fullName,
+        email,
+        clubName,
+        designation
+      }
+    })
+
+    const createdTickets = []
+
+    for (const pass of passesToCreate) {
+      // Insert attendee
+      const { error: attendeeError } = await supabaseAdmin
+        .from("attendees")
+        .insert({
+          event_id: input.eventId,
+          user_id: null,
+          full_name: pass.fullName,
+          email: pass.email,
+          club_name: pass.clubName,
+          designation: pass.designation,
+          status: "confirmed"
+        })
+
+      if (attendeeError) {
+        console.warn("Attendee insert warning:", attendeeError.message)
+      }
+
+      // Insert ticket
+      const { data: ticketData, error: ticketError } = await supabaseAdmin
+        .from("tickets")
+        .insert({
+          event_id: input.eventId,
+          user_id: null,
+          ticket_code: pass.ticketCode,
+          price_paid: 0,
+          status: "active",
+          order_id: `manual_${Date.now()}_${pass.ticketCode}`,
+          payment_id: input.paymentNote ? `manual:${input.paymentNote}` : "organizer_manual_issue",
+          ticket_tier_name: input.ticketTierName || "Organizer Pass"
+        })
+        .select()
+        .single()
+
+      if (ticketError) throw ticketError
+
+      createdTickets.push({
+        ticketCode: pass.ticketCode,
+        fullName: pass.fullName,
+        email: pass.email,
+        clubName: pass.clubName,
+        designation: pass.designation,
+        tierName: input.ticketTierName || "Organizer Pass"
+      })
+    }
+
+    // Update attendees_count
+    await supabaseAdmin
+      .from("events")
+      .update({ attendees_count: currentCount + count })
+      .eq("id", input.eventId)
+
+    await logAuditAction(userId, caller.email || "", "MANUAL_TICKET_ISSUANCE", input.eventId, {
+      ticketCount: count,
+      primaryEmail: input.primaryEmail
+    })
+
+    return {
+      success: true,
+      simulated: false,
+      tickets: createdTickets
+    }
+  } catch (error) {
+    console.error("Error in issueManualTicketAction:", error)
+    return { success: false, error: error instanceof Error ? error.message : "Failed to issue tickets" }
   }
 }

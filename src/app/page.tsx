@@ -90,11 +90,11 @@ export default function Home() {
         const res = await getEventsAction()
         if (res.success) {
           if (!res.simulated) {
-            setEvents(res.events as EventItem[])
+            setEvents((res.events as EventItem[]).filter(e => e.status !== "CANCELLED"))
           } else {
             const saved = localStorage.getItem("rotasphere_events")
             const currentEvents = saved ? JSON.parse(saved) : []
-            setEvents(currentEvents.filter((e: any) => e.status === "PUBLISHED" || !e.status))
+            setEvents(currentEvents.filter((e: any) => (e.status === "PUBLISHED" || !e.status) && e.status !== "CANCELLED"))
           }
         }
       } catch (err) {
@@ -333,7 +333,14 @@ export default function Home() {
                       <p className="text-xs font-weight-450 mb-4 font-mono" style={{ color: "var(--muted-foreground)" }}>
                         {evt.date}
                       </p>
-                      {((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
+                      {(evt as any).registrationsDisabled ? (
+                        <span
+                          className="text-xs font-bold block text-center py-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 cursor-not-allowed font-mono"
+                          style={{ borderRadius: "32px" }}
+                        >
+                          Registrations Paused
+                        </span>
+                      ) : ((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
                         <span
                           className="text-xs font-bold block text-center py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed font-mono"
                           style={{ borderRadius: "32px" }}

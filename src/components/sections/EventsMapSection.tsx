@@ -134,6 +134,9 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
   // Filter events
   const filteredEvents = React.useMemo(() => {
     return events.filter(evt => {
+      // 0. Filter out CANCELLED events for attendees
+      if ((evt as any).status === "CANCELLED") return false;
+
       // 1. Search Query
       const query = searchQuery.toLowerCase().trim();
       const matchesSearch = !query || 
@@ -662,7 +665,14 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                           >
                             Details <ArrowRight className="h-2.5 w-2.5" />
                           </Link>
-                          {((selectedEvent.attendees || 0) >= parseInt(selectedEvent.capacity || "0")) ? (
+                          {(selectedEvent as any).registrationsDisabled ? (
+                            <Button
+                              disabled
+                              className="h-6 px-2.5 rounded-full bg-amber-500/20 text-amber-400 text-[9px] font-bold uppercase tracking-wider cursor-not-allowed border border-amber-500/30"
+                            >
+                              Paused
+                            </Button>
+                          ) : ((selectedEvent.attendees || 0) >= parseInt(selectedEvent.capacity || "0")) ? (
                             <Button
                               disabled
                               className="h-6 px-2.5 rounded-full bg-slate-800 text-slate-400 text-[9px] font-bold uppercase tracking-wider cursor-not-allowed border border-white/10"
@@ -736,7 +746,14 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                               <span className="text-[9px] font-mono text-slate-400">{evt.date}</span>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[9px] font-bold text-white">{getEventPriceDisplay(evt)}</span>
-                                {((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
+                                {(evt as any).registrationsDisabled ? (
+                                  <Button
+                                    disabled
+                                    className="h-5 px-2 rounded-full bg-amber-500/20 text-amber-400 text-[8px] font-bold uppercase tracking-wider cursor-not-allowed border border-amber-500/30"
+                                  >
+                                    Paused
+                                  </Button>
+                                ) : ((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
                                   <Button
                                     disabled
                                     className="h-5 px-2 rounded-full bg-slate-800 text-slate-400 text-[8px] font-bold uppercase tracking-wider cursor-not-allowed border border-white/10"

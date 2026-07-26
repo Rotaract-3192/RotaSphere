@@ -50,6 +50,7 @@ export function mapRowToEventItem(row: any): any {
     status: row.status || 'DRAFT',
     reviewNotes: row.review_notes || '',
     ticketTiers: row.ticket_tiers || [],
-    hostClub: row.host_club
+    hostClub: row.host_club,
+    registrationsDisabled: Boolean(row.registrations_disabled)
   }
 }

@@ -316,9 +316,9 @@
       { label: "Public Relations", value: "pr" }
     ]
 
-    const filteredEvents = selectedCategory === "all"
-      ? events
-      : events.filter(evt => evt.category === selectedCategory)
+    const filteredEvents = events.filter(evt => 
+      (evt as any).status !== "CANCELLED" && (selectedCategory === "all" || evt.category === selectedCategory)
+    )
 
     const handleBookTicket = (event: EventItem) => {
       if (!isSignedIn) {
@@ -739,6 +739,8 @@
               {filteredEvents.map((evt, index) => {
                 const attendeesPct = Math.min(100, Math.round((evt.attendees / parseInt(evt.capacity)) * 100))
                 const isSoldOut = evt.attendees >= parseInt(evt.capacity || "0")
+                const isRegistrationsDisabled = Boolean((evt as any).registrationsDisabled)
+                const isBookingBlocked = isSoldOut || isRegistrationsDisabled
                 return (
                   <div
                     key={evt.id}
@@ -857,10 +859,10 @@
 
                     {/* Near-Black CTA Button */}
                     <button
-                      onClick={() => !isSoldOut && handleBookTicket(evt)}
-                      disabled={isSoldOut}
+                      onClick={() => !isBookingBlocked && handleBookTicket(evt)}
+                      disabled={isBookingBlocked}
                       className={`text-sm font-bold transition-all duration-300 ${
-                        isSoldOut 
+                        isBookingBlocked 
                           ? "bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-500 cursor-not-allowed" 
                           : "hover:-translate-y-0.5 shadow-md hover:shadow-sky-500/20 cursor-pointer bg-gradient-to-r from-[#17458F] to-[#1E88E5] text-white"
                       }`}
@@ -871,7 +873,7 @@
                         letterSpacing: "-0.02em"
                       }}
                     >
-                      {isSoldOut ? "Sold Out" : "Get Ticket Pass"}
+                      {isRegistrationsDisabled ? "Registrations Paused" : isSoldOut ? "Sold Out" : "Get Ticket Pass"}
                     </button>
                   </div>
                 )
@@ -949,9 +951,12 @@
                     </DialogHeader>
 
                     <form onSubmit={confirmBooking} className="space-y-4 text-left">
-                      {bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0) && (
+                      {bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || (bookingEvent as any).registrationsDisabled || remainingCapacity <= 0) && (
                         <div className="p-3.5 mb-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold text-center font-mono">
-                          Registrations Closed: All {bookingEvent.capacity} tickets for this event have been booked.
+                          {(bookingEvent as any).registrationsDisabled 
+                            ? "Registrations Paused: The organizer has temporarily paused registrations for this event."
+                            : `Registrations Closed: All ${bookingEvent.capacity} tickets for this event have been booked.`
+                          }
                         </div>
                       )}
                       {checkoutStep === "details" ? (
@@ -1535,18 +1540,20 @@
                         </button>
                         <button
                           type="submit"
-                          disabled={isPaying || (bookingEvent ? ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0) : false)}
+                          disabled={isPaying || (bookingEvent ? ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || (bookingEvent as any).registrationsDisabled || remainingCapacity <= 0) : false)}
                           className="flex-1 flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           style={{
-                            background: (bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0)) ? "#dc2626" : "#17171c",
+                            background: (bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || (bookingEvent as any).registrationsDisabled || remainingCapacity <= 0)) ? "#dc2626" : "#17171c",
                             color: "#ffffff",
                             borderRadius: "32px",
                             padding: "10px",
-                            border: (bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0)) ? "1px solid #dc2626" : "1px solid #17171c",
+                            border: (bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || (bookingEvent as any).registrationsDisabled || remainingCapacity <= 0)) ? "1px solid #dc2626" : "1px solid #17171c",
                             letterSpacing: "-0.01em"
                           }}
                         >
-                          {bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0) ? (
+                          {bookingEvent && (bookingEvent as any).registrationsDisabled ? (
+                            "Registrations Paused"
+                          ) : bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0) ? (
                             "Registrations Closed"
                           ) : isPaying ? (
                             <>

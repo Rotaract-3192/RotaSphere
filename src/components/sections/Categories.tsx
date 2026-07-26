@@ -127,7 +127,7 @@ export function Categories() {
       try {
         const res = await getEventsAction()
         if (res.success) {
-          const eventsList = res.events as EventItem[]
+          const eventsList = (res.events as EventItem[]).filter(e => e.status !== "CANCELLED")
           const isRealDb = !res.simulated
           const counts: Record<string, number> = {}
           eventsList.forEach(e => {

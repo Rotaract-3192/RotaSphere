@@ -285,11 +285,11 @@ export default function DashboardPage() {
   const handleDeleteEvent = async (id: string) => {
     const res = await deleteEventAction(id)
     if (res.success) {
-      const updated = events.filter(e => e.id !== id)
+      const updated = events.map(e => e.id === id ? { ...e, status: "CANCELLED" } : e)
       setEvents(updated)
       localStorage.setItem("rotasphere_events", JSON.stringify(updated))
     } else {
-      alert(res.error || "Failed to delete event.")
+      alert(res.error || "Failed to cancel event.")
     }
   }
 

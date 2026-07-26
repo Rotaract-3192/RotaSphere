@@ -24,11 +24,11 @@ export default function EventsPage() {
         const res = await getEventsAction()
         if (res.success) {
           if (!res.simulated) {
-            setEvents(res.events as EventItem[])
+            setEvents((res.events as EventItem[]).filter(e => e.status !== "CANCELLED"))
           } else {
             const saved = localStorage.getItem("rotasphere_events")
             const current = saved ? JSON.parse(saved) : []
-            setEvents(current.filter((e: any) => e.status === "PUBLISHED" || !e.status))
+            setEvents(current.filter((e: any) => (e.status === "PUBLISHED" || !e.status) && e.status !== "CANCELLED"))
           }
         }
       } catch (err) {

@@ -76,6 +76,7 @@ export function EventCalendar({ events }: EventCalendarProps) {
   const eventsByDay = React.useMemo(() => {
     const map: Record<string, EventItem[]> = {}
     events.forEach(event => {
+      if ((event as any).status === "CANCELLED") return
       const eventDateStr = event.startDate || event.date
       if (!eventDateStr) return
 
@@ -435,7 +436,11 @@ export function EventCalendar({ events }: EventCalendarProps) {
                               {/* Link action */}
                               <div className="flex justify-between items-center mt-2 pt-2.5 border-t border-white/5">
                                 <span className="text-xs font-bold text-white font-mono">{getEventPriceDisplay(evt)}</span>
-                                {((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
+                                {(evt as any).registrationsDisabled ? (
+                                  <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase tracking-wider font-mono">
+                                    Paused
+                                  </span>
+                                ) : ((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
                                   <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 uppercase tracking-wider font-mono">
                                     Sold Out
                                   </span>

@@ -8,7 +8,7 @@ import {
   BarChart3, Plus, UserCheck, Trash2, Edit,
   TrendingUp, LayoutDashboard, Settings, Menu, Bell, Search, 
   Sparkles, LogOut, Moon, Sun, ClipboardList, Info, Check, Home,
-  QrCode, Shield
+  QrCode, Shield, Download
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
@@ -255,12 +255,12 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
   const handleDeleteEvent = async (id: string) => {
     const res = await deleteEventAction(id)
     if (res.success) {
-      const updated = events.filter(e => e.id !== id)
+      const updated = events.map(e => e.id === id ? { ...e, status: "CANCELLED" } : e)
       setEvents(updated)
       localStorage.setItem("rotasphere_events", JSON.stringify(updated))
-      showToast("🗑️ Event removed successfully.")
+      showToast("🚫 Event cancelled and hidden from attendees.")
     } else {
-      showToast(`❌ Failed to delete: ${res.error}`)
+      showToast(`❌ Failed to cancel: ${res.error}`)
     }
   }
 
@@ -277,6 +277,177 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
     } catch (err) {
       showToast("❌ Failed to submit event.")
     }
+  }
+
+  const handleToggleRegistrations = async (eventId: string, currentDisabled: boolean) => {
+    const newDisabled = !currentDisabled
+    try {
+      const { toggleEventRegistrationsAction } = await import("@/app/actions/eventActions")
+      const res = await toggleEventRegistrationsAction(eventId, newDisabled)
+      if (res.success) {
+        const updated = events.map(e => e.id === eventId ? { ...e, registrationsDisabled: newDisabled } : e)
+        setEvents(updated)
+        localStorage.setItem("rotasphere_events", JSON.stringify(updated))
+        showToast(newDisabled ? "⏸️ Registrations paused for this event." : "▶️ Registrations re-opened!")
+      } else {
+        showToast(`❌ Action failed: ${res.error}`)
+      }
+    } catch (err) {
+      showToast("❌ Failed to toggle registrations.")
+    }
+  }
+
+  const [manualBookingOpen, setManualBookingOpen] = React.useState(false)
+  const [manualBookingEventId, setManualBookingEventId] = React.useState("")
+  const [manualBookingForm, setManualBookingForm] = React.useState({
+    fullName: "",
+    email: "",
+    clubName: "Rotaract Club of Bangalore",
+    designation: "Member",
+    customDesignation: "",
+    isCustomDesignation: false,
+    ticketTierName: "General Pass",
+    ticketCount: 1,
+    paymentNote: "Cash Received at Gate"
+  })
+  const [isIssuingTicket, setIsIssuingTicket] = React.useState(false)
+  const [issuedTicketsResult, setIssuedTicketsResult] = React.useState<any[] | null>(null)
+
+  const openManualBookingModal = (eventId?: string) => {
+    setManualBookingEventId(eventId || (events[0]?.id || ""))
+    setIssuedTicketsResult(null)
+    setManualBookingForm({
+      fullName: "",
+      email: "",
+      clubName: homeClub || "Rotaract Club of Bangalore",
+      designation: designation || "Member",
+      customDesignation: "",
+      isCustomDesignation: false,
+      ticketTierName: "General Pass",
+      ticketCount: 1,
+      paymentNote: "Cash Received at Gate"
+    })
+    setManualBookingOpen(true)
+  }
+
+  const handleManualTicketSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!manualBookingEventId) {
+      showToast("❌ Please select an event.")
+      return
+    }
+    if (!manualBookingForm.fullName.trim() || !manualBookingForm.email.trim()) {
+      showToast("❌ Please fill in attendee full name and email.")
+      return
+    }
+
+    setIsIssuingTicket(true)
+    try {
+      const { issueManualTicketAction } = await import("@/app/actions/paymentActions")
+      const finalDesignation = manualBookingForm.isCustomDesignation
+        ? manualBookingForm.customDesignation.trim()
+        : manualBookingForm.designation
+
+      const targetEvt = events.find(e => e.id === manualBookingEventId)
+
+      const res = await issueManualTicketAction({
+        eventId: manualBookingEventId,
+        ticketCount: manualBookingForm.ticketCount,
+        primaryFullName: manualBookingForm.fullName,
+        primaryEmail: manualBookingForm.email,
+        primaryClubName: manualBookingForm.clubName,
+        primaryDesignation: finalDesignation,
+        ticketTierName: manualBookingForm.ticketTierName,
+        paymentNote: manualBookingForm.paymentNote
+      })
+
+      if (res.success && res.tickets) {
+        setIssuedTicketsResult(res.tickets)
+
+        const newAttendees = res.tickets.map((t: any, i: number) => ({
+          id: `manual_${Date.now()}_${i}`,
+          name: t.fullName,
+          email: t.email,
+          eventTitle: targetEvt?.title || "Event Pass",
+          date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          checkedIn: true,
+          clubName: t.clubName,
+          designation: t.designation,
+          ticketCode: t.ticketCode
+        }))
+
+        setAttendeeRegistry(prev => [...newAttendees, ...prev])
+        setEvents(prev => prev.map(evt => evt.id === manualBookingEventId ? { ...evt, attendees: evt.attendees + manualBookingForm.ticketCount } : evt))
+
+        showToast(`🎉 Successfully issued ${res.tickets.length} ticket pass(es)!`)
+      } else {
+        showToast(`❌ Failed to issue ticket: ${res.error}`)
+      }
+    } catch (err) {
+      console.error("Manual ticket issuance error:", err)
+      showToast("❌ Failed to issue ticket pass.")
+    } finally {
+      setIsIssuingTicket(false)
+    }
+  }
+
+  const [selectedExportEvent, setSelectedExportEvent] = React.useState<string>("all")
+
+  const exportAttendeesToExcel = (targetEventTitle?: string) => {
+    const filterTitle = targetEventTitle || (selectedExportEvent === "all" ? undefined : selectedExportEvent)
+    const listToExport = filterTitle
+      ? attendeeRegistry.filter(a => a.eventTitle.toLowerCase() === filterTitle.toLowerCase())
+      : attendeeRegistry
+
+    if (listToExport.length === 0) {
+      showToast("⚠️ No attendees found to export.")
+      return
+    }
+
+    const headers = [
+      "S.No",
+      "Attendee Full Name",
+      "Email Address",
+      "Designation / Role",
+      "Rotaract Club Name",
+      "Event Registered",
+      "Registration Date",
+      "Check-In Status"
+    ]
+
+    const csvRows = [
+      headers.join(","),
+      ...listToExport.map((att, index) => {
+        const escape = (val: any) => `"${String(val || "").replace(/"/g, '""')}"`
+        return [
+          index + 1,
+          escape(att.name),
+          escape(att.email),
+          escape(att.designation || "Member"),
+          escape(att.clubName || "Non-Member"),
+          escape(att.eventTitle),
+          escape(att.date),
+          escape(att.checkedIn ? "Checked In" : "Pending Check-In")
+        ].join(",")
+      })
+    ]
+
+    const csvContent = "\uFEFF" + csvRows.join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    
+    const cleanTitle = filterTitle ? filterTitle.replace(/[^a-zA-Z0-9]/g, "_") : "All_Events"
+    const fileName = `Rotaract_Attendees_${cleanTitle}_${new Date().toISOString().split("T")[0]}.csv`
+    
+    link.setAttribute("href", url)
+    link.setAttribute("download", fileName)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    showToast(`📊 Exported ${listToExport.length} attendees to Excel sheet!`)
   }
 
   const toggleCheckIn = (id: string) => {
@@ -825,17 +996,26 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                 </td>
                                 <td className="py-3 text-muted-foreground font-mono">{evt.date}</td>
                                 <td className="py-3">
-                                  <span className={cn(
-                                    "inline-block text-[9px] font-mono font-medium px-2.5 py-0.5 rounded-full border",
-                                    status === "PUBLISHED" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" :
-                                    status === "PENDING_APPROVAL" ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 animate-pulse" :
-                                    status === "REJECTED" ? "bg-destructive/10 border-destructive/20 text-destructive" :
-                                    "bg-muted border-border text-muted-foreground"
-                                  )}>
-                                    {status === "PUBLISHED" ? "PUBLISHED" :
-                                     status === "PENDING_APPROVAL" ? "PENDING APPROVAL" :
-                                     status === "REJECTED" ? "REJECTED" : "DRAFT"}
-                                  </span>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className={cn(
+                                      "inline-block text-[9px] font-mono font-medium px-2.5 py-0.5 rounded-full border",
+                                      status === "PUBLISHED" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" :
+                                      status === "PENDING_APPROVAL" ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 animate-pulse" :
+                                      status === "REJECTED" ? "bg-destructive/10 border-destructive/20 text-destructive" :
+                                      status === "CANCELLED" ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400" :
+                                      "bg-muted border-border text-muted-foreground"
+                                    )}>
+                                      {status === "PUBLISHED" ? "PUBLISHED" :
+                                       status === "PENDING_APPROVAL" ? "PENDING APPROVAL" :
+                                       status === "REJECTED" ? "REJECTED" :
+                                       status === "CANCELLED" ? "CANCELLED (HIDDEN FROM ATTENDEES)" : "DRAFT"}
+                                    </span>
+                                    {(evt as any).registrationsDisabled && (
+                                      <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400">
+                                        PAUSED
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="py-3">
                                   <div className="w-24 bg-muted h-1.5 rounded-full overflow-hidden flex mb-1">
@@ -860,6 +1040,38 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                         Submit
                                       </Button>
                                     )}
+                                    <Button 
+                                       variant="ghost" 
+                                       size="icon" 
+                                       onClick={() => openManualBookingModal(evt.id)}
+                                       className="rounded-lg hover:bg-sky-500/10 text-muted-foreground hover:text-sky-500 h-8 w-8"
+                                       title="Issue Ticket for Attendee"
+                                     >
+                                       <Plus className="h-3.5 w-3.5" />
+                                     </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => handleToggleRegistrations(evt.id, Boolean((evt as any).registrationsDisabled))}
+                                      className={cn(
+                                        "rounded-lg h-8 w-8 transition-colors",
+                                        (evt as any).registrationsDisabled
+                                          ? "text-amber-500 hover:bg-amber-500/10"
+                                          : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10"
+                                      )}
+                                      title={(evt as any).registrationsDisabled ? "Re-open Registrations" : "Pause Registrations"}
+                                    >
+                                      {(evt as any).registrationsDisabled ? <UserCheck className="h-3.5 w-3.5 text-amber-500" /> : <UserCheck className="h-3.5 w-3.5" />}
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => exportAttendeesToExcel(evt.title)}
+                                      className="rounded-lg hover:bg-emerald-500/10 text-muted-foreground hover:text-emerald-500 h-8 w-8"
+                                      title="Download Attendees Excel"
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                    </Button>
                                     <Button 
                                       variant="ghost" 
                                       size="icon" 
@@ -910,9 +1122,10 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                     status === "PUBLISHED" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" :
                                     status === "PENDING_APPROVAL" ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400" :
                                     status === "REJECTED" ? "bg-destructive/10 border-destructive/20 text-destructive" :
+                                    status === "CANCELLED" ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400" :
                                     "bg-muted border-border text-muted-foreground"
                                   )}>
-                                    {status}
+                                    {status === "CANCELLED" ? "CANCELLED (HIDDEN)" : status}
                                   </span>
                                 </div>
                                 <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -1304,10 +1517,43 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                  ========================================== */}
               {activeView === 'attendees' && (
                 <Card className="border border-border bg-card p-5 shadow-none rounded-[16px]">
-                  <div className="flex justify-between items-center mb-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
                       <h3 className="text-sm font-heading font-medium text-foreground">Attendee Registry</h3>
                       <p className="text-[10px] text-muted-foreground mt-0.5">Toggle check-in status directly when checking in guests at the gate.</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                      <select
+                        value={selectedExportEvent}
+                        onChange={(e) => setSelectedExportEvent(e.target.value)}
+                        className="text-xs p-2 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground font-medium outline-none cursor-pointer"
+                      >
+                        <option value="all">All Events ({attendeeRegistry.length})</option>
+                        {Array.from(new Set(attendeeRegistry.map(a => a.eventTitle))).map(title => (
+                          <option key={title} value={title}>
+                            {title} ({attendeeRegistry.filter(a => a.eventTitle === title).length})
+                          </option>
+                        ))}
+                      </select>
+
+                      <Button
+                        onClick={() => openManualBookingModal()}
+                        size="xs"
+                        className="rounded-full bg-accent hover:opacity-90 text-white font-medium shadow-none py-2 px-4 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Issue Ticket
+                      </Button>
+
+                      <Button
+                        onClick={() => exportAttendeesToExcel()}
+                        size="xs"
+                        className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-none py-2 px-4 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        Export Excel Sheet
+                      </Button>
                     </div>
                   </div>
                   
@@ -1682,6 +1928,207 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
               </>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Ticket Issuance Dialog */}
+      <Dialog open={manualBookingOpen} onOpenChange={(open) => { if (!open) setManualBookingOpen(false) }}>
+        <DialogContent className="bg-card w-full max-w-lg border border-border rounded-2xl p-6 shadow-2xl text-left text-xs max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="space-y-1 mb-4">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-accent">
+              Organizer Assistance Pass
+            </span>
+            <DialogTitle className="text-lg font-bold tracking-tight text-foreground">
+              Issue Ticket for Attendee
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-xs">
+              Manually book a ticket pass for guests unable to book online or registering via cash at gate.
+            </DialogDescription>
+          </DialogHeader>
+
+          {issuedTicketsResult ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+                <Check className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                <h4 className="font-bold text-sm text-foreground">Tickets Successfully Issued!</h4>
+                <p className="text-xs text-muted-foreground mt-1">Issued {issuedTicketsResult.length} official pass(es) for event.</p>
+              </div>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {issuedTicketsResult.map((t: any, idx: number) => (
+                  <div key={idx} className="p-3 rounded-xl border border-border bg-muted/20 font-mono text-xs flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-foreground">{t.fullName}</p>
+                      <p className="text-[10px] text-muted-foreground">{t.email} • {t.designation}</p>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-full bg-accent/15 border border-accent/30 text-accent font-bold text-[11px]">
+                      {t.ticketCode}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                onClick={() => setManualBookingOpen(false)}
+                className="w-full rounded-full bg-accent hover:opacity-90 text-white font-medium py-2"
+              >
+                Done
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleManualTicketSubmit} className="space-y-4">
+              {/* Event Selector */}
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+                  Select Event *
+                </label>
+                <select
+                  value={manualBookingEventId}
+                  onChange={(e) => setManualBookingEventId(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground font-medium outline-none text-xs cursor-pointer"
+                  required
+                >
+                  <option value="" disabled>Select an Event</option>
+                  {events.map(evt => (
+                    <option key={evt.id} value={evt.id}>
+                      {evt.title} ({evt.attendees}/{evt.capacity} seats)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Attendee Name & Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Guest Full Name"
+                    value={manualBookingForm.fullName}
+                    onChange={(e) => setManualBookingForm(prev => ({ ...prev, fullName: e.target.value }))}
+                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="guest@example.com"
+                    value={manualBookingForm.email}
+                    onChange={(e) => setManualBookingForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Rotaract Club & Designation */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+                    Club Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rotaract Club of Bangalore"
+                    value={manualBookingForm.clubName}
+                    onChange={(e) => setManualBookingForm(prev => ({ ...prev, clubName: e.target.value }))}
+                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+                    Designation
+                  </label>
+                  <select
+                    value={manualBookingForm.isCustomDesignation ? "Custom" : manualBookingForm.designation}
+                    onChange={(e) => {
+                      if (e.target.value === "Custom") {
+                        setManualBookingForm(prev => ({ ...prev, isCustomDesignation: true }))
+                      } else {
+                        setManualBookingForm(prev => ({ ...prev, isCustomDesignation: false, designation: e.target.value }))
+                      }
+                    }}
+                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs cursor-pointer"
+                  >
+                    {ROTARACT_DESIGNATIONS.map((desig) => (
+                      <option key={desig} value={desig}>
+                        {desig}
+                      </option>
+                    ))}
+                    <option value="Custom">Custom Designation...</option>
+                  </select>
+
+                  {manualBookingForm.isCustomDesignation && (
+                    <input
+                      type="text"
+                      placeholder="Enter custom designation"
+                      value={manualBookingForm.customDesignation}
+                      onChange={(e) => setManualBookingForm(prev => ({ ...prev, customDesignation: e.target.value }))}
+                      className="w-full mt-2 p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs"
+                      required
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Ticket Count & Payment Note */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+                    Ticket Pass Count
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={manualBookingForm.ticketCount}
+                    onChange={(e) => setManualBookingForm(prev => ({ ...prev, ticketCount: parseInt(e.target.value) || 1 }))}
+                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+                    Payment Status / Note
+                  </label>
+                  <select
+                    value={manualBookingForm.paymentNote}
+                    onChange={(e) => setManualBookingForm(prev => ({ ...prev, paymentNote: e.target.value }))}
+                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs cursor-pointer"
+                  >
+                    <option value="Cash Received at Gate">Cash Received at Gate</option>
+                    <option value="UPI Spot Payment Verified">UPI Spot Payment Verified</option>
+                    <option value="Organizer VIP / Complimentary">Organizer VIP / Complimentary</option>
+                    <option value="Assisted Phone Booking">Assisted Phone Booking</option>
+                  </select>
+                </div>
+              </div>
+
+              <DialogFooter className="pt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setManualBookingOpen(false)}
+                  className="rounded-full px-4 h-9 font-medium"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isIssuingTicket}
+                  className="rounded-full px-5 h-9 bg-accent hover:opacity-90 text-white font-medium flex items-center gap-1.5"
+                >
+                  {isIssuingTicket ? "Issuing Pass..." : "Confirm & Issue Pass"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>
