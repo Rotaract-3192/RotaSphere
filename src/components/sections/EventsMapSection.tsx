@@ -662,13 +662,22 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                           >
                             Details <ArrowRight className="h-2.5 w-2.5" />
                           </Link>
-                          <Button
-                            onClick={(e) => handleBookClick(selectedEvent, e)}
-                            className="h-6 px-2.5 rounded-full bg-coral hover:bg-coral-soft text-white text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer shadow-md"
-                          >
-                            <Ticket className="h-2.5 w-2.5" />
-                            Book Tickets
-                          </Button>
+                          {((selectedEvent.attendees || 0) >= parseInt(selectedEvent.capacity || "0")) ? (
+                            <Button
+                              disabled
+                              className="h-6 px-2.5 rounded-full bg-slate-800 text-slate-400 text-[9px] font-bold uppercase tracking-wider cursor-not-allowed border border-white/10"
+                            >
+                              Sold Out
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={(e) => handleBookClick(selectedEvent, e)}
+                              className="h-6 px-2.5 rounded-full bg-coral hover:bg-coral-soft text-white text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer shadow-md"
+                            >
+                              <Ticket className="h-2.5 w-2.5" />
+                              Book Tickets
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -727,13 +736,22 @@ export default function EventsMapSection({ events }: EventsMapSectionProps) {
                               <span className="text-[9px] font-mono text-slate-400">{evt.date}</span>
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[9px] font-bold text-white">{getEventPriceDisplay(evt)}</span>
-                                <Button
-                                  onClick={(e) => handleBookClick(evt, e)}
-                                  className="h-5 px-2 rounded-full bg-coral hover:bg-coral-soft text-white text-[8px] font-bold uppercase tracking-wider flex items-center gap-0.5 cursor-pointer shadow-sm"
-                                >
-                                  <Ticket className="h-2 w-2" />
-                                  Book
-                                </Button>
+                                {((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
+                                  <Button
+                                    disabled
+                                    className="h-5 px-2 rounded-full bg-slate-800 text-slate-400 text-[8px] font-bold uppercase tracking-wider cursor-not-allowed border border-white/10"
+                                  >
+                                    Sold Out
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    onClick={(e) => handleBookClick(evt, e)}
+                                    className="h-5 px-2 rounded-full bg-coral hover:bg-coral-soft text-white text-[8px] font-bold uppercase tracking-wider flex items-center gap-0.5 cursor-pointer shadow-sm"
+                                  >
+                                    <Ticket className="h-2 w-2" />
+                                    Book
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>

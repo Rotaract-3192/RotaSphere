@@ -44,8 +44,8 @@ export default function EventsPage() {
     setEvents(prev => [newEvent, ...prev])
   }
 
-  const handleEventBooked = (eventId: string) => {
-    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, attendees: e.attendees + 1 } : e))
+  const handleEventBooked = (eventId: string, ticketCount: number = 1) => {
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, attendees: (e.attendees || 0) + ticketCount } : e))
   }
 
   return (

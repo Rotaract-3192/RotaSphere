@@ -12,7 +12,7 @@
 
   interface FeaturedEventsProps {
     events: EventItem[];
-    onEventBooked?: (eventId: string) => void;
+    onEventBooked?: (eventId: string, ticketCount?: number) => void;
   }
 
   export function FeaturedEvents({ events, onEventBooked }: FeaturedEventsProps) {
@@ -65,10 +65,10 @@
 
     const remainingCapacity = getSelectedTierRemaining()
     const getMaxSelectable = () => {
-      let maxSel = Math.max(1, Math.min(10, remainingCapacity))
+      let maxSel = Math.max(0, Math.min(10, remainingCapacity))
       if (selectedTierId === "early-bird" && attendeeClubName && attendeeClubName !== "Non-Rotaractor") {
         const remainingLimit = Math.max(0, 5 - clubEarlyBirdCount)
-        maxSel = Math.max(1, Math.min(maxSel, remainingLimit))
+        maxSel = Math.max(0, Math.min(maxSel, remainingLimit))
       }
       return maxSel
     }
@@ -404,6 +404,14 @@
       // Validate guest attendees
       for (let i = 0; i < attendees.length; i++) {
         const att = attendees[i]
+        if (!att.fullName?.trim()) {
+          alert(`Please enter the full name for Guest Attendee ${i + 2}.`)
+          return
+        }
+        if (!att.email?.trim()) {
+          alert(`Please enter the email address for Guest Attendee ${i + 2}.`)
+          return
+        }
         const des = att.isCustom ? att.customDesignation?.trim() : att.designation
         if (!des) {
           alert(`Please select a designation for Guest Attendee ${i + 2}.`)
@@ -465,7 +473,12 @@
                 ticketCount: formData.ticketCount,
                 bookedAt: new Date().toISOString(),
                 clubName: attendeeClubName,
-                ticketTierId: "free"
+                ticketTierId: "free",
+                ticketTierName: "Free Pass",
+                eventId: bookingEvent.id,
+                eventTitle: bookingEvent.title,
+                status: "active",
+                pricePaid: 0
               }
             })
             localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
@@ -500,7 +513,7 @@
     localStorage.removeItem(getStorageKey(bookingEvent.id))
   }
 
-            if (onEventBooked) onEventBooked(bookingEvent.id)
+            if (onEventBooked) onEventBooked(bookingEvent.id, formData.ticketCount)
             router.refresh()
             setTimeout(() => { setBookingSuccess(false); setBookingEvent(null) }, 2200)
           } else {
@@ -566,7 +579,12 @@
               status: "pending",
               bookedAt: new Date().toISOString(),
               clubName: attendeeClubName,
-              ticketTierId: selectedTierId
+              ticketTierId: selectedTierId,
+              ticketTierName: selectedTierName,
+              eventId: bookingEvent.id,
+              eventTitle: bookingEvent.title,
+              pricePaid: unitPrice,
+              screenshotUrl: screenshot
             }
           })
           localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
@@ -609,7 +627,7 @@
           if (bookingEvent) {
     localStorage.removeItem(getStorageKey(bookingEvent.id))
   }
-          if (onEventBooked) onEventBooked(bookingEvent.id)
+          if (onEventBooked) onEventBooked(bookingEvent.id, formData.ticketCount)
           router.refresh()
           setTimeout(() => {
             setBookingSuccess(false)
@@ -931,6 +949,11 @@
                     </DialogHeader>
 
                     <form onSubmit={confirmBooking} className="space-y-4 text-left">
+                      {bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0) && (
+                        <div className="p-3.5 mb-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold text-center font-mono">
+                          Registrations Closed: All {bookingEvent.capacity} tickets for this event have been booked.
+                        </div>
+                      )}
                       {checkoutStep === "details" ? (
                         <>
                           {/* Ticket Tier Selection */}
@@ -1512,18 +1535,20 @@
                         </button>
                         <button
                           type="submit"
-                          disabled={isPaying}
-                          className="flex-1 flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-60 cursor-pointer"
+                          disabled={isPaying || (bookingEvent ? ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0) : false)}
+                          className="flex-1 flex items-center justify-center gap-2 text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                           style={{
-                            background: "#17171c",
+                            background: (bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0)) ? "#dc2626" : "#17171c",
                             color: "#ffffff",
                             borderRadius: "32px",
                             padding: "10px",
-                            border: "1px solid #17171c",
+                            border: (bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0)) ? "1px solid #dc2626" : "1px solid #17171c",
                             letterSpacing: "-0.01em"
                           }}
                         >
-                          {isPaying ? (
+                          {bookingEvent && ((bookingEvent.attendees || 0) >= parseInt(bookingEvent.capacity || "0") || remainingCapacity <= 0) ? (
+                            "Registrations Closed"
+                          ) : isPaying ? (
                             <>
                               <Loader2 className="h-4 w-4 animate-spin" />
                               Processing…

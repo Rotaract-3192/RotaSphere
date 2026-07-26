@@ -89,7 +89,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
 
   // Real global attendees database
-  const [attendeeRegistry, setAttendeeRegistry] = React.useState<{ id: string; name: string; email: string; eventTitle: string; date: string; checkedIn: boolean }[]>([])
+  const [attendeeRegistry, setAttendeeRegistry] = React.useState<{ id: string; name: string; email: string; eventTitle: string; date: string; checkedIn: boolean; clubName?: string; designation?: string }[]>([])
   const [salesByDay, setSalesByDay] = React.useState<{ day: string; amount: number }[]>([])
 
   React.useEffect(() => {
@@ -102,14 +102,57 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
         if (statsRes.success && statsRes.salesByDay) {
           setSalesByDay(statsRes.salesByDay)
         }
+
+        const savedDetails = typeof window !== "undefined" ? localStorage.getItem("rotasphere_ticket_details") : null
+        const localDetailsMap = savedDetails ? JSON.parse(savedDetails) : {}
+
         const attRes = await getOrganizerAttendeesAction()
-        if (attRes.success && attRes.attendees) {
-          setAttendeeRegistry(attRes.attendees)
-        }
+        let dbAttendees = (attRes.success && attRes.attendees) ? attRes.attendees : []
+        
+        // Convert local storage per-ticket passes into attendee entries
+        const localAttendees = Object.keys(localDetailsMap).map((code, idx) => {
+          const item = localDetailsMap[code]
+          return {
+            id: `att_local_${idx}_${code}`,
+            name: item.fullName || "Attendee",
+            email: item.email || "",
+            eventTitle: item.eventTitle || "District Event",
+            date: item.bookedAt ? new Date(item.bookedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : new Date().toLocaleDateString(),
+            checkedIn: true,
+            clubName: item.clubName || "Non-Member",
+            designation: item.designation || "Member"
+          }
+        })
+
+        const existingEmails = new Set(dbAttendees.map((a: any) => `${a.email}_${a.eventTitle}`))
+        const newLocalAttendees = localAttendees.filter(a => !existingEmails.has(`${a.email}_${a.eventTitle}`))
+        setAttendeeRegistry([...dbAttendees, ...newLocalAttendees])
+
         const ticketsRes = await getOrganizerTicketsAction()
-        if (ticketsRes.success && ticketsRes.tickets) {
-          setOrganizerTickets(ticketsRes.tickets)
-        }
+        let dbTickets = (ticketsRes.success && ticketsRes.tickets) ? ticketsRes.tickets : []
+        
+        const localTickets = Object.keys(localDetailsMap).map((code, idx) => {
+          const item = localDetailsMap[code]
+          return {
+            id: `t_local_${idx}_${code}`,
+            eventTitle: item.eventTitle || "District Event",
+            eventId: item.eventId || "evt-1",
+            ticketCode: code,
+            pricePaid: item.pricePaid || 0,
+            status: item.status || "active",
+            createdAt: item.bookedAt || new Date().toISOString(),
+            screenshotUrl: item.screenshotUrl || null,
+            attendeeName: item.fullName || "Attendee",
+            attendeeEmail: item.email || "",
+            orderId: item.orderId || code,
+            ticketTierName: item.ticketTierName || "Regular"
+          }
+        })
+
+        const existingCodes = new Set(dbTickets.map((t: any) => t.ticketCode))
+        const newLocalTickets = localTickets.filter(t => !existingCodes.has(t.ticketCode))
+        setOrganizerTickets([...dbTickets, ...newLocalTickets])
+
       } catch (err) {
         console.error("Failed to load organizer metrics:", err)
       }
@@ -1280,6 +1323,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <thead>
                             <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
                               <th className="pb-3">Guest</th>
+                              <th className="pb-3">Designation</th>
                               <th className="pb-3">Club Name</th>
                               <th className="pb-3">Email Address</th>
                               <th className="pb-3">Event Registered</th>
@@ -1298,8 +1342,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                     <span className="font-medium text-foreground">{item.name}</span>
                                   </div>
                                 </td>
+                                <td className="py-3 text-foreground font-medium text-[11px]">
+                                  {item.designation || "Member"}
+                                </td>
                                 <td className="py-3 text-muted-foreground font-medium uppercase text-[9px] tracking-wide">
-                                  {(item as any).clubName || "Non-Member / Unknown"}
+                                  {item.clubName || "Non-Member / Unknown"}
                                 </td>
                                 <td className="py-3 text-muted-foreground">{item.email}</td>
                                 <td className="py-3 text-muted-foreground">{item.eventTitle}</td>

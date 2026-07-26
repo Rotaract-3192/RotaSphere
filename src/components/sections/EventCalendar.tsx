@@ -435,12 +435,18 @@ export function EventCalendar({ events }: EventCalendarProps) {
                               {/* Link action */}
                               <div className="flex justify-between items-center mt-2 pt-2.5 border-t border-white/5">
                                 <span className="text-xs font-bold text-white font-mono">{getEventPriceDisplay(evt)}</span>
-                                <Link
-                                  href={`/events?eventId=${evt.id}`}
-                                  className="text-[9px] font-bold text-[#38BDF8] hover:text-[#6EB7FF] flex items-center gap-1 transition-all uppercase tracking-wider font-mono"
-                                >
-                                  Get Ticket <ArrowRight className="h-3 w-3" />
-                                </Link>
+                                {((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
+                                  <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 uppercase tracking-wider font-mono">
+                                    Sold Out
+                                  </span>
+                                ) : (
+                                  <Link
+                                    href={`/events?eventId=${evt.id}`}
+                                    className="text-[9px] font-bold text-[#38BDF8] hover:text-[#6EB7FF] flex items-center gap-1 transition-all uppercase tracking-wider font-mono"
+                                  >
+                                    Get Ticket <ArrowRight className="h-3 w-3" />
+                                  </Link>
+                                )}
                               </div>
                             </div>
                           )

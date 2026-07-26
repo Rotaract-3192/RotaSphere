@@ -333,18 +333,27 @@ export default function Home() {
                       <p className="text-xs font-weight-450 mb-4 font-mono" style={{ color: "var(--muted-foreground)" }}>
                         {evt.date}
                       </p>
-                      <Link
-                        href={`/events?eventId=${evt.id}`}
-                        className="text-xs font-medium block text-center py-2 transition-opacity hover:opacity-80"
-                        style={{
-                          background: "var(--accent)",
-                          color: "var(--accent-foreground)",
-                          borderRadius: "32px",
-                          textDecoration: "none"
-                        }}
-                      >
-                        {getEventPriceDisplay(evt) === "Free" ? "Register Free" : `Get Ticket · ${getEventPriceDisplay(evt)}`}
-                      </Link>
+                      {((evt.attendees || 0) >= parseInt(evt.capacity || "0")) ? (
+                        <span
+                          className="text-xs font-bold block text-center py-2 bg-slate-300 dark:bg-slate-800 text-slate-500 cursor-not-allowed font-mono"
+                          style={{ borderRadius: "32px" }}
+                        >
+                          Sold Out ({evt.attendees}/{evt.capacity})
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/events?eventId=${evt.id}`}
+                          className="text-xs font-medium block text-center py-2 transition-opacity hover:opacity-80"
+                          style={{
+                            background: "var(--accent)",
+                            color: "var(--accent-foreground)",
+                            borderRadius: "32px",
+                            textDecoration: "none"
+                          }}
+                        >
+                          {getEventPriceDisplay(evt) === "Free" ? "Register Free" : `Get Ticket · ${getEventPriceDisplay(evt)}`}
+                        </Link>
+                      )}
                     </div>
                   </div>
                 ))}
