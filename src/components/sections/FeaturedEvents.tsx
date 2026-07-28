@@ -938,12 +938,12 @@
                         </span>
                       </div>
                       <DialogTitle
-                        className="text-xl font-medium line-clamp-1"
-                        style={{ color: "var(--foreground)", letterSpacing: "-0.02em" }}
+                        className="text-xl font-bold line-clamp-1 text-slate-900"
+                        style={{ color: "#0f172a", letterSpacing: "-0.02em" }}
                       >
                         {bookingEvent.title}
                       </DialogTitle>
-                      <DialogDescription className="text-sm font-weight-450" style={{ color: "var(--muted-foreground)" }}>
+                      <DialogDescription className="text-xs font-semibold text-slate-600" style={{ color: "#475569" }}>
                         {checkoutStep === 'details' 
                           ? "Please fill out the registration details to complete your order."
                           : "Scan the QR code below on your banking app to transfer the amount."}
@@ -964,13 +964,14 @@
                           {/* Ticket Tier Selection */}
                           {bookingEvent.type === "paid" && tiersList.filter((t: any) => t.enabled).length > 1 && (
                             <div className="space-y-2 mb-4">
-                              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 font-mono">
+                              <label className="block text-xs font-bold text-slate-900 uppercase tracking-wider mb-1.5 font-mono">
                                 Select Ticket Type *
                               </label>
                               <div className="grid grid-cols-1 gap-2.5">
                                 {tiersList.filter((t: any) => t.enabled).map((tier: any) => {
                                   const isSoldOut = (tier.ticketsSold || 0) >= tier.capacity
                                   const isSelected = selectedTierId === tier.id
+                                  const remaining = Math.max(0, tier.capacity - (tier.ticketsSold || 0))
                                   
                                   return (
                                     <button
@@ -979,31 +980,31 @@
                                       disabled={isSoldOut}
                                       onClick={() => setSelectedTierId(tier.id)}
                                       className={cn(
-                                        "flex items-center justify-between p-3.5 rounded-xl border text-left text-xs transition-all relative overflow-hidden cursor-pointer",
+                                        "flex items-center justify-between p-3.5 rounded-xl border text-left text-xs transition-all relative overflow-hidden cursor-pointer shadow-sm",
                                         isSelected
-                                          ? "border-accent bg-accent/5 ring-1 ring-accent/20"
+                                          ? "border-[#1E88E5] bg-sky-50 ring-2 ring-[#1E88E5]/40"
                                           : isSoldOut
-                                          ? "border-border opacity-50 bg-muted/20 cursor-not-allowed"
-                                          : "border-border hover:bg-muted/30"
+                                          ? "border-slate-200 opacity-50 bg-slate-100 cursor-not-allowed"
+                                          : "border-slate-300 bg-white hover:bg-slate-50"
                                       )}
                                     >
                                       <div className="flex items-center gap-3">
                                         <div className={cn(
-                                          "h-4.5 w-4.5 rounded-full border flex items-center justify-center shrink-0",
-                                          isSelected ? "border-accent text-accent" : "border-muted-foreground"
+                                          "h-4.5 w-4.5 rounded-full border-2 flex items-center justify-center shrink-0",
+                                          isSelected ? "border-[#1E88E5] text-[#1E88E5]" : "border-slate-400"
                                         )}>
-                                          {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-accent" />}
+                                          {isSelected && <div className="h-2.5 w-2.5 rounded-full bg-[#1E88E5]" />}
                                         </div>
                                         <div>
-                                          <span className="font-bold text-foreground block text-[11px] uppercase tracking-wider">{tier.name}</span>
-                                          <span className="text-[10px] text-muted-foreground">
+                                          <span className="font-extrabold text-slate-900 block text-xs uppercase tracking-wider">{tier.name}</span>
+                                          <span className="text-[11px] text-slate-700 font-bold">
                                             {isSoldOut 
                                               ? "Sold Out" 
-                                              : `${tier.capacity - (tier.ticketsSold || 0)} tickets remaining`}
+                                              : `${remaining} tickets remaining`}
                                           </span>
                                         </div>
                                       </div>
-                                      <span className="font-bold font-mono text-foreground text-xs">
+                                      <span className="font-extrabold font-mono text-slate-900 text-sm">
                                         ₹{parseFloat(String(tier.price)).toFixed(2)}
                                       </span>
                                     </button>
@@ -1014,32 +1015,32 @@
                           )}
                           {/* Club selection searchable dropdown */}
                           <div className="space-y-2 relative mb-4">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-bold text-slate-900 uppercase tracking-wider mb-1">
                               Rotaract Club Name *
                             </label>
                             <div className="relative">
                               <div 
-                                className="flex h-10 w-full items-center justify-between rounded-xl border border-slate-700/60 bg-slate-900/40 px-3 py-2 text-xs placeholder:text-slate-500 cursor-pointer text-white"
+                                className="flex h-10 w-full items-center justify-between rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs cursor-pointer text-slate-900 shadow-sm font-semibold"
                                 onClick={() => setAttendeeClubDropdownOpen(!attendeeClubDropdownOpen)}
                               >
-                                <span className={cn(attendeeClubName ? "text-white font-medium" : "text-slate-500")}>
+                                <span className={cn(attendeeClubName ? "text-slate-900 font-bold" : "text-slate-500 font-medium")}>
                                   {attendeeClubName || "Select or search club name..."}
                                 </span>
-                                <Users className="h-4 w-4 text-slate-500 opacity-60" />
+                                <Users className="h-4 w-4 text-slate-600 opacity-80" />
                               </div>
                               
                               {attendeeClubDropdownOpen && (
                                 <div 
-                                  className="absolute z-[9999] mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-700 bg-[#0B1528] p-1.5 shadow-lg animate-fade-in"
+                                  className="absolute z-[9999] mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-300 bg-white p-1.5 shadow-xl animate-fade-in"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <div className="flex items-center border-b border-slate-700 pb-1.5 mb-1.5 px-2">
+                                  <div className="flex items-center border-b border-slate-200 pb-1.5 mb-1.5 px-2">
                                     <input
                                       type="text"
                                       placeholder="Search club name..."
                                       value={attendeeClubSearch}
                                       onChange={(e) => setAttendeeClubSearch(e.target.value)}
-                                      className="w-full bg-transparent text-xs text-white outline-none border-none placeholder:text-slate-500"
+                                      className="w-full bg-transparent text-xs text-slate-900 font-semibold outline-none border-none placeholder:text-slate-400"
                                       autoFocus
                                     />
                                   </div>
@@ -1051,10 +1052,10 @@
                                           setAttendeeClubDropdownOpen(false)
                                           setAttendeeClubSearch("")
                                         }}
-                                        className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors bg-[#1E88E5]/10 text-[#38BDF8] font-medium border border-dashed border-[#1E88E5]/30 hover:bg-[#1E88E5]/20 mb-1"
+                                        className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors bg-sky-50 text-[#1E88E5] font-bold border border-dashed border-[#1E88E5]/40 hover:bg-sky-100 mb-1"
                                       >
                                         <span>Use custom: "{attendeeClubSearch.trim()}"</span>
-                                        <Plus className="h-3.5 w-3.5 text-[#38BDF8]" />
+                                        <Plus className="h-3.5 w-3.5 text-[#1E88E5]" />
                                       </div>
                                     )}
                                     
@@ -1066,21 +1067,21 @@
                                         setAttendeeClubSearch("")
                                       }}
                                       className={cn(
-                                        "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors",
+                                        "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors font-medium",
                                         attendeeClubName === "Non-Rotaractor" 
-                                          ? "bg-[#1E88E5]/20 text-[#38BDF8] font-semibold" 
-                                          : "hover:bg-slate-800 text-slate-400 hover:text-white"
+                                          ? "bg-sky-100 text-[#1E88E5] font-bold" 
+                                          : "hover:bg-slate-100 text-slate-700 hover:text-slate-900"
                                       )}
                                     >
                                       <span>Non-Rotaractor (Guest)</span>
-                                      {attendeeClubName === "Non-Rotaractor" && <Check className="h-3 w-3 text-[#38BDF8]" />}
+                                      {attendeeClubName === "Non-Rotaractor" && <Check className="h-3 w-3 text-[#1E88E5]" />}
                                     </div>
                                     
                                     {ROTARACT_CLUBS.filter(club => 
                                       club.toLowerCase().includes(attendeeClubSearch.toLowerCase())
                                     ).length === 0 ? (
                                       attendeeClubSearch.trim() ? null : (
-                                        <div className="py-2 text-center text-xs text-slate-500">
+                                        <div className="py-2 text-center text-xs text-slate-500 font-medium">
                                           No clubs found
                                         </div>
                                       )
@@ -1098,14 +1099,14 @@
                                               setAttendeeClubSearch("")
                                             }}
                                             className={cn(
-                                              "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors",
+                                              "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors font-medium",
                                               isSelected 
-                                                ? "bg-[#1E88E5]/20 text-[#38BDF8] font-semibold" 
-                                                : "hover:bg-slate-800 text-slate-400 hover:text-white"
+                                                ? "bg-sky-100 text-[#1E88E5] font-bold" 
+                                                : "hover:bg-slate-100 text-slate-700 hover:text-slate-900"
                                             )}
                                           >
                                             <span>{club}</span>
-                                            {isSelected && <Check className="h-3 w-3 text-[#38BDF8]" />}
+                                            {isSelected && <Check className="h-3 w-3 text-[#1E88E5]" />}
                                           </div>
                                         )
                                       })
@@ -1114,12 +1115,12 @@
                                 </div>
                               )}
                             </div>
-                            <p className="text-[10px] text-slate-500">Search and select the club you belong to. If you are not a Rotaractor, select "Non-Rotaractor".</p>
+                            <p className="text-[10px] text-slate-600 font-medium">Search and select the club you belong to. If you are not a Rotaractor, select "Non-Rotaractor".</p>
                           </div>
 
                           {/* Name Input */}
                           <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
                               Full Name *
                             </label>
                             <input
@@ -1127,11 +1128,11 @@
                               required
                               value={formData.fullName}
                               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                              className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                              className="w-full text-sm font-semibold p-3 rounded-lg border focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-[#1E88E5]/20 transition-all duration-200 shadow-sm"
                               style={{
                                 background: "#ffffff",
-                                borderColor: "#d9d9dd",
-                                color: "#212121"
+                                borderColor: "#94a3b8",
+                                color: "#0f172a"
                               }}
                               placeholder="Enter attendee's full name"
                             />
@@ -1139,7 +1140,7 @@
 
                           {/* Email Input */}
                           <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
                               Email Address *
                             </label>
                             <input
@@ -1147,11 +1148,11 @@
                               required
                               value={formData.email}
                               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                              className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                              className="w-full text-sm font-semibold p-3 rounded-lg border focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-[#1E88E5]/20 transition-all duration-200 shadow-sm"
                               style={{
                                 background: "#ffffff",
-                                borderColor: "#d9d9dd",
-                                color: "#212121"
+                                borderColor: "#94a3b8",
+                                color: "#0f172a"
                               }}
                               placeholder="email@example.com"
                             />
@@ -1159,7 +1160,7 @@
 
                           {/* Phone Input */}
                           <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
                               Phone Number *
                             </label>
                             <input
@@ -1167,11 +1168,11 @@
                               required
                               value={formData.phone}
                               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                              className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                              className="w-full text-sm font-semibold p-3 rounded-lg border focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-[#1E88E5]/20 transition-all duration-200 shadow-sm"
                               style={{
                                 background: "#ffffff",
-                                borderColor: "#d9d9dd",
-                                color: "#212121"
+                                borderColor: "#94a3b8",
+                                color: "#0f172a"
                               }}
                               placeholder="+91 98765 43210"
                             />
@@ -1179,7 +1180,7 @@
 
                           {/* Designation Input */}
                           <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                            <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
                               Designation / Role in Club *
                             </label>
                             <select
@@ -1194,11 +1195,11 @@
                                   setCustomDesignation("")
                                 }
                               }}
-                              className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                              className="w-full text-sm font-semibold p-3 rounded-lg border focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-[#1E88E5]/20 transition-all duration-200 shadow-sm"
                               style={{
                                 background: "#ffffff",
-                                borderColor: "#d9d9dd",
-                                color: "#212121"
+                                borderColor: "#94a3b8",
+                                color: "#0f172a"
                               }}
                               required
                             >
@@ -1212,7 +1213,7 @@
 
                           {isCustomDesignation && (
                             <div className="animate-fade-in">
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
                                 Custom Designation *
                               </label>
                               <input
@@ -1220,11 +1221,11 @@
                                 required
                                 value={customDesignation}
                                 onChange={(e) => setCustomDesignation(e.target.value)}
-                                className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                                className="w-full text-sm font-semibold p-3 rounded-lg border focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-[#1E88E5]/20 transition-all duration-200 shadow-sm"
                                 style={{
                                   background: "#ffffff",
-                                  borderColor: "#d9d9dd",
-                                  color: "#212121"
+                                  borderColor: "#94a3b8",
+                                  color: "#0f172a"
                                 }}
                                 placeholder="Enter custom designation"
                               />
@@ -1234,17 +1235,17 @@
                           {/* Quantity and Special Requests */}
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div className="col-span-1 sm:col-span-1">
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
                                 Tickets *
                               </label>
                               <select
                                 value={formData.ticketCount}
                                 onChange={(e) => setFormData({ ...formData, ticketCount: parseInt(e.target.value) })}
-                                className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                                className="w-full text-sm font-semibold p-3 rounded-lg border focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-[#1E88E5]/20 transition-all duration-200 shadow-sm"
                                 style={{
                                   background: "#ffffff",
-                                  borderColor: "#d9d9dd",
-                                  color: "#212121"
+                                  borderColor: "#94a3b8",
+                                  color: "#0f172a"
                                 }}
                               >
                                 {Array.from({ length: maxSelectable }, (_, i) => i + 1).map((num) => (
@@ -1255,18 +1256,18 @@
                               </select>
                             </div>
                             <div className="col-span-1 sm:col-span-2">
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                              <label className="block text-xs font-extrabold text-slate-900 uppercase tracking-wider mb-1">
                                 Special Requests
                               </label>
                               <input
                                 type="text"
                                 value={formData.specialRequests}
                                 onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
-                                className="w-full text-sm p-3 rounded-lg border focus:outline-none focus:border-[#17458f] focus:ring-1 focus:ring-[#17458f]/20 transition-all duration-200"
+                                className="w-full text-sm font-semibold p-3 rounded-lg border focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-[#1E88E5]/20 transition-all duration-200 shadow-sm"
                                 style={{
                                   background: "#ffffff",
-                                  borderColor: "#d9d9dd",
-                                  color: "#212121"
+                                  borderColor: "#94a3b8",
+                                  color: "#0f172a"
                                 }}
                                 placeholder="Dietary, access needs..."
                               />

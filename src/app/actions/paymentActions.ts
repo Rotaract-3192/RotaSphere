@@ -1291,12 +1291,16 @@ export async function issueManualTicketAction(input: IssueManualTicketInput) {
     const createdTickets = []
 
     for (const pass of passesToCreate) {
-      // 1. Insert ticket record
+      // Ensure exact pass email is preserved
+      const passEmail = pass.email ? pass.email.trim() : input.primaryEmail ? input.primaryEmail.trim() : "attendee@rotasphere.org"
+
+      // 1. Insert ticket record with exact user_email stored
       const { data: ticketData, error: ticketError } = await supabaseAdmin
         .from("tickets")
         .insert({
           event_id: input.eventId,
           user_id: userId,
+          user_email: passEmail,
           ticket_code: pass.ticketCode,
           price_paid: 0,
           status: "active",
@@ -1309,45 +1313,39 @@ export async function issueManualTicketAction(input: IssueManualTicketInput) {
 
       if (ticketError) throw ticketError
 
-      // Ensure pass email is unique for guest passes
-      let passEmail = pass.email ? pass.email.trim() : ""
-      if (!passEmail) {
-        passEmail = input.primaryEmail.includes("@")
-          ? input.primaryEmail.replace("@", `+pass_${pass.ticketCode}@`)
-          : `${input.primaryEmail}_pass_${pass.ticketCode}`
-      }
-
-      // 2. Insert attendee record with ticket_id link
+      // 2. Insert attendee record with ticket_id link & exact email
+      const manualClerkId = `manual_${pass.ticketCode}`
+      const nowIso = new Date().toISOString()
       let { error: attendeeError } = await supabaseAdmin
         .from("attendees")
         .insert({
           event_id: input.eventId,
-          clerk_id: userId,
+          clerk_id: manualClerkId,
           full_name: pass.fullName,
           email: passEmail,
           ticket_id: ticketData.id,
           club_name: pass.clubName,
           designation: pass.designation,
-          status: "confirmed"
+          status: "confirmed",
+          registered_at: nowIso
         })
 
-      // If duplicate email unique constraint triggers, retry with unique ticket pass email
+      // If duplicate constraint triggers, retry with unique clerk_id while keeping exact email
       if (attendeeError && (attendeeError.code === "23505" || attendeeError.message?.includes("unique"))) {
-        const fallbackEmail = input.primaryEmail.includes("@")
-          ? input.primaryEmail.replace("@", `+pass_${pass.ticketCode}@`)
-          : `${input.primaryEmail}_pass_${pass.ticketCode}`
+        const fallbackClerkId = `manual_${pass.ticketCode}_${Date.now()}`
 
         const retryRes = await supabaseAdmin
           .from("attendees")
           .insert({
             event_id: input.eventId,
-            clerk_id: userId,
+            clerk_id: fallbackClerkId,
             full_name: pass.fullName,
-            email: fallbackEmail,
+            email: passEmail,
             ticket_id: ticketData.id,
             club_name: pass.clubName,
             designation: pass.designation,
-            status: "confirmed"
+            status: "confirmed",
+            registered_at: nowIso
           })
         attendeeError = retryRes.error
       }

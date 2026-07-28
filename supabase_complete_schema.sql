@@ -18,6 +18,7 @@ ALTER TABLE tickets ADD COLUMN IF NOT EXISTS payment_screenshot_url TEXT;
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS payment_id TEXT;
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS order_id TEXT;
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
 -- 3. UPDATE ATTENDEES TABLE (Add Designation, Club Name & Status columns)
 ALTER TABLE attendees ADD COLUMN IF NOT EXISTS designation TEXT DEFAULT '';
@@ -25,6 +26,7 @@ ALTER TABLE attendees ADD COLUMN IF NOT EXISTS club_name TEXT DEFAULT '';
 ALTER TABLE attendees ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'confirmed';
 ALTER TABLE attendees DROP CONSTRAINT IF EXISTS attendees_event_id_email_key;
 ALTER TABLE attendees DROP CONSTRAINT IF EXISTS attendees_email_key;
+ALTER TABLE attendees DROP CONSTRAINT IF EXISTS attendees_event_id_clerk_id_key;
 
 -- 4. UPDATE PROFILES TABLE (Add Designation, Home Club & Fix Role Constraints)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS designation TEXT DEFAULT '';

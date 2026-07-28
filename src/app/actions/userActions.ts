@@ -46,6 +46,12 @@ async function logAuditAction(adminId: string, adminEmail: string, action: strin
   }
 }
 
+export async function getCurrentUserRoleAction() {
+  const { userId } = await auth()
+  if (!userId) return { role: "ATTENDEE" as UserRole, status: "ACTIVE" as UserStatus, email: "" }
+  return await getCallerProfile(userId)
+}
+
 // Helper to check the caller's role/status
 async function getCallerProfile(userId: string) {
   if (!isSupabaseAdminConfigured) {

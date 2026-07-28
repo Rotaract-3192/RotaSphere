@@ -89,7 +89,21 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
 
   // Real global attendees database
-  const [attendeeRegistry, setAttendeeRegistry] = React.useState<{ id: string; name: string; email: string; eventTitle: string; date: string; checkedIn: boolean; clubName?: string; designation?: string }[]>([])
+  const [attendeeRegistry, setAttendeeRegistry] = React.useState<{ 
+    id: string; 
+    name: string; 
+    email: string; 
+    eventTitle: string; 
+    date: string; 
+    checkedIn: boolean; 
+    clubName?: string; 
+    designation?: string; 
+    ticketCode?: string; 
+    isManual?: boolean; 
+    ticketTierName?: string; 
+    pricePaid?: string; 
+    approvalStatus?: string 
+  }[]>([])
   const [salesByDay, setSalesByDay] = React.useState<{ day: string; amount: number }[]>([])
 
   React.useEffect(() => {
@@ -361,7 +375,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
 
       const res = await issueManualTicketAction({
         eventId: manualBookingEventId,
-        ticketCount: manualBookingForm.ticketCount,
+        ticketCount: 1,
         primaryFullName: manualBookingForm.fullName,
         primaryEmail: manualBookingForm.email,
         primaryClubName: manualBookingForm.clubName,
@@ -382,7 +396,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
           checkedIn: true,
           clubName: t.clubName,
           designation: t.designation,
-          ticketCode: t.ticketCode
+          ticketCode: t.ticketCode ? (t.ticketCode.startsWith("#") ? t.ticketCode : `#${t.ticketCode}`) : "N/A",
+          isManual: true,
+          ticketTierName: manualBookingForm.ticketTierName || "Manual Pass",
+          pricePaid: "₹0.00",
+          approvalStatus: "Approved (Active)"
         }))
 
         setAttendeeRegistry(prev => [...newAttendees, ...prev])
@@ -481,12 +499,37 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
     showToast(`📊 Exported ${listToExport.length} attendees to Excel sheet!`)
   }
 
-  const toggleCheckIn = (id: string) => {
+  const toggleCheckIn = async (id: string) => {
+    const target = attendeeRegistry.find(a => a.id === id)
+    if (!target) return
+    const newStatus = !target.checkedIn
+
     setAttendeeRegistry(prev => prev.map(a => 
-      a.id === id ? { ...a, checkedIn: !a.checkedIn } : a
+      a.id === id ? { ...a, checkedIn: newStatus } : a
     ))
-    showToast("Status updated successfully.")
+    showToast(newStatus ? "✅ Marked guest as Checked In" : "↩️ Check-in status reset.")
+
+    try {
+      const { toggleAttendeeCheckInAction } = await import("@/app/actions/eventActions")
+      await toggleAttendeeCheckInAction(id, newStatus)
+    } catch (err) {
+      console.error("Failed to persist check-in:", err)
+    }
   }
+
+  const filteredAttendees = attendeeRegistry.filter((item: any) => {
+    const matchesEvent = selectedExportEvent === "all" || item.eventTitle?.toLowerCase() === selectedExportEvent.toLowerCase()
+    const q = searchQuery.toLowerCase().trim()
+    const matchesSearch = !q || (
+      item.name?.toLowerCase().includes(q) ||
+      item.email?.toLowerCase().includes(q) ||
+      item.eventTitle?.toLowerCase().includes(q) ||
+      item.clubName?.toLowerCase().includes(q) ||
+      item.designation?.toLowerCase().includes(q) ||
+      item.ticketCode?.toLowerCase().includes(q)
+    )
+    return matchesEvent && matchesSearch
+  })
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1588,9 +1631,11 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                     </div>
                   </div>
                   
-                  {attendeeRegistry.length === 0 ? (
+                  {filteredAttendees.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground text-xs">
-                      No attendees have registered for your events yet.
+                      {attendeeRegistry.length === 0 
+                        ? "No attendees have registered for your events yet." 
+                        : "No attendees found matching your filter criteria."}
                     </div>
                   ) : (
                     <>
@@ -1609,104 +1654,132 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border/40">
-                            {attendeeRegistry.map((item) => (
-                              <tr key={item.id} className="hover:bg-muted/20 dark:hover:bg-muted/10">
-                                <td className="py-3">
-                                  <div className="flex items-center gap-2">
-                                    <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px]">
-                                      {item.name.charAt(0)}
+                            {filteredAttendees.map((item) => {
+                              const isManualPass = item.isManual || item.ticketCode?.includes("ORG-PASS") || item.id?.startsWith("manual")
+                              return (
+                                <tr key={item.id} className="hover:bg-muted/20 dark:hover:bg-muted/10">
+                                  <td className="py-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px] shrink-0">
+                                        {item.name.charAt(0)}
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="font-medium text-foreground">{item.name}</span>
+                                          {isManualPass && (
+                                            <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                              Manual Pass
+                                            </span>
+                                          )}
+                                        </div>
+                                        {item.ticketCode && item.ticketCode !== "N/A" && (
+                                          <span className="text-[10px] text-muted-foreground font-mono block">{item.ticketCode}</span>
+                                        )}
+                                      </div>
                                     </div>
-                                    <span className="font-medium text-foreground">{item.name}</span>
-                                  </div>
-                                </td>
-                                <td className="py-3 text-foreground font-medium text-[11px]">
-                                  {item.designation || "Member"}
-                                </td>
-                                <td className="py-3 text-muted-foreground font-medium uppercase text-[9px] tracking-wide">
-                                  {item.clubName || "Non-Member / Unknown"}
-                                </td>
-                                <td className="py-3 text-muted-foreground">{item.email}</td>
-                                <td className="py-3 text-muted-foreground">{item.eventTitle}</td>
-                                <td className="py-3 text-muted-foreground">{item.date}</td>
-                                <td className="py-3 text-right">
-                                  <button
-                                    onClick={() => toggleCheckIn(item.id)}
-                                    className={cn(
-                                      "inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold border transition-colors",
-                                      item.checkedIn
-                                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
-                                        : "bg-muted border-border text-foreground hover:bg-muted/80"
-                                    )}
-                                  >
-                                    {item.checkedIn ? (
-                                      <>
-                                        <Check className="h-3 w-3" />
-                                        Checked In
-                                      </>
-                                    ) : (
-                                      "Check In"
-                                    )}
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
+                                  </td>
+                                  <td className="py-3 text-foreground font-medium text-[11px]">
+                                    {item.designation || "Member"}
+                                  </td>
+                                  <td className="py-3 text-muted-foreground font-medium uppercase text-[9px] tracking-wide">
+                                    {item.clubName || "Non-Member / Unknown"}
+                                  </td>
+                                  <td className="py-3 text-muted-foreground">{item.email}</td>
+                                  <td className="py-3 text-muted-foreground">{item.eventTitle}</td>
+                                  <td className="py-3 text-muted-foreground">{item.date}</td>
+                                  <td className="py-3 text-right">
+                                    <button
+                                      onClick={() => toggleCheckIn(item.id)}
+                                      className={cn(
+                                        "inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold border transition-colors cursor-pointer",
+                                        item.checkedIn
+                                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
+                                          : "bg-muted border-border text-foreground hover:bg-muted/80"
+                                      )}
+                                    >
+                                      {item.checkedIn ? (
+                                        <>
+                                          <Check className="h-3 w-3" />
+                                          Checked In
+                                        </>
+                                      ) : (
+                                        "Check In"
+                                      )}
+                                    </button>
+                                  </td>
+                                </tr>
+                              )
+                            })}
                           </tbody>
                         </table>
                       </div>
 
                       {/* Mobile View */}
                       <div className="block md:hidden space-y-3">
-                        {attendeeRegistry.map((item) => (
-                          <div key={item.id} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs">
-                            <div className="flex justify-between items-start">
-                              <div className="flex items-center gap-2">
-                                <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px] shrink-0">
-                                  {item.name.charAt(0)}
+                        {filteredAttendees.map((item) => {
+                          const isManualPass = item.isManual || item.ticketCode?.includes("ORG-PASS") || item.id?.startsWith("manual")
+                          return (
+                            <div key={item.id} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs">
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center font-semibold text-[10px] shrink-0">
+                                    {item.name.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-medium text-foreground block">{item.name}</span>
+                                      {isManualPass && (
+                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                          Manual Pass
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground block">{item.email}</span>
+                                    {item.ticketCode && item.ticketCode !== "N/A" && (
+                                      <span className="text-[10px] text-muted-foreground font-mono block">{item.ticketCode}</span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div>
-                                  <span className="font-medium text-foreground block">{item.name}</span>
-                                  <span className="text-[10px] text-muted-foreground block">{item.email}</span>
+                              </div>
+
+                              <div className="space-y-1 text-[10px] text-muted-foreground pt-2 border-t border-border/20">
+                                <div className="flex justify-between">
+                                  <span>Rotaract Club</span>
+                                  <span className="font-semibold text-foreground uppercase text-[9px]">{(item as any).clubName || "Non-Member / Unknown"}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Event Registered</span>
+                                  <span className="text-foreground text-right max-w-[180px] truncate">{item.eventTitle}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Date Registered</span>
+                                  <span className="text-foreground">{item.date}</span>
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="space-y-1 text-[10px] text-muted-foreground pt-2 border-t border-border/20">
-                              <div className="flex justify-between">
-                                <span>Rotaract Club</span>
-                                <span className="font-semibold text-foreground uppercase text-[9px]">{(item as any).clubName || "Non-Member / Unknown"}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Event Registered</span>
-                                <span className="text-foreground text-right max-w-[180px] truncate">{item.eventTitle}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Date Registered</span>
-                                <span className="text-foreground">{item.date}</span>
+                              <div className="pt-2 border-t border-border/20 flex justify-end">
+                                <button
+                                  onClick={() => toggleCheckIn(item.id)}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-colors w-full justify-center sm:w-auto cursor-pointer",
+                                    item.checkedIn
+                                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
+                                      : "bg-muted border-border text-foreground hover:bg-muted/80"
+                                  )}
+                                >
+                                  {item.checkedIn ? (
+                                    <>
+                                      <Check className="h-3 w-3" />
+                                      Checked In
+                                    </>
+                                  ) : (
+                                    "Check In"
+                                  )}
+                                </button>
                               </div>
                             </div>
-
-                            <div className="pt-2 border-t border-border/20 flex justify-end">
-                              <button
-                                onClick={() => toggleCheckIn(item.id)}
-                                className={cn(
-                                  "inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-colors w-full justify-center sm:w-auto",
-                                  item.checkedIn
-                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
-                                    : "bg-muted border-border text-foreground hover:bg-muted/80"
-                                )}
-                              >
-                                {item.checkedIn ? (
-                                  <>
-                                    <Check className="h-3 w-3" />
-                                    Checked In
-                                  </>
-                                ) : (
-                                  "Check In"
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </>
                   )}
@@ -2090,12 +2163,12 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                 <select
                   value={manualBookingEventId}
                   onChange={(e) => setManualBookingEventId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground font-medium outline-none text-xs cursor-pointer"
+                  className="w-full p-2.5 rounded-xl border border-border bg-card text-card-foreground font-medium outline-none text-xs cursor-pointer"
                   required
                 >
-                  <option value="" disabled>Select an Event</option>
+                  <option value="" disabled className="bg-[#0C1E3D] text-white">Select an Event</option>
                   {events.map(evt => (
-                    <option key={evt.id} value={evt.id}>
+                    <option key={evt.id} value={evt.id} className="bg-[#0C1E3D] text-white">
                       {evt.title} ({evt.attendees}/{evt.capacity} seats)
                     </option>
                   ))}
@@ -2160,14 +2233,14 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                         setManualBookingForm(prev => ({ ...prev, isCustomDesignation: false, designation: e.target.value }))
                       }
                     }}
-                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs cursor-pointer"
+                    className="w-full p-2.5 rounded-xl border border-border bg-card text-card-foreground outline-none text-xs cursor-pointer"
                   >
                     {ROTARACT_DESIGNATIONS.map((desig) => (
-                      <option key={desig} value={desig}>
+                      <option key={desig} value={desig} className="bg-[#0C1E3D] text-white">
                         {desig}
                       </option>
                     ))}
-                    <option value="Custom">Custom Designation...</option>
+                    <option value="Custom" className="bg-[#0C1E3D] text-white">Custom Designation...</option>
                   </select>
 
                   {manualBookingForm.isCustomDesignation && (
@@ -2183,36 +2256,21 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                 </div>
               </div>
 
-              {/* Ticket Count & Payment Note */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
-                    Ticket Pass Count
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={manualBookingForm.ticketCount}
-                    onChange={(e) => setManualBookingForm(prev => ({ ...prev, ticketCount: parseInt(e.target.value) || 1 }))}
-                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
-                    Payment Status / Note
-                  </label>
-                  <select
-                    value={manualBookingForm.paymentNote}
-                    onChange={(e) => setManualBookingForm(prev => ({ ...prev, paymentNote: e.target.value }))}
-                    className="w-full p-2.5 rounded-xl border border-border bg-muted/20 dark:bg-muted/10 text-foreground outline-none text-xs cursor-pointer"
-                  >
-                    <option value="Cash Received at Gate">Cash Received at Gate</option>
-                    <option value="UPI Spot Payment Verified">UPI Spot Payment Verified</option>
-                    <option value="Organizer VIP / Complimentary">Organizer VIP / Complimentary</option>
-                    <option value="Assisted Phone Booking">Assisted Phone Booking</option>
-                  </select>
-                </div>
+              {/* Payment Status / Note */}
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1 font-mono">
+                  Payment Status / Note
+                </label>
+                <select
+                  value={manualBookingForm.paymentNote}
+                  onChange={(e) => setManualBookingForm(prev => ({ ...prev, paymentNote: e.target.value }))}
+                  className="w-full p-2.5 rounded-xl border border-border bg-card text-card-foreground outline-none text-xs cursor-pointer"
+                >
+                  <option value="Cash Received at Gate" className="bg-[#0C1E3D] text-white">Cash Received at Gate</option>
+                  <option value="UPI Spot Payment Verified" className="bg-[#0C1E3D] text-white">UPI Spot Payment Verified</option>
+                  <option value="Organizer VIP / Complimentary" className="bg-[#0C1E3D] text-white">Organizer VIP / Complimentary</option>
+                  <option value="Assisted Phone Booking" className="bg-[#0C1E3D] text-white">Assisted Phone Booking</option>
+                </select>
               </div>
 
               <DialogFooter className="pt-3">

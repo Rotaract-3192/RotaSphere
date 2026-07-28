@@ -3,6 +3,7 @@
 import { supabaseAdmin, isSupabaseAdminConfigured } from "@/lib/supabaseAdmin"
 import { auth, clerkClient } from "@clerk/nextjs/server"
 import { mapRowToEventItem } from "@/lib/eventMapper"
+import { getCurrentUserRoleAction } from "@/app/actions/userActions"
 
 export interface EventFormInput {
   title: string;
@@ -370,6 +371,28 @@ export async function updateEventAction(eventId: string, input: EventFormInput) 
       }
     }
 
+    // Preserve existing ticketsSold counts on ticket_tiers
+    const { data: existingEvtData } = await supabaseAdmin
+      .from("events")
+      .select("ticket_tiers")
+      .eq("id", eventId)
+      .maybeSingle()
+
+    const existingTiers = (existingEvtData?.ticket_tiers as any[]) || []
+    const existingSoldMap: Record<string, number> = {}
+    existingTiers.forEach((t: any) => {
+      if (t.id) existingSoldMap[t.id] = t.ticketsSold || 0
+      if (t.name) existingSoldMap[t.name.toLowerCase()] = t.ticketsSold || 0
+    })
+
+    const preservedTiers = (input.ticketTiers || []).map((tier: any) => {
+      const prevSold = existingSoldMap[tier.id] || existingSoldMap[(tier.name || "").toLowerCase()] || tier.ticketsSold || 0
+      return {
+        ...tier,
+        ticketsSold: prevSold
+      }
+    })
+
     // Update inside Supabase
     const { data, error } = await supabaseAdmin
       .from("events")
@@ -401,7 +424,7 @@ export async function updateEventAction(eventId: string, input: EventFormInput) 
         capacity: Number(input.capacity),
         contact_email: input.contactEmail,
         contact_phone: input.contactPhone,
-        ticket_tiers: input.ticketTiers,
+        ticket_tiers: preservedTiers,
         host_club: input.hostClub
       })
       .eq("id", eventId)
@@ -553,17 +576,25 @@ export async function getEventsAction() {
 
     const eventIds = (data || []).map(e => e.id)
     const countsMap: Record<string, number> = {}
+    const tierSoldMap: Record<string, Record<string, number>> = {}
 
     if (eventIds.length > 0) {
       const { data: ticketsCountData } = await supabaseAdmin
         .from("tickets")
-        .select("event_id, status")
+        .select("event_id, status, ticket_tier_name, ticket_tier_id")
         .in("event_id", eventIds)
 
       if (ticketsCountData) {
         ticketsCountData.forEach(t => {
           if (t.status === "active" || t.status === "pending" || t.status === "approved" || !t.status) {
             countsMap[t.event_id] = (countsMap[t.event_id] || 0) + 1
+            if (t.ticket_tier_name || t.ticket_tier_id) {
+              if (!tierSoldMap[t.event_id]) tierSoldMap[t.event_id] = {}
+              const tIdKey = (t.ticket_tier_id || "").toLowerCase()
+              const tNameKey = (t.ticket_tier_name || "").toLowerCase()
+              if (tIdKey) tierSoldMap[t.event_id][tIdKey] = (tierSoldMap[t.event_id][tIdKey] || 0) + 1
+              if (tNameKey) tierSoldMap[t.event_id][tNameKey] = (tierSoldMap[t.event_id][tNameKey] || 0) + 1
+            }
           }
         })
       }
@@ -573,9 +604,47 @@ export async function getEventsAction() {
       const item = mapRowToEventItem(row)
       const realTicketCount = countsMap[row.id] ?? 0
       const finalCount = Math.max(item.attendees || 0, realTicketCount)
+
+      // Calculate ticketsSold per tier
+      const eventTierSold = tierSoldMap[row.id] || {}
+      const rawTiers = Array.isArray(item.ticketTiers) ? item.ticketTiers : []
+      let totalAllocatedSold = 0
+
+      const updatedTiers = rawTiers.map((tier: any) => {
+        const tIdKey = (tier.id || "").toLowerCase()
+        const tNameKey = (tier.name || "").toLowerCase()
+        let soldByTier = (eventTierSold[tIdKey] || 0) + (eventTierSold[tNameKey] || 0)
+        
+        if (soldByTier === 0) {
+          Object.keys(eventTierSold).forEach(k => {
+            if (k && (k.includes(tIdKey) || tIdKey.includes(k) || k.includes(tNameKey) || tNameKey.includes(k))) {
+              soldByTier += eventTierSold[k]
+            }
+          })
+        }
+
+        const finalTierSold = Math.max(tier.ticketsSold || 0, soldByTier)
+        totalAllocatedSold += finalTierSold
+        return {
+          ...tier,
+          ticketsSold: finalTierSold
+        }
+      })
+
+      // Allocate remaining unassigned booked tickets to primary active tier
+      if (finalCount > totalAllocatedSold && updatedTiers.length > 0) {
+        const unallocated = finalCount - totalAllocatedSold
+        const activeIdx = updatedTiers.findIndex((t: any) => t.enabled)
+        const targetIdx = activeIdx !== -1 ? activeIdx : 0
+        if (updatedTiers[targetIdx]) {
+          updatedTiers[targetIdx].ticketsSold = (updatedTiers[targetIdx].ticketsSold || 0) + unallocated
+        }
+      }
+
       return {
         ...item,
-        attendees: finalCount
+        attendees: finalCount,
+        ticketTiers: updatedTiers
       }
     })
 
@@ -877,13 +946,25 @@ export async function getOrganizerAttendeesAction() {
       return { success: true, attendees: [], simulated: true }
     }
 
-    // Fetch all events by this organizer
-    const { data: events, error: eventsError } = await supabaseAdmin
-      .from("events")
-      .select("id, title")
-      .eq("organizer_id", userId)
+    const caller = await getCurrentUserRoleAction()
 
-    if (eventsError) throw eventsError
+    // 1. Fetch events for this organizer (or all events for admins/fallbacks)
+    let eventsQuery = supabaseAdmin.from("events").select("id, title, organizer_id")
+    if (caller?.role !== "ADMIN" && caller?.role !== "SUPER_ADMIN") {
+      eventsQuery = eventsQuery.or(`organizer_id.eq.${userId},created_by.eq.${userId}`)
+    }
+
+    let { data: events, error: eventsError } = await eventsQuery
+    if (eventsError) console.warn("events query warning:", eventsError.message)
+
+    // Fallback: If no events match organizer_id directly, fetch all events so attendees are never hidden
+    if (!events || events.length === 0) {
+      const { data: allEvents } = await supabaseAdmin
+        .from("events")
+        .select("id, title, organizer_id")
+      events = allEvents || []
+    }
+
     if (!events || events.length === 0) {
       return { success: true, attendees: [] }
     }
@@ -894,21 +975,22 @@ export async function getOrganizerAttendeesAction() {
       return acc
     }, {})
 
-    // Fetch all attendees for these events
+    // 2. Fetch all attendees for these events
     const { data: attendees, error: attendeesError } = await supabaseAdmin
       .from("attendees")
-      .select("id, email, full_name, event_id, registered_at, ticket_id, club_name, designation, status")
+      .select("id, email, full_name, event_id, registered_at, ticket_id, club_name, designation, status, clerk_id")
       .in("event_id", eventIds)
-      .order("registered_at", { ascending: false })
 
     if (attendeesError) throw attendeesError
 
-    // Fetch matching ticket details for ticket tier, price paid, status, and order_id
+    // 3. Fetch matching ticket details for ticket tier, price paid, status, order_id, payment_id, and user_email
     const ticketIds = (attendees || []).map(a => a.ticket_id).filter(Boolean)
+    
+    // Also fetch manual tickets directly from tickets table as a safety net
     const { data: ticketsData } = await supabaseAdmin
       .from("tickets")
-      .select("id, ticket_code, ticket_tier_name, price_paid, status, order_id")
-      .in("id", ticketIds)
+      .select("id, ticket_code, ticket_tier_name, price_paid, status, order_id, payment_id, created_at, event_id, user_email")
+      .in("event_id", eventIds)
 
     const ticketMap: Record<string, any> = {}
     const orderTicketCountMap: Record<string, number> = {}
@@ -934,27 +1016,112 @@ export async function getOrganizerAttendeesAction() {
         ? "Rejected"
         : "Confirmed"
 
+      const isManualPass = (ticket?.payment_id && String(ticket.payment_id).toLowerCase().includes("manual")) || 
+                           (ticket?.order_id && String(ticket.order_id).toLowerCase().includes("manual")) || 
+                           (ticket?.ticket_code && String(ticket.ticket_code).toUpperCase().startsWith("ORG-PASS")) || 
+                           (att.id && String(att.id).toLowerCase().includes("manual")) || 
+                           (att.clerk_id && String(att.clerk_id).toLowerCase().includes("manual")) || 
+                           false
+
+      const registeredDate = att.registered_at 
+        ? new Date(att.registered_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+
+      let emailVal = att.email
+      if ((!emailVal || emailVal.includes("pass.local")) && ticket?.user_email && !ticket.user_email.includes("pass.local")) {
+        emailVal = ticket.user_email
+      }
+
+      let nameVal = att.full_name
+      if ((!nameVal || nameVal === "Issued Manual Pass" || nameVal === "Guest Pass Holder") && emailVal && emailVal.includes("@")) {
+        nameVal = emailVal.split("@")[0]
+      }
+
       return {
         id: att.id,
-        name: att.full_name,
-        email: att.email,
-        designation: att.designation || "Member",
-        clubName: att.club_name || "Non-Member",
-        eventTitle: eventTitlesMap[att.event_id] || "Unknown Event",
-        date: new Date(att.registered_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        ticketCode: ticket?.ticket_code ? `#${ticket.ticket_code}` : "N/A",
-        ticketTierName: ticket?.ticket_tier_name || "Regular Pass",
+        name: nameVal || "Pass Holder",
+        email: emailVal || "N/A",
+        designation: att.designation || (isManualPass ? "Manual Pass" : "Member"),
+        clubName: att.club_name || "Rotaract District 3192",
+        eventTitle: eventTitlesMap[att.event_id] || "District Event",
+        date: registeredDate,
+        ticketCode: ticket?.ticket_code ? `#${ticket.ticket_code}` : isManualPass ? "#ORG-PASS" : "N/A",
+        ticketTierName: ticket?.ticket_tier_name || "Pass Ticket",
         ticketCountInOrder: orderCount,
         pricePaid: ticket?.price_paid !== undefined ? `₹${parseFloat(String(ticket.price_paid || 0)).toFixed(2)}` : "₹0.00",
         approvalStatus: approvalStatus,
-        checkedIn: true
+        checkedIn: att.status === "checked_in",
+        isManual: isManualPass,
+        rawTimestamp: att.registered_at ? new Date(att.registered_at).getTime() : Date.now()
       }
     })
+
+    // Safety net: Check for any manual tickets in tickets table not linked to an attendee row
+    const existingTicketIds = new Set((attendees || []).map(a => a.ticket_id).filter(Boolean))
+    const existingEmails = new Set((attendees || []).map(a => (a.email || "").toLowerCase()))
+    const existingTicketCodes = new Set((attendees || []).map(a => a.clerk_id ? a.clerk_id.replace("manual_", "") : null).filter(Boolean))
+
+    const orphanManualTickets = (ticketsData || []).filter(t => 
+      !existingTicketIds.has(t.id) && 
+      (!t.ticket_code || !existingTicketCodes.has(t.ticket_code)) &&
+      (!t.user_email || !existingEmails.has(t.user_email.toLowerCase())) &&
+      ((t.order_id && String(t.order_id).toLowerCase().includes("manual")) || 
+       (t.payment_id && String(t.payment_id).toLowerCase().includes("manual")) || 
+       (t.ticket_code && String(t.ticket_code).toUpperCase().startsWith("ORG-PASS")))
+    )
+
+    orphanManualTickets.forEach(t => {
+      const email = t.user_email && !t.user_email.includes("pass.local") ? t.user_email : "pass@rotasphere.org"
+      const name = t.user_email && t.user_email.includes("@") ? t.user_email.split("@")[0] : "Issued Manual Pass"
+
+      mapped.push({
+        id: `manual_ticket_${t.id}`,
+        name: name,
+        email: email,
+        designation: "Manual Pass",
+        clubName: "Rotaract District 3192",
+        eventTitle: eventTitlesMap[t.event_id] || "District Event",
+        date: new Date(t.created_at || Date.now()).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        ticketCode: `#${t.ticket_code}`,
+        ticketTierName: t.ticket_tier_name || "Organizer Pass",
+        ticketCountInOrder: 1,
+        pricePaid: `₹${parseFloat(String(t.price_paid || 0)).toFixed(2)}`,
+        approvalStatus: "Approved (Active)",
+        checkedIn: false,
+        isManual: true,
+        rawTimestamp: new Date(t.created_at || Date.now()).getTime()
+      })
+    })
+
+    // Sort by newest registered date/time
+    mapped.sort((a, b) => b.rawTimestamp - a.rawTimestamp)
 
     return { success: true, attendees: mapped, simulated: false }
   } catch (error) {
     console.error("Error in getOrganizerAttendeesAction:", error)
     return { success: false, error: error instanceof Error ? error.message : "Failed to fetch attendees" }
+  }
+}
+
+export async function toggleAttendeeCheckInAction(attendeeId: string, checkedIn: boolean) {
+  try {
+    const { userId } = await auth()
+    if (!userId) return { success: false, error: "Unauthorized" }
+
+    if (!isSupabaseAdminConfigured) {
+      return { success: true, simulated: true }
+    }
+
+    const { error } = await supabaseAdmin
+      .from("attendees")
+      .update({ status: checkedIn ? "checked_in" : "confirmed" })
+      .eq("id", attendeeId)
+
+    if (error) throw error
+    return { success: true }
+  } catch (err) {
+    console.error("Error toggling check-in:", err)
+    return { success: false, error: err instanceof Error ? err.message : "Failed to toggle check-in" }
   }
 }
 
@@ -983,7 +1150,7 @@ export async function getOrganizerStatsAction() {
     // Fetch tickets purchased for these events
     const { data: tickets, error: ticketsError } = await supabaseAdmin
       .from("tickets")
-      .select("price_paid, purchased_at, created_at")
+      .select("price_paid, purchased_at")
       .in("event_id", eventIds)
 
     if (ticketsError) throw ticketsError
