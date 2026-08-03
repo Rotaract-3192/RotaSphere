@@ -640,10 +640,8 @@ if (file.size > MAX_FILE_SIZE) {
         } else {
           alert(res.error || "Failed to submit ticket request.")
         }
-      } catch (err) {
-        console.error("Offline paid checkout error:", err)
-        catch (err: any) {
-  console.error("Ticket booking failed:", err);
+ } catch (err: any) {
+  console.error("Offline paid checkout error:", err);
 
   const message =
     err?.message ||
@@ -652,7 +650,7 @@ if (file.size > MAX_FILE_SIZE) {
 
   if (message.includes("Failed to find Server Action")) {
     alert(
-      "The website was recently updated while you were booking. Please refresh the page and submit your registration again."
+      "The website was recently updated while you were booking. Please refresh the page and try again."
     );
     return;
   }
@@ -669,15 +667,15 @@ if (file.size > MAX_FILE_SIZE) {
 
   alert(
     message || "An unexpected error occurred while booking your ticket."
-  );
+  )
+} finally {
+  setIsPaying(false)
 }
-      } finally {
-        setIsPaying(false)
-      }
-    }
 
-    return (
-      <section
+}
+
+return (
+  <section
         id="events"
         className="relative section-padding"
         style={{ background: "var(--background)" }}
