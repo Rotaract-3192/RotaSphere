@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+
   output: "standalone",
 
   reactStrictMode: true,
@@ -12,6 +13,12 @@ const nextConfig: NextConfig = {
   compress: true,
 
   serverExternalPackages: ["mongoose"],
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "20mb",
+    },
+  },
 
   images: {
     remotePatterns: [

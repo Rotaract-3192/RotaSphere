@@ -354,17 +354,19 @@
 
     const { isFree, unitPrice, totalPrice, currencySymbol, selectedTierName } = getPriceDetails()
 
-    const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (!file) return
+      const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
 
-      setScreenshotError(null)
+        setScreenshotError(null)
 
-      // Check size limit (1GB limit)
-      if (file.size > 1024 * 1024 * 1024) {
-        setScreenshotError("Receipt screenshot size exceeds 1GB limit.")
-        return
-      }
+        // Check size limit (20MB limit)
+        const MAX_FILE_SIZE = 20 * 1024 * 1024
+
+if (file.size > MAX_FILE_SIZE) {
+  setScreenshotError("Receipt screenshot must be smaller than 20 MB.")
+  return
+}
 
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -640,7 +642,35 @@
         }
       } catch (err) {
         console.error("Offline paid checkout error:", err)
-        alert("An unexpected error occurred during ticket booking.")
+        catch (err: any) {
+  console.error("Ticket booking failed:", err);
+
+  const message =
+    err?.message ||
+    err?.toString() ||
+    "";
+
+  if (message.includes("Failed to find Server Action")) {
+    alert(
+      "The website was recently updated while you were booking. Please refresh the page and submit your registration again."
+    );
+    return;
+  }
+
+  if (
+    message.includes("Body exceeded") ||
+    message.includes("413")
+  ) {
+    alert(
+      "The uploaded payment screenshot is too large. Please upload an image smaller than 20 MB."
+    );
+    return;
+  }
+
+  alert(
+    message || "An unexpected error occurred while booking your ticket."
+  );
+}
       } finally {
         setIsPaying(false)
       }
@@ -1454,7 +1484,7 @@
                                 />
                                 <Upload className="h-6 w-6 text-slate-400 mb-2" />
                                 <span className="text-xs font-semibold text-slate-600 block">Click or Drag screenshot here</span>
-                                <span className="text-[9px] text-slate-400 mt-1">Accepts PNG, JPG, WEBP (Image should be under 1GB)</span>
+                                <span className="text-[9px] text-slate-400 mt-1">Accepts PNG, JPG, WEBP (Maximum file size: 20 MB)</span>
                               </div>
                             ) : (
                               <div className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between gap-3 shadow-sm">
