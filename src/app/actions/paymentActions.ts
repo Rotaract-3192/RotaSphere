@@ -617,12 +617,9 @@ async function uploadScreenshotToSupabase(base64Str: string): Promise<string> {
       throw error;
     }
 
-    // Retrieve public URL for client display
-    const { data: urlData } = supabaseAdmin.storage
-      .from("RotaSphere")
-      .getPublicUrl(fileName);
-
-    return urlData.publicUrl;
+    // Return the bucket path (not public URL) - we'll generate signed URLs on retrieval
+    // This is safer for private buckets and allows dynamic signed URL generation
+    return `RotaSphere/${fileName}`;
   } catch (err) {
     console.error("uploadScreenshotToSupabase helper failed:", err);
     return base64Str; // Return base64 as fallback to avoid request blockage
@@ -1156,16 +1153,29 @@ export async function getOrganizerTicketsAction() {
 
       let screenshotUrl = t.payment_screenshot_url || (t.payment_id !== "offline_upi" && t.payment_id?.startsWith("data:") ? t.payment_id : null)
 
-      // If it is a Supabase public/private storage url, generate a signed url to bypass private access limits
-      if (screenshotUrl && screenshotUrl.startsWith("http") && screenshotUrl.includes("RotaSphere/")) {
+      // If screenshot URL exists, ensure it's a signed URL for private bucket access
+      if (screenshotUrl && !screenshotUrl.startsWith("data:")) {
         try {
-          const filename = screenshotUrl.substring(screenshotUrl.indexOf("RotaSphere/") + "RotaSphere/".length)
-          const { data: signedData, error: signedError } = await supabaseAdmin.storage
-            .from("RotaSphere")
-            .createSignedUrl(filename, 7200) // 2 hours expiry
+          // Handle both formats: "RotaSphere/filename" and full URLs
+          let filename = screenshotUrl
+          if (screenshotUrl.startsWith("http")) {
+            // Extract filename from full URL
+            const idx = screenshotUrl.indexOf("RotaSphere/")
+            if (idx !== -1) {
+              filename = screenshotUrl.substring(idx + "RotaSphere/".length)
+            }
+            // If not a RotaSphere URL, keep as-is
+          }
           
-          if (!signedError && signedData) {
-            screenshotUrl = signedData.signedUrl
+          // Generate a fresh signed URL (2 hour expiry) for Supabase paths
+          if (filename && !filename.startsWith("http")) {
+            const { data: signedData, error: signedError } = await supabaseAdmin.storage
+              .from("RotaSphere")
+              .createSignedUrl(filename, 7200)
+            
+            if (!signedError && signedData) {
+              screenshotUrl = signedData.signedUrl
+            }
           }
         } catch (err) {
           console.error("Failed to generate signed url for ticket:", err)

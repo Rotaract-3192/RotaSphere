@@ -585,8 +585,7 @@ if (file.size > MAX_FILE_SIZE) {
               ticketTierName: selectedTierName,
               eventId: bookingEvent.id,
               eventTitle: bookingEvent.title,
-              pricePaid: unitPrice,
-              screenshotUrl: screenshot
+              pricePaid: unitPrice
             }
           })
           localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
