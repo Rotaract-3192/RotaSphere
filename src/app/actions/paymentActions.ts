@@ -646,18 +646,11 @@ export async function bookOfflinePaidTicketAction(input: {
       return { success: false, error: "Unauthorized. You must be signed in to book tickets." }
     }
 
-    const ticketCount = input.ticketCount || 1
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.eventId)
-
-    if (!isSupabaseAdminConfigured || !isUuid) {
-      const ticketCodes = Array.from({ length: ticketCount }).map(() => generateTicketCode())
-      return {
-        success: true,
-        simulated: true,
-        ticketCode: ticketCodes.join(", "),
-        ticketId: `ticket_offline_sim_${Date.now()}`
-      }
+    if (!isSupabaseAdminConfigured) {
+      return { success: false, error: "Database not configured." }
     }
+
+    const ticketCount = input.ticketCount || 1
 
     // Fetch event details
     const { data: event, error: eventError } = await supabaseAdmin
@@ -667,13 +660,7 @@ export async function bookOfflinePaidTicketAction(input: {
       .maybeSingle()
 
     if (eventError || !event) {
-      const ticketCodes = Array.from({ length: ticketCount }).map(() => generateTicketCode())
-      return {
-        success: true,
-        simulated: true,
-        ticketCode: ticketCodes.join(", "),
-        ticketId: `ticket_offline_sim_${Date.now()}`
-      }
+      return { success: false, error: "Event not found" }
     }
 
     // Enforce club-specific Early Bird limit of 5 tickets
@@ -1111,22 +1098,13 @@ export async function getOrganizerTicketsAction() {
       return { success: true, tickets: [], simulated: true }
     }
 
-    const caller = await getCallerProfile(userId)
+    // 1. Fetch all event IDs by this organizer
+    const { data: events, error: eventsError } = await supabaseAdmin
+      .from("events")
+      .select("id, title")
+      .eq("organizer_id", userId)
 
-    // 1. Fetch event IDs: Admins & Super Admins get all events; organizers get their events
-    let eventsQuery = supabaseAdmin.from("events").select("id, title")
-    if (caller.role !== "ADMIN" && caller.role !== "SUPER_ADMIN") {
-      eventsQuery = eventsQuery.or(`organizer_id.eq.${userId},created_by.eq.${userId}`)
-    }
-
-    let { data: events, error: eventsError } = await eventsQuery
-    if (eventsError) console.warn("getOrganizerTicketsAction events query warning:", eventsError.message)
-
-    if (!events || events.length === 0) {
-      const { data: allEvents } = await supabaseAdmin.from("events").select("id, title")
-      events = allEvents || []
-    }
-
+    if (eventsError) throw eventsError
     if (!events || events.length === 0) {
       return { success: true, tickets: [] }
     }
@@ -1168,17 +1146,12 @@ export async function getOrganizerTicketsAction() {
 
     // Map to a clean structure resolving private bucket signed URLs
     const mappedPromises = (tickets || []).map(async (t: any) => {
+      // Find matching attendee name & email entered in form
       const matchedAttendee = attendeeByTicketMap[t.id] || attendeeByClerkMap[t.user_id]
       const primaryAttendeeName = matchedAttendee?.full_name || "Attendee Pass"
       const primaryAttendeeEmail = matchedAttendee?.email || ""
-      let screenshotUrl = t.payment_screenshot_url || (
-        t.payment_id && 
-        t.payment_id !== "offline_upi" && 
-        t.payment_id !== "organizer_manual_issue" &&
-        !t.payment_id.startsWith("manual:")
-          ? t.payment_id 
-          : null
-      )
+
+      let screenshotUrl = t.payment_screenshot_url || (t.payment_id !== "offline_upi" && t.payment_id?.startsWith("data:") ? t.payment_id : null)
 
       // If screenshot URL exists, ensure it's a signed URL for private bucket access
       if (screenshotUrl && !screenshotUrl.startsWith("data:")) {

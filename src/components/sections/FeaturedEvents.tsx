@@ -603,8 +603,7 @@
               ticketTierName: selectedTierName,
               eventId: bookingEvent.id,
               eventTitle: bookingEvent.title,
-              pricePaid: unitPrice,
-              screenshotUrl: screenshot
+              pricePaid: unitPrice
             }
           })
           localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))

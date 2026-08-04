@@ -168,7 +168,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
             eventId: item.eventId || "evt-1",
             ticketCode: code,
             pricePaid: item.pricePaid || 0,
-            status: item.status || (item.screenshotUrl ? "pending" : "active"),
+            status: item.status || "active",
             createdAt: item.bookedAt || new Date().toISOString(),
             screenshotUrl: item.screenshotUrl || null,
             attendeeName: item.fullName || "Attendee",
