@@ -126,6 +126,9 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
         const savedDetails = typeof window !== "undefined" ? localStorage.getItem("rotasphere_ticket_details") : null
         const localDetailsMap = savedDetails ? JSON.parse(savedDetails) : {}
 
+        const savedManualStr = typeof window !== "undefined" ? localStorage.getItem("rotasphere_manual_attendees") : null
+        const savedManualList = savedManualStr ? JSON.parse(savedManualStr) : []
+
         const attRes = await getOrganizerAttendeesAction()
         let dbAttendees = (attRes.success && attRes.attendees) ? attRes.attendees : []
         
@@ -140,13 +143,19 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
             date: item.bookedAt ? new Date(item.bookedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : new Date().toLocaleDateString(),
             checkedIn: true,
             clubName: item.clubName || "Non-Member",
-            designation: item.designation || "Member"
+            designation: item.designation || "Member",
+            ticketCode: code ? (code.startsWith("#") ? code : `#${code}`) : "N/A",
+            ticketTierName: item.ticketTierName || "Regular Pass"
           }
         })
 
         const existingEmails = new Set(dbAttendees.map((a: any) => `${a.email}_${a.eventTitle}`))
+        const existingCodes = new Set(dbAttendees.map((a: any) => a.ticketCode).filter(Boolean))
+        
         const newLocalAttendees = localAttendees.filter(a => !existingEmails.has(`${a.email}_${a.eventTitle}`))
-        setAttendeeRegistry([...dbAttendees, ...newLocalAttendees])
+        const extraManuals = savedManualList.filter((m: any) => !existingCodes.has(m.ticketCode) && !existingEmails.has(`${m.email}_${m.eventTitle}`))
+
+        setAttendeeRegistry([...extraManuals, ...dbAttendees, ...newLocalAttendees])
 
         const ticketsRes = await getOrganizerTicketsAction()
         let dbTickets = (ticketsRes.success && ticketsRes.tickets) ? ticketsRes.tickets : []
@@ -169,8 +178,8 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
           }
         })
 
-        const existingCodes = new Set(dbTickets.map((t: any) => t.ticketCode))
-        const newLocalTickets = localTickets.filter(t => !existingCodes.has(t.ticketCode))
+        const existingTicketCodes = new Set(dbTickets.map((t: any) => t.ticketCode))
+        const newLocalTickets = localTickets.filter(t => !existingTicketCodes.has(t.ticketCode))
         setOrganizerTickets([...dbTickets, ...newLocalTickets])
 
       } catch (err) {
@@ -406,18 +415,44 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
         setAttendeeRegistry(prev => [...newAttendees, ...prev])
         setEvents(prev => prev.map(evt => evt.id === manualBookingEventId ? { ...evt, attendees: evt.attendees + manualBookingForm.ticketCount } : evt))
 
+        // Persist manual passes in local storage as fallback for simulated/mock events
+        try {
+          const savedManuals = JSON.parse(localStorage.getItem("rotasphere_manual_attendees") || "[]")
+          const updatedManuals = [...newAttendees, ...savedManuals]
+          localStorage.setItem("rotasphere_manual_attendees", JSON.stringify(updatedManuals))
+        } catch (e) {
+          console.warn("Failed to persist manual attendees to localStorage:", e)
+        }
+
+        // Sync new tickets into organizerTickets state table
+        const newOrgTickets = res.tickets.map((t: any, i: number) => ({
+          id: t.id || `manual_t_${Date.now()}_${i}`,
+          eventTitle: targetEvt?.title || "Event Pass",
+          eventId: manualBookingEventId,
+          ticketCode: t.ticketCode,
+          pricePaid: 0,
+          status: "active",
+          createdAt: new Date().toISOString(),
+          screenshotUrl: null,
+          attendeeName: t.fullName,
+          attendeeEmail: t.email,
+          orderId: `manual_${Date.now()}_${t.ticketCode}`,
+          ticketTierName: t.tierName || manualBookingForm.ticketTierName || "Organizer Pass"
+        }))
+        setOrganizerTickets(prev => [...newOrgTickets, ...prev])
+
         showToast(`🎉 Successfully issued ${res.tickets.length} ticket pass(es)!`)
-        setManualBookingOpen(false)
+        // Keep modal open to show issuedTicketsResult modal view with ticket codes
         setManualBookingForm({
           fullName: "",
           email: "",
-          clubName: "Rotaract Club of Bengaluru East",
-          designation: "Member",
+          clubName: homeClub || "Rotaract Club of Bangalore",
+          designation: designation || "Member",
           customDesignation: "",
           isCustomDesignation: false,
           ticketCount: 1,
-          paymentNote: "UPI Spot Payment Verified",
-          ticketTierName: "Regular Pass"
+          paymentNote: "Cash Received at Gate",
+          ticketTierName: "General Pass"
         })
       } else {
         showToast(`❌ Failed to issue ticket: ${res.error}`)
@@ -1645,6 +1680,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <thead>
                             <tr className="border-b border-border text-muted-foreground font-semibold uppercase tracking-wider text-[9px] pb-2">
                               <th className="pb-3">Guest</th>
+                              <th className="pb-3">Ticket / Pass Code</th>
                               <th className="pb-3">Designation</th>
                               <th className="pb-3">Club Name</th>
                               <th className="pb-3">Email Address</th>
@@ -1656,6 +1692,12 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                           <tbody className="divide-y divide-border/40">
                             {filteredAttendees.map((item) => {
                               const isManualPass = item.isManual || item.ticketCode?.includes("ORG-PASS") || item.id?.startsWith("manual")
+                              const codeDisplay = item.ticketCode && item.ticketCode !== "N/A" 
+                                ? item.ticketCode 
+                                : isManualPass 
+                                ? "#ORG-PASS" 
+                                : "N/A"
+
                               return (
                                 <tr key={item.id} className="hover:bg-muted/20 dark:hover:bg-muted/10">
                                   <td className="py-3">
@@ -1664,18 +1706,26 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                         {item.name.charAt(0)}
                                       </div>
                                       <div>
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="font-medium text-foreground">{item.name}</span>
-                                          {isManualPass && (
-                                            <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                              Manual Pass
-                                            </span>
-                                          )}
-                                        </div>
-                                        {item.ticketCode && item.ticketCode !== "N/A" && (
-                                          <span className="text-[10px] text-muted-foreground font-mono block">{item.ticketCode}</span>
+                                        <span className="font-medium text-foreground block">{item.name}</span>
+                                        <span className="text-[10px] text-muted-foreground block">{item.email}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3">
+                                    <div className="flex flex-col gap-0.5">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-mono font-bold text-accent text-[11px]">
+                                          {codeDisplay}
+                                        </span>
+                                        {isManualPass && (
+                                          <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                            Manual Pass
+                                          </span>
                                         )}
                                       </div>
+                                      <span className="text-[9px] text-muted-foreground uppercase font-mono tracking-tight">
+                                        {item.ticketTierName || (isManualPass ? "Organizer Pass" : "Regular Pass")}
+                                      </span>
                                     </div>
                                   </td>
                                   <td className="py-3 text-foreground font-medium text-[11px]">
@@ -1718,6 +1768,12 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                       <div className="block md:hidden space-y-3">
                         {filteredAttendees.map((item) => {
                           const isManualPass = item.isManual || item.ticketCode?.includes("ORG-PASS") || item.id?.startsWith("manual")
+                          const codeDisplay = item.ticketCode && item.ticketCode !== "N/A" 
+                            ? item.ticketCode 
+                            : isManualPass 
+                            ? "#ORG-PASS" 
+                            : "N/A"
+
                           return (
                             <div key={item.id} className="p-4 rounded-xl border border-border bg-muted/10 dark:bg-muted/5 space-y-3 text-xs">
                               <div className="flex justify-between items-start">
@@ -1735,9 +1791,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
                                       )}
                                     </div>
                                     <span className="text-[10px] text-muted-foreground block">{item.email}</span>
-                                    {item.ticketCode && item.ticketCode !== "N/A" && (
-                                      <span className="text-[10px] text-muted-foreground font-mono block">{item.ticketCode}</span>
-                                    )}
+                                    <span className="text-[10px] font-bold text-accent font-mono block mt-0.5">{codeDisplay} • {item.ticketTierName || "Regular Pass"}</span>
                                   </div>
                                 </div>
                               </div>

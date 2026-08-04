@@ -1037,6 +1037,18 @@ export async function getOrganizerAttendeesAction() {
         nameVal = emailVal.split("@")[0]
       }
 
+      const extractedCodeFromClerk = att.clerk_id?.startsWith("manual_") 
+        ? att.clerk_id.replace(/^manual_/, "").split("_")[0] 
+        : null
+
+      const ticketCodeVal = ticket?.ticket_code 
+        ? (ticket.ticket_code.startsWith("#") ? ticket.ticket_code : `#${ticket.ticket_code}`)
+        : extractedCodeFromClerk 
+        ? `#${extractedCodeFromClerk}` 
+        : isManualPass 
+        ? "#ORG-PASS" 
+        : "N/A"
+
       return {
         id: att.id,
         name: nameVal || "Pass Holder",
@@ -1045,8 +1057,8 @@ export async function getOrganizerAttendeesAction() {
         clubName: att.club_name || "Rotaract District 3192",
         eventTitle: eventTitlesMap[att.event_id] || "District Event",
         date: registeredDate,
-        ticketCode: ticket?.ticket_code ? `#${ticket.ticket_code}` : isManualPass ? "#ORG-PASS" : "N/A",
-        ticketTierName: ticket?.ticket_tier_name || "Pass Ticket",
+        ticketCode: ticketCodeVal,
+        ticketTierName: ticket?.ticket_tier_name || (isManualPass ? "Organizer Pass" : "Regular Pass"),
         ticketCountInOrder: orderCount,
         pricePaid: ticket?.price_paid !== undefined ? `₹${parseFloat(String(ticket.price_paid || 0)).toFixed(2)}` : "₹0.00",
         approvalStatus: approvalStatus,
