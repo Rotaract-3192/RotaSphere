@@ -363,10 +363,28 @@
         // Check size limit (20MB limit)
         const MAX_FILE_SIZE = 20 * 1024 * 1024
 
-if (file.size > MAX_FILE_SIZE) {
-  setScreenshotError("Receipt screenshot must be smaller than 20 MB.")
-  return
-}
+        // Reject HEIC / HEIF images
+        const isHeicFile =
+          file.type === "image/heic" ||
+          file.type === "image/heif" ||
+          file.name.toLowerCase().endsWith(".heic") ||
+          file.name.toLowerCase().endsWith(".heif")
+
+        if (isHeicFile) {
+          setScreenshot(null)
+          setScreenshotError(
+            "HEIC photos from iPhones are not supported. Please convert the image to JPG or PNG before uploading."
+          )
+          e.currentTarget.value = ""
+          return
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+          setScreenshot(null)
+          setScreenshotError("Receipt screenshot must be smaller than 20 MB.")
+          e.currentTarget.value = ""
+          return
+        }
 
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -1475,14 +1493,14 @@ return (
                               <div className="border border-dashed border-slate-300 hover:border-[#1E88E5]/50 rounded-xl p-6 transition-colors bg-white flex flex-col items-center text-center relative cursor-pointer">
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                                   required
                                   onChange={handleScreenshotChange}
                                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 />
                                 <Upload className="h-6 w-6 text-slate-400 mb-2" />
                                 <span className="text-xs font-semibold text-slate-600 block">Click or Drag screenshot here</span>
-                                <span className="text-[9px] text-slate-400 mt-1">Accepts PNG, JPG, WEBP (Maximum file size: 20 MB)</span>
+                                <span className="text-[9px] text-slate-400 mt-1">Accepts JPG, JPEG, PNG & WEBP (Maximum file size: 20 MB). HEIC images are not supported.</span>
                               </div>
                             ) : (
                               <div className="border border-slate-200 rounded-xl p-3 bg-white flex items-center justify-between gap-3 shadow-sm">
