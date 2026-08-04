@@ -1187,10 +1187,11 @@ export async function getOrganizerTicketsAction() {
           let filename = screenshotUrl
           if (screenshotUrl.startsWith("http")) {
             // Extract filename from full URL
-            const idx = screenshotUrl.indexOf("RotaSphere/")
-            if (idx !== -1) {
-              filename = screenshotUrl.substring(idx + "RotaSphere/".length)
-            }
+            const url = new URL(screenshotUrl)
+
+                filename = decodeURIComponent(
+                    url.pathname.split("/RotaSphere/")[1] || ""
+                )
             // If not a RotaSphere URL, keep as-is
           }
           
@@ -1202,6 +1203,7 @@ export async function getOrganizerTicketsAction() {
             
             if (!signedError && signedData) {
               screenshotUrl = signedData.signedUrl
+              console.log("Signed URL:", screenshotUrl)
             }
           }
         } catch (err) {
