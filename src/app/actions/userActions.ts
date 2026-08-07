@@ -108,59 +108,73 @@ async function getCallerProfile(userId: string) {
   if (error || !profile) {
     // FALLBACK: Auto-sync from Clerk if profile is missing in the database
     try {
-      const client = await clerkClient()
-      const clerkUser = await client.users.getUser(userId)
-      const email = clerkUser.primaryEmailAddress?.emailAddress || ""
-      const fullName = clerkUser.fullName || clerkUser.username || "Event Enthusiast"
-      const imageUrl = clerkUser.imageUrl
+  const client = await clerkClient()
+  const clerkUser = await client.users.getUser(userId)
 
-      const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
-      // Write lowercase to DB (check constraint requirement)
-      const roleForDb = isSuperAdmin ? "super_admin" : "attendee"
-      const statusForDb = isSuperAdmin ? "ACTIVE" : "ACTIVE"
+  const email = (clerkUser.primaryEmailAddress?.emailAddress || "").toLowerCase()
+  const fullName = clerkUser.fullName || clerkUser.username || "Event Enthusiast"
+  const imageUrl = clerkUser.imageUrl
 
-      const { error: upsertError } = await supabaseAdmin
-        .from("profiles")
-        .upsert(
-          {
-            id: userId,
-            email: email.toLowerCase(),
-            full_name: fullName,
-            role: roleForDb,
-            status: statusForDb,
-            image_url: imageUrl,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "id" }
-        )
+  const isSuperAdmin = email === SUPER_ADMIN_EMAIL.toLowerCase()
 
-      if (upsertError) {
-        throw new Error(`Profile auto-sync failed: ${upsertError.message}`)
-      }
+  const roleForDb = isSuperAdmin ? "super_admin" : "attendee"
+  const statusForDb = "ACTIVE"
 
-      const normalizedRole = normalizeRole(roleForDb)
-      const normalizedStatus = normalizeStatus(statusForDb)
+  // -------------------------------------------------
+  // NEW: Look for existing profile by email
+  // -------------------------------------------------
 
-      try {
-        await client.users.updateUserMetadata(userId, {
-          publicMetadata: { role: normalizedRole, status: normalizedStatus }
-        })
-      } catch (clerkErr) {
-        console.warn("[Auth] Clerk metadata update failed (non-fatal):", clerkErr)
-      }
+  const { data: existingByEmail, error: emailLookupError } =
+  await supabaseAdmin
+    .from("profiles")
+    .select("role, status, email, bio, home_club, designation")
+    .eq("email", email)
+    .maybeSingle()
 
-      return { 
-        role: normalizedRole, 
-        status: normalizedStatus, 
-        email, 
-        bio: "", 
-        homeClub: "",
-        designation: ""
-      }
-    } catch (fallbackErr) {
-      console.error("[Auth] Auto-sync fallback failed:", fallbackErr)
-      return null
+if (emailLookupError) {
+  throw emailLookupError
+}
+
+  if (existingByEmail) {
+  return {
+    role: normalizeRole(existingByEmail.role),
+    status: normalizeStatus(existingByEmail.status),
+    email: existingByEmail.email,
+    bio: existingByEmail.bio || "",
+    homeClub: existingByEmail.home_club || "",
+    designation: existingByEmail.designation || "",
+  }
+} else {
+    const { error: insertError } = await supabaseAdmin
+      .from("profiles")
+      .insert({
+        id: userId,
+        email,
+        full_name: fullName,
+        role: roleForDb,
+        status: statusForDb,
+        image_url: imageUrl,
+        updated_at: new Date().toISOString(),
+      })
+
+    if (insertError) {
+      throw insertError
     }
+  }
+
+  return {
+    role: normalizeRole(roleForDb),
+    status: normalizeStatus(statusForDb),
+    email,
+    bio: "",
+    homeClub: "",
+    designation: "",
+  }
+}
+catch (err) {
+  console.error("[Auth] Auto-sync fallback failed:", err)
+  return null
+}
   }
   // Normalize DB lowercase → uppercase for RBAC comparisons
   return {
