@@ -113,14 +113,16 @@ export default function DashboardPage() {
           if (!res.simulated) {
             let loadedEvents = res.events as EventItem[]
             if (user?.role === "ORGANIZER") {
-              loadedEvents = loadedEvents.filter(e => e.organizerId === user.id)
+              const matched = loadedEvents.filter(e => e.organizerId === user.id)
+              loadedEvents = matched.length > 0 ? matched : loadedEvents
             }
             finalEvents = loadedEvents
           } else {
             const savedEvents = localStorage.getItem("rotasphere_events")
             let loadedEvents = savedEvents ? JSON.parse(savedEvents) : mockEvents
             if (user?.role === "ORGANIZER") {
-              loadedEvents = loadedEvents.filter((e: any) => e.organizerId === user?.id)
+              const matched = loadedEvents.filter((e: any) => e.organizerId === user?.id)
+              loadedEvents = matched.length > 0 ? matched : loadedEvents
             }
             finalEvents = loadedEvents
           }

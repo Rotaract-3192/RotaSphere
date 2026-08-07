@@ -559,13 +559,10 @@ export async function getEventsAction() {
     // Build Supabase Query
     let query = supabaseAdmin.from("events").select("*")
 
-    // Filter query based on role
-    if (callerRole !== "SUPER_ADMIN" && callerRole !== "ADMIN") {
-      if (callerRole === "ORGANIZER") {
-        query = query.or(`status.eq.PUBLISHED,organizer_id.eq.${userId}`)
-      } else {
-        query = query.eq("status", "PUBLISHED")
-      }
+    // If caller is signed in, fetch all events so organizers and admins can manage them regardless of draft/pending status
+    if (!userId) {
+      // For anonymous guests on public pages, show published and pending approval events (case-insensitive)
+      query = query.or("status.ilike.published,status.ilike.pending%,status.is.null")
     }
 
     const { data, error } = await query.order("created_at", { ascending: false })
