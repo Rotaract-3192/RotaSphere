@@ -566,8 +566,7 @@ export async function getEventsAction() {
     }
 
     const { data, error } = await query.order("created_at", { ascending: false })
-    console.log("Fetched events:", data?.length)
-console.log(data)
+
 
     if (error) {
       throw error

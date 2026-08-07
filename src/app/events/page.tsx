@@ -24,13 +24,16 @@ function EventsContent() {
       setIsLoading(true)
       try {
         const res = await getEventsAction()
+        console.log("EVENT RESPONSE", res)
         if (res.success) {
           if (!res.simulated) {
             setEvents((res.events as EventItem[]).filter(e => e.status !== "CANCELLED"))
+            console.log("SETTING EVENTS", res.events)
           } else {
             const saved = localStorage.getItem("rotasphere_events")
             const current = saved ? JSON.parse(saved) : []
             setEvents(current.filter((e: any) => (e.status === "PUBLISHED" || !e.status) && e.status !== "CANCELLED"))
+            console.log("SETTING EVENTS in else Block : ", res.events)
           }
         }
       } catch (err) {
@@ -49,7 +52,7 @@ function EventsContent() {
   const handleEventBooked = (eventId: string, ticketCount: number = 1) => {
     setEvents(prev => prev.map(e => e.id === eventId ? { ...e, attendees: (e.attendees || 0) + ticketCount } : e))
   }
-
+  console.log("RENDER EVENTS", events)
   return (
     <>
       <Navbar onCreateEventClick={() => setIsCreateEventOpen(true)} />
