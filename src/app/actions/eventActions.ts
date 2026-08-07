@@ -99,53 +99,27 @@ export async function getCallerProfile(userId: string) {
     .maybeSingle()
 
   if (error || !profile) {
-    // FALLBACK: Auto-sync from Clerk if profile is missing in the database
-    try {
-      const client = await clerkClient()
-      const clerkUser = await client.users.getUser(userId)
-      const email = clerkUser.primaryEmailAddress?.emailAddress || ""
-      const fullName = clerkUser.fullName || clerkUser.username || "Event Enthusiast"
-      const imageUrl = clerkUser.imageUrl
+  try {
+    const client = await clerkClient()
+    const clerkUser = await client.users.getUser(userId)
 
-      const isSuperAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
-      // DB stores lowercase roles, code uses uppercase
-      const roleForDb = isSuperAdmin ? "super_admin" : "attendee"
-      const statusForDb = isSuperAdmin ? "ACTIVE" : "ACTIVE"
+    const email = clerkUser.primaryEmailAddress?.emailAddress || ""
+    const isSuperAdmin =
+      email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
 
-      const { error: upsertError } = await supabaseAdmin
-        .from("profiles")
-        .upsert(
-          {
-            id: userId,
-            email: email.toLowerCase(),
-            full_name: fullName,
-            role: roleForDb,
-            status: statusForDb,
-            image_url: imageUrl,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "id" }
-        )
-
-      if (upsertError) {
-        throw new Error(`Profile auto-sync failed: ${upsertError.message}`)
-      }
-
-      try {
-        await client.users.updateUserMetadata(userId, {
-          publicMetadata: { role: normalizeRole(roleForDb), status: normalizeStatus(statusForDb) }
-        })
-      } catch (clerkErr) {
-        console.warn("[Auth] Clerk metadata update failed (non-fatal):", clerkErr)
-      }
-
-      // Return uppercase for code-level comparisons
-      return { role: normalizeRole(roleForDb), status: normalizeStatus(statusForDb), email }
-    } catch (fallbackErr: any) {
-      console.error("[Auth] Auto-sync fallback failed:", fallbackErr)
-      throw new Error(`Profile auto-sync failed: ${fallbackErr?.message || String(fallbackErr)}`)
+    return {
+      role: isSuperAdmin ? "SUPER_ADMIN" : "ATTENDEE",
+      status: "ACTIVE",
+      email,
+    }
+  } catch {
+    return {
+      role: "ATTENDEE",
+      status: "ACTIVE",
+      email: "",
     }
   }
+}
   // Normalize DB lowercase → uppercase for consistent RBAC checks
   return {
     role: normalizeRole(profile.role),
@@ -546,11 +520,16 @@ export async function getEventsAction() {
     let callerRole: string | null = null
 
     if (userId) {
-      const caller = await getCallerProfile(userId)
-      if (caller) {
-        callerRole = caller.role
-      }
+  try {
+    const caller = await getCallerProfile(userId)
+    if (caller) {
+      callerRole = caller.role
     }
+  } catch (err) {
+    console.error("Failed to resolve caller profile:", err)
+    callerRole = "ATTENDEE"
+  }
+}
 
     if (!isSupabaseAdminConfigured) {
       return { success: true, events: [], simulated: true }
