@@ -27,6 +27,24 @@
     const getStorageKey = (eventId: string) =>
     `rotasphere-booking-${eventId}`
 
+    const safeSetItem = (key: string, value: string) => {
+      try {
+        localStorage.setItem(key, value)
+      } catch (err) {
+        console.warn(`[Storage] safeSetItem failed for key "${key}":`, err)
+        try {
+          Object.keys(localStorage).forEach(k => {
+            if (k.startsWith("rotasphere-booking-")) {
+              localStorage.removeItem(k)
+            }
+          })
+          localStorage.setItem(key, value)
+        } catch (retryErr) {
+          console.warn("[Storage] Retry safeSetItem also failed:", retryErr)
+        }
+      }
+    }
+
     // Offline checkout states
     const [checkoutStep, setCheckoutStep] = React.useState<'details' | 'payment'>('details')
     const [screenshot, setScreenshot] = React.useState<string | null>(null)
@@ -199,36 +217,47 @@
     }, [bookingEvent, user])
 
     React.useEffect(() => {
-    if (!bookingEvent) return
+      if (!bookingEvent) return
 
-    const draft = {
+      try {
+        const draft = {
+          formData,
+          attendees,
+          checkoutStep,
+          selectedTierId,
+          attendeeClubName,
+          attendeeDesignation,
+          customDesignation,
+          isCustomDesignation,
+        }
+
+        safeSetItem(
+          getStorageKey(bookingEvent.id),
+          JSON.stringify(draft)
+        )
+      } catch (err) {
+        console.warn("Failed to save booking draft to localStorage:", err)
+        try {
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith("rotasphere-booking-")) {
+              localStorage.removeItem(key)
+            }
+          })
+        } catch (e) {
+          // ignore
+        }
+      }
+    }, [
+      bookingEvent,
       formData,
       attendees,
       checkoutStep,
-      screenshot,
       selectedTierId,
       attendeeClubName,
       attendeeDesignation,
       customDesignation,
       isCustomDesignation,
-    }
-
-    localStorage.setItem(
-      getStorageKey(bookingEvent.id),
-      JSON.stringify(draft)
-    )
-  }, [
-    bookingEvent,
-    formData,
-    attendees,
-    checkoutStep,
-    screenshot,
-    selectedTierId,
-    attendeeClubName,
-    attendeeDesignation,
-    customDesignation,
-    isCustomDesignation,
-  ])
+    ])
 
     React.useEffect(() => {
       let active = true
@@ -501,7 +530,7 @@
                 pricePaid: 0
               }
             })
-            localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
+            safeSetItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
 
             const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
             const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
@@ -512,7 +541,7 @@
                 ticketId: res.ticketId
               }
               bookedList.push(bookedEventItem)
-              localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
+              safeSetItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
             }
 
             // Sync client-side localStorage copy of events
@@ -526,7 +555,7 @@
                 }
                 return e
               })
-              localStorage.setItem("rotasphere_events", JSON.stringify(updatedList))
+              safeSetItem("rotasphere_events", JSON.stringify(updatedList))
             }
             setBookingSuccess(true)
             if (bookingEvent) {
@@ -606,7 +635,7 @@
               pricePaid: unitPrice
             }
           })
-          localStorage.setItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
+          safeSetItem("rotasphere_ticket_details", JSON.stringify(detailsMap))
 
           const savedBooked = localStorage.getItem("rotasphere_booked_tickets")
           const bookedList: EventItem[] = savedBooked ? JSON.parse(savedBooked) : []
@@ -618,7 +647,7 @@
               status: "pending"
             }
             bookedList.push(bookedEventItem)
-            localStorage.setItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
+            safeSetItem("rotasphere_booked_tickets", JSON.stringify(bookedList))
           }
 
           // Sync client-side localStorage copy of events
@@ -639,7 +668,7 @@
               }
               return e
             })
-            localStorage.setItem("rotasphere_events", JSON.stringify(updatedList))
+            safeSetItem("rotasphere_events", JSON.stringify(updatedList))
           }
 
           setBookingSuccess(true)

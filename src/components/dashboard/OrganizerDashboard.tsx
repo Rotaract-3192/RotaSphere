@@ -289,7 +289,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
     if (res.success) {
       const updated = events.map(e => e.id === id ? { ...e, status: "CANCELLED" } : e)
       setEvents(updated)
-      localStorage.setItem("rotasphere_events", JSON.stringify(updated))
+      try { localStorage.setItem("rotasphere_events", JSON.stringify(updated)) } catch (e) {}
       showToast("🚫 Event cancelled and hidden from attendees.")
     } else {
       showToast(`❌ Failed to cancel: ${res.error}`)
@@ -319,7 +319,7 @@ export function OrganizerDashboard({ events, setEvents, bookedTickets, user, sig
       if (res.success) {
         const updated = events.map(e => e.id === eventId ? { ...e, registrationsDisabled: newDisabled } : e)
         setEvents(updated)
-        localStorage.setItem("rotasphere_events", JSON.stringify(updated))
+        try { localStorage.setItem("rotasphere_events", JSON.stringify(updated)) } catch (e) {}
         showToast(newDisabled ? "⏸️ Registrations paused for this event." : "▶️ Registrations re-opened!")
       } else {
         showToast(`❌ Action failed: ${res.error}`)
